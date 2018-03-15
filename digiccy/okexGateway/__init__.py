@@ -1,10 +1,10 @@
 # encoding: UTF-8
 
 from vnpy.trader import vtConstant
-from lbankGateway import LbankGateway
+from okexGateway import OkexGateway
 
-gatewayClass = LbankGateway
-gatewayName = 'LBANK'
-gatewayDisplayName = u'LBANK'
+gatewayClass = OkexGateway
+gatewayName = 'OkexGateway'
+gatewayDisplayName = u'OKEX'
 gatewayType = vtConstant.GATEWAYTYPE_BTC
 gatewayQryEnabled = True
