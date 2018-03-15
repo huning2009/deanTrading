@@ -17,13 +17,13 @@ from vnpy.trader.vtConstant import (DIRECTION_LONG, DIRECTION_SHORT,
 from .tabBase import (StLeg, StSpread, EVENT_SPREADTRADING_TICK,
                      EVENT_SPREADTRADING_POS, EVENT_SPREADTRADING_LOG,
                      EVENT_SPREADTRADING_ALGO, EVENT_SPREADTRADING_ALGOLOG)
-from .tabAlgo import SniperAlgo
+from .tabAlgo import TabAlgoD
 
 
 ########################################################################
-class TabEngine(object):
+class TabDataEngine(object):
     """价差数据计算引擎"""
-    settingFileName = 'ST_setting.json'
+    settingFileName = 'Tab_setting.json'
     settingFilePath = getJsonPath(settingFileName, __file__)
 
     #----------------------------------------------------------------------
@@ -87,6 +87,7 @@ class TabEngine(object):
         # 创建价差
         spread = StSpread()
         spread.name = setting['name']        
+        spread.algoName = setting['algo']        
         self.spreadDict[spread.name] = spread
         
         # 创建主动腿
@@ -277,9 +278,9 @@ class TabEngine(object):
 
     
 ########################################################################
-class StAlgoEngine(object):
+class TabAlgoEngine(object):
     """价差算法交易引擎"""
-    algoFileName = 'SpreadTradingAlgo.vt'
+    algoFileName = 'TabAlgo.vt'
     algoFilePath = getTempPath(algoFileName)
 
     #----------------------------------------------------------------------
@@ -454,7 +455,7 @@ class StAlgoEngine(object):
         # 创建算法对象
         l = self.dataEngine.getAllSpreads()
         for spread in l:
-            algo = SniperAlgo(self, spread)
+            algo = TabAlgoD[spread.algoName](self, spread)
             self.algoDict[spread.name] = algo
             
             # 保存腿代码和算法对象的映射
@@ -543,7 +544,7 @@ class StAlgoEngine(object):
 
 
 ########################################################################
-class StEngine(object):
+class TabEngine(object):
     """价差引擎"""
 
     #----------------------------------------------------------------------
@@ -552,8 +553,8 @@ class StEngine(object):
         self.mainEngine = mainEngine
         self.eventEngine = eventEngine
         
-        self.dataEngine = StDataEngine(mainEngine, eventEngine)
-        self.algoEngine = StAlgoEngine(self.dataEngine, mainEngine, eventEngine)
+        self.dataEngine = TabDataEngine(mainEngine, eventEngine)
+        self.algoEngine = TabAlgoEngine(self.dataEngine, mainEngine, eventEngine)
         
     #----------------------------------------------------------------------
     def init(self):

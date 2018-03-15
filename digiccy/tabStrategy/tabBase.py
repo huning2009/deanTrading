@@ -49,6 +49,7 @@ class StSpread(object):
         """Constructor"""
         self.name = EMPTY_UNICODE       # 名称
         self.symbol = EMPTY_STRING      # 代码（基于组成腿计算）
+        self.algoName = EMPTY_STRING
         
         self.activeLeg = None           # 主动腿
         self.passiveLegs = []           # 被动腿（支持多条）

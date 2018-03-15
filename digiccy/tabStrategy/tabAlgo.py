@@ -7,10 +7,11 @@ from vnpy.trader.vtConstant import (EMPTY_INT, EMPTY_FLOAT,
                                     DIRECTION_LONG, DIRECTION_SHORT,
                                     STATUS_ALLTRADED, STATUS_CANCELLED, STATUS_REJECTED)
 
-
+TabAlgoD = {}
+TabAlgoD['tabSniper'] = TabSniperAlgo
 
 ########################################################################
-class StAlgoTemplate(object):
+class TabAlgoTemplate(object):
     """价差算法交易模板"""
     MODE_LONGSHORT = u'双向'
     MODE_LONGONLY = u'做多'
@@ -150,14 +151,14 @@ class StAlgoTemplate(object):
         
 
 ########################################################################
-class SniperAlgo(StAlgoTemplate):
+class TabSniperAlgo(TabAlgoTemplate):
     """狙击算法（市价委托）"""
     FINISHED_STATUS = [STATUS_ALLTRADED, STATUS_CANCELLED, STATUS_REJECTED]
 
     #----------------------------------------------------------------------
     def __init__(self, algoEngine, spread):
         """Constructor"""
-        super(SniperAlgo, self).__init__(algoEngine, spread)
+        super(TabSniperAlgo, self).__init__(algoEngine, spread)
         
         self.algoName = u'Sniper'
         self.quoteInterval = 2      # 主动腿报价撤单再发前等待的时间
