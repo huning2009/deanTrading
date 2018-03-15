@@ -8,7 +8,7 @@ from threading import Thread
 
 import websocket    
 
-# OKEX网站
+# OKEX网站 vnpy1.5
 OKEX_USD_SPOT = 'wss://real.okex.com:10441/websocket'               # OKEX 现货地址
 OKEX_USD_CONTRACT = 'wss://real.okex.com:10440/websocket/okexapi'   # OKEX 期货地址
 
