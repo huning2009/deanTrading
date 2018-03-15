@@ -13,8 +13,10 @@ from datetime import datetime, time
 from vnpy.event import EventEngine2
 from vnpy.trader.vtEvent import EVENT_LOG
 from vnpy.trader.vtEngine import MainEngine, LogEngine
+from tabStrategy.tabBase import EVENT_SPREADTRADING_LOG
+
 import okexGateway
-import triAbiStrategy
+import tabStrategy
  
 #----------------------------------------------------------------------
 def runChildProcess():
@@ -33,29 +35,29 @@ def runChildProcess():
     le.info(u'事件引擎创建成功')
     
     me = MainEngine(ee)
-    me.addGateway(ctpGateway)
+    me.addGateway(okexGateway)
     le.info(u'主引擎创建成功')
     
     ee.register(EVENT_LOG, le.processLogEvent)
-    ee.register(EVENT_CTA_LOG, le.processLogEvent)
+    ee.register(EVENT_SPREADTRADING_LOG, le.processLogEvent)
     le.info(u'注册日志事件监听')
     
-    me.connect('CTP')
-    le.info(u'连接CTP接口')
+    # me.connect('CTP')
+    # le.info(u'连接CTP接口')
     
-    sleep(20)    # 等待CTP接口初始化
+    # sleep(20)    # 等待CTP接口初始化
 
-    me.addApp(ctaStrategy)
+    me.addApp(tabStrategy)
 
-    cta = me.getApp(ctaStrategy.appName)
+    tab = me.getApp(tabStrategy.appName)
     
-    cta.loadSetting()
+    # tab.loadSetting()
     # le.info(u'CTA策略载入成功')
     
-    cta.initAll()
+    # tab.initAll()
     # le.info(u'CTA策略初始化成功')
     
-    cta.startAll()
+    # tab.startAll()
     # le.info(u'CTA策略启动成功')
     
     while True:

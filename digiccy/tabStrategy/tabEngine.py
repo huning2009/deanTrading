@@ -14,10 +14,10 @@ from vnpy.trader.vtConstant import (DIRECTION_LONG, DIRECTION_SHORT,
                                     OFFSET_OPEN, OFFSET_CLOSE, 
                                     PRICETYPE_LIMITPRICE)
 
-from .stBase import (StLeg, StSpread, EVENT_SPREADTRADING_TICK,
+from .tabBase import (StLeg, StSpread, EVENT_SPREADTRADING_TICK,
                      EVENT_SPREADTRADING_POS, EVENT_SPREADTRADING_LOG,
                      EVENT_SPREADTRADING_ALGO, EVENT_SPREADTRADING_ALGOLOG)
-from .stAlgo import SniperAlgo
+from .tabAlgo import SniperAlgo
 
 
 ########################################################################

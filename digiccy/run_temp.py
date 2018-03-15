@@ -1,3 +1,0 @@
-import okexGateway
-
-print okexGateway.gatewayName

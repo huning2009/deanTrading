@@ -44,7 +44,7 @@ class OkexGateway(VtGateway):
         """Constructor"""
         super(OkexGateway, self).__init__(eventEngine, gatewayName)
         
-        self.api = LbankApi(self)
+        self.api = OkexApi(self)
         
         self.fileName = self.gatewayName + '_connect.json'
         self.filePath = getJsonPath(self.fileName, __file__)             
@@ -149,13 +149,13 @@ class OkexGateway(VtGateway):
     
 
 ########################################################################
-class LbankApi(LbankApi):
+class OkexApi(object):
     """"""
 
     #----------------------------------------------------------------------
     def __init__(self, gateway):
         """Constructor"""
-        super(LbankApi, self).__init__()
+        super(OkexApi, self).__init__()
         
         self.gateway = gateway
         self.gatewayName = gateway.gatewayName
