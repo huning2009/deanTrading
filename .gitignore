@@ -1,0 +1,13 @@
+# Python编译文件
+*.pyc
+*.pyo
+
+# 不想同步的
+*.local
+*.temp
+*.vt
+*.log
+*.json
+
+# API的.con文件
+*.con
