@@ -10,16 +10,16 @@ from vnpy.trader.vtConstant import (EMPTY_INT, EMPTY_FLOAT,
 
 
 
-EVENT_SPREADTRADING_TICK = 'eSpreadTradingTick.'
-EVENT_SPREADTRADING_POS = 'eSpreadTradingPos.'
-EVENT_SPREADTRADING_LOG = 'eSpreadTradingLog'
-EVENT_SPREADTRADING_ALGO = 'eSpreadTradingAlgo.'
-EVENT_SPREADTRADING_ALGOLOG = 'eSpreadTradingAlgoLog'
+EVENT_TABTRADING_TICK = 'eTabTradingTick.'
+EVENT_TABTRADING_POS = 'eTabTradingPos.'
+EVENT_TABTRADING_LOG = 'eTabTradingLog'
+EVENT_TABTRADING_ALGO = 'eTabTradingAlgo.'
+EVENT_TABTRADING_ALGOLOG = 'eTabTradingAlgoLog'
 
 
 
 ########################################################################
-class StLeg(object):
+class TabLeg(object):
     """"""
 
     #----------------------------------------------------------------------
@@ -41,7 +41,7 @@ class StLeg(object):
 
 
 ########################################################################
-class StSpread(object):
+class TabSpread(object):
     """"""
 
     #----------------------------------------------------------------------

@@ -14,9 +14,9 @@ from vnpy.trader.vtConstant import (DIRECTION_LONG, DIRECTION_SHORT,
                                     OFFSET_OPEN, OFFSET_CLOSE, 
                                     PRICETYPE_LIMITPRICE)
 
-from .tabBase import (StLeg, StSpread, EVENT_SPREADTRADING_TICK,
-                     EVENT_SPREADTRADING_POS, EVENT_SPREADTRADING_LOG,
-                     EVENT_SPREADTRADING_ALGO, EVENT_SPREADTRADING_ALGOLOG)
+from .tabBase import (TabLeg, TabSpread, EVENT_TABTRADING_TICK,
+                     EVENT_TABTRADING_POS, EVENT_TABTRADING_LOG,
+                     EVENT_TABTRADING_ALGO, EVENT_TABTRADING_ALGOLOG)
 from .tabAlgo import TabAlgoD
 
 
@@ -33,9 +33,9 @@ class TabDataEngine(object):
         self.eventEngine = eventEngine
         
         # 腿、价差相关字典
-        self.legDict = {}                   # vtSymbol:StLeg
-        self.spreadDict = {}                # name:StSpread
-        self.vtSymbolSpreadDict = {}        # vtSymbol:StSpread
+        self.legDict = {}                   # vtSymbol:TabLeg
+        self.spreadDict = {}                # name:TabSpread
+        self.vtSymbolSpreadDict = {}        # vtSymbol:TabSpread
         
         self.registerEvent()
         
@@ -85,7 +85,7 @@ class TabDataEngine(object):
                 return result, msg
     
         # 创建价差
-        spread = StSpread()
+        spread = TabSpread()
         spread.name = setting['name']        
         spread.algoName = setting['algo']        
         self.spreadDict[spread.name] = spread
@@ -93,7 +93,7 @@ class TabDataEngine(object):
         # 创建主动腿
         activeSetting = setting['activeLeg']
         
-        activeLeg = StLeg()
+        activeLeg = TabLeg()
         activeLeg.vtSymbol = str(activeSetting['vtSymbol'])
         activeLeg.ratio = float(activeSetting['ratio'])
         activeLeg.multiplier = float(activeSetting['multiplier'])
@@ -110,7 +110,7 @@ class TabDataEngine(object):
         passiveLegList = []
         
         for d in passiveSettingList:
-            passiveLeg = StLeg()
+            passiveLeg = TabLeg()
             passiveLeg.vtSymbol = str(d['vtSymbol'])
             passiveLeg.ratio = float(d['ratio'])
             passiveLeg.multiplier = float(d['multiplier'])
@@ -267,7 +267,7 @@ class TabDataEngine(object):
         log = VtLogData()
         log.logContent = content
         
-        event = Event(EVENT_SPREADTRADING_LOG)
+        event = Event(EVENT_TABTRADING_LOG)
         event.dict_['data'] = log
         self.eventEngine.put(event)
         
@@ -298,8 +298,8 @@ class TabAlgoEngine(object):
     #----------------------------------------------------------------------
     def registerEvent(self):
         """注册事件监听"""
-        self.eventEngine.register(EVENT_SPREADTRADING_TICK, self.processSpreadTickEvent)
-        self.eventEngine.register(EVENT_SPREADTRADING_POS, self.processSpreadPosEvent)
+        self.eventEngine.register(EVENT_TABTRADING_TICK, self.processSpreadTickEvent)
+        self.eventEngine.register(EVENT_TABTRADING_POS, self.processSpreadPosEvent)
         self.eventEngine.register(EVENT_TRADE, self.processTradeEvent)
         self.eventEngine.register(EVENT_ORDER, self.processOrderEvent)
         self.eventEngine.register(EVENT_TIMER, self.processTimerEvent)
@@ -424,7 +424,7 @@ class TabAlgoEngine(object):
     #----------------------------------------------------------------------
     def putAlgoEvent(self, algo):
         """发出算法状态更新事件"""
-        event = Event(EVENT_SPREADTRADING_ALGO+algo.name)
+        event = Event(EVENT_TABTRADING_ALGO+algo.name)
         self.eventEngine.put(event)
         
     #----------------------------------------------------------------------
@@ -433,7 +433,7 @@ class TabAlgoEngine(object):
         log = VtLogData()
         log.logContent = content
         
-        event = Event(EVENT_SPREADTRADING_ALGOLOG)
+        event = Event(EVENT_TABTRADING_ALGOLOG)
         event.dict_['data'] = log
         
         self.eventEngine.put(event)
