@@ -12,6 +12,7 @@ from time import sleep
 
 from vnpy.trader.vtGateway import *
 from vnpy.trader.vtFunction import getJsonPath
+from okexApi import OkexApi
 
 
 SYMBOL_BTCCNY = 'BTCCNY'
@@ -147,9 +148,8 @@ class OkexGateway(VtGateway):
         """设置是否要启动循环查询"""
         self.qryEnabled = qryEnabled
     
-
 ########################################################################
-class OkexApi(object):
+class OkexApi(OkexApi):
     """"""
 
     #----------------------------------------------------------------------
