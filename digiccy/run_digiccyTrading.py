@@ -1,11 +1,5 @@
 # encoding: UTF-8
 
-import os,sys
-myFun_Obj_Path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-myStrategyPath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'strategy')
-sys.path.append(myFun_Obj_Path)
-sys.path.append(myStrategyPath)
-
 import multiprocessing
 from time import sleep
 from datetime import datetime, time
@@ -13,9 +7,10 @@ from datetime import datetime, time
 from vnpy.event import EventEngine2
 from vnpy.trader.vtEvent import EVENT_LOG
 from vnpy.trader.vtEngine import MainEngine, LogEngine
-from tabStrategy.tabBase import EVENT_SPREADTRADING_LOG
+from tabStrategy.tabBase import EVENT_TABTRADING_LOG
 
 import okexGateway
+import huobiGateway
 import tabStrategy
  
 #----------------------------------------------------------------------
@@ -39,7 +34,7 @@ def runChildProcess():
     le.info(u'主引擎创建成功')
     
     ee.register(EVENT_LOG, le.processLogEvent)
-    ee.register(EVENT_SPREADTRADING_LOG, le.processLogEvent)
+    ee.register(EVENT_TABTRADING_LOG, le.processLogEvent)
     le.info(u'注册日志事件监听')
     
     # me.connect('CTP')

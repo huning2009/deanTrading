@@ -158,11 +158,11 @@ class TabDataEngine(object):
     #----------------------------------------------------------------------
     def putSpreadTickEvent(self, spread):
         """发出价差行情更新事件"""
-        event1 = Event(EVENT_SPREADTRADING_TICK+spread.name)
+        event1 = Event(EVENT_TABTRADING_TICK+spread.name)
         event1.dict_['data'] = spread
         self.eventEngine.put(event1)
         
-        event2 = Event(EVENT_SPREADTRADING_TICK)
+        event2 = Event(EVENT_TABTRADING_TICK)
         event2.dict_['data'] = spread
         self.eventEngine.put(event2)        
     
@@ -196,11 +196,11 @@ class TabDataEngine(object):
         spread.calculatePos()
         
         # 推送价差持仓更新
-        event1 = Event(EVENT_SPREADTRADING_POS+spread.name)
+        event1 = Event(EVENT_TABTRADING_POS+spread.name)
         event1.dict_['data'] = spread
         self.eventEngine.put(event1)
         
-        event2 = Event(EVENT_SPREADTRADING_POS)
+        event2 = Event(EVENT_TABTRADING_POS)
         event2.dict_['data'] = spread
         self.eventEngine.put(event2)
     
@@ -232,11 +232,11 @@ class TabDataEngine(object):
     #----------------------------------------------------------------------
     def putSpreadPosEvent(self, spread):
         """发出价差持仓事件"""
-        event1 = Event(EVENT_SPREADTRADING_POS+spread.name)
+        event1 = Event(EVENT_TABTRADING_POS+spread.name)
         event1.dict_['data'] = spread
         self.eventEngine.put(event1)
     
-        event2 = Event(EVENT_SPREADTRADING_POS)
+        event2 = Event(EVENT_TABTRADING_POS)
         event2.dict_['data'] = spread
         self.eventEngine.put(event2)         
         

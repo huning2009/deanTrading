@@ -8,7 +8,6 @@ from vnpy.trader.vtConstant import (EMPTY_INT, EMPTY_FLOAT,
                                     STATUS_ALLTRADED, STATUS_CANCELLED, STATUS_REJECTED)
 
 TabAlgoD = {}
-TabAlgoD['tabSniper'] = TabSniperAlgo
 
 ########################################################################
 class TabAlgoTemplate(object):
@@ -152,7 +151,13 @@ class TabAlgoTemplate(object):
 
 ########################################################################
 class TabSniperAlgo(TabAlgoTemplate):
-    """狙击算法（市价委托）"""
+    """狙击TriAbi
+    r = 1 - ratio(费率)
+    n2 = p1 * n1 / r
+    n3 = n1 * r
+    收益为(r^2 * p3 - p2*p1/r) * n1个pair3下币
+
+    """
     FINISHED_STATUS = [STATUS_ALLTRADED, STATUS_CANCELLED, STATUS_REJECTED]
 
     #----------------------------------------------------------------------
@@ -525,3 +530,6 @@ class TabSniperAlgo(TabAlgoTemplate):
         # 只有确实发出撤单委托时，才输出信息        
         if cancelPassive:
             self.writeLog(u'被动腿全撤')
+
+TabAlgoD['tabSniper'] = TabSniperAlgo
+

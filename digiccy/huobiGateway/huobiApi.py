@@ -2,33 +2,73 @@
 
 import urllib
 import hashlib
-
+import json
 import requests
+import zlib
+from time import time, sleep
 from Queue import Queue, Empty
 from threading import Thread
-from time import sleep
+
+from websocket import create_connection, _exceptions
 
 
+# 常量定义
+COINTYPE_BTC = 1
+COINTYPE_LTC = 2
 
-API_ROOT ="https://api.lbank.info/v1/"
+ACCOUNTTYPE_CNY = 1
+ACCOUNTTYPE_USD = 2
 
-FUNCTION_TICKER = ('ticker.do', 'get')
-FUNCTION_DEPTH = ('depth.do', 'get')
-FUNCTION_TRADES = ('trades.do', 'get')
-FUNCTION_KLINE = ('kline.do', 'get')
+LOANTYPE_CNY = 1
+LOANTYPE_BTC = 2
+LOANTYPE_LTC = 3
+LOANTYPE_USD = 4
 
-FUNCTION_USERINFO = ('user_info.do', 'post')
-FUNCTION_CREATEORDER = ('create_order.do', 'post')
-FUNCTION_CANCELORDER = ('cancel_order.do', 'post')
-FUNCTION_ORDERSINFO = ('orders_info.do', 'post')
-FUNCTION_ORDERSINFOHISTORY = ('orders_info_history.do', 'post')
+MARKETTYPE_CNY = 'cny'
+MARKETTYPE_USD = 'usd'
+
+SYMBOL_BTCCNY = 'BTC_CNY'
+SYMBOL_LTCCNY = 'LTC_CNY'
+SYMBOL_BTCUSD = 'BTC_USD'
+
+PERIOD_1MIN = '001'
+PERIOD_5MIN = '005'
+PERIOD_15MIN = '015'
+PERIOD_30MIN = '030'
+PERIOD_60MIN = '060'
+PERIOD_DAILY = '100'
+PERIOD_WEEKLY = '200'
+PERIOD_MONTHLY = '300'
+PERIOD_ANNUALLY = '400'
+
+# API相关定义
+HUOBI_TRADE_API = 'https://api.huobi.com/apiv3'
+
+# 功能代码
+FUNCTIONCODE_GETACCOUNTINFO = 'get_account_info'
+FUNCTIONCODE_GETORDERS = 'get_orders'
+FUNCTIONCODE_ORDERINFO = 'order_info'
+FUNCTIONCODE_BUY = 'buy'
+FUNCTIONCODE_SELL = 'sell'
+FUNCTIONCODE_BUYMARKET = 'buy_market'
+FUNCTIONCODE_SELLMARKET = 'sell_market'
+FUNCTIONCODE_CANCELORDER = 'cancel_order'
+FUNCTIONCODE_GETNEWDEALORDERS = 'get_new_deal_orders'
+FUNCTIONCODE_GETORDERIDBYTRADEID = 'get_order_id_by_trade_id'
+FUNCTIONCODE_WITHDRAWCOIN = 'withdraw_coin'
+FUNCTIONCODE_CANCELWITHDRAWCOIN = 'cancel_withdraw_coin'
+FUNCTIONCODE_GETWITHDRAWCOINRESULT = 'get_withdraw_coin_result'
+FUNCTIONCODE_TRANSFER = 'transfer'
+FUNCTIONCODE_LOAN = 'loan'
+FUNCTIONCODE_REPAYMENT = 'repayment'
+FUNCTIONCODE_GETLOANAVAILABLE = 'get_loan_available'
+FUNCTIONCODE_GETLOANS = 'get_loans'
 
 
 #----------------------------------------------------------------------
-def signature(params, secretKey):
+def signature(params):
     """生成签名"""
     params = sorted(params.iteritems(), key=lambda d:d[0], reverse=False)
-    params.append(('secret_key', secretKey))
     message = urllib.urlencode(params)
     
     m = hashlib.md5()
@@ -40,59 +80,48 @@ def signature(params, secretKey):
     
 
 ########################################################################
-class HuobiApi(object):
-    """"""
+class TradeApi(object):
+    """交易接口"""
     DEBUG = True
 
     #----------------------------------------------------------------------
     def __init__(self):
         """Constructor"""
-        self.apiKey = ''
+        self.accessKey = ''
         self.secretKey = ''
-
-        self.interval = 1           # 每次请求的间隔等待
+        
         self.active = False         # API工作状态   
         self.reqID = 0              # 请求编号
         self.reqQueue = Queue()     # 请求队列
         self.reqThread = Thread(target=self.processQueue)   # 请求处理线程        
     
     #----------------------------------------------------------------------
-    def init(self, apiKey, secretKey, interval):
-        """初始化"""
-        self.apiKey = apiKey
-        self.secretKey = secretKey
-        self.interval = interval
-        
-        self.active = True
-        self.reqThread.start()
-        
-    #----------------------------------------------------------------------
-    def exit(self):
-        """退出"""
-        self.active = False
-        
-        if self.reqThread.isAlive():
-            self.reqThread.join()
-    
-    #----------------------------------------------------------------------
     def processRequest(self, req):
         """处理请求"""
         # 读取方法和参数
-        api, method = req['function']
+        method = req['method']
         params = req['params']
-        url = API_ROOT + api
+        optional = req['optional']
         
         # 在参数中增加必须的字段
-        params['api_key'] = self.apiKey
+        params['created'] = long(time())
+        params['access_key'] = self.accessKey
+        params['secret_key'] = self.secretKey
+        params['method'] = method
         
         # 添加签名
-        sign = signature(params, self.secretKey)
+        sign = signature(params)
         params['sign'] = sign
+        del params['secret_key']
+        
+        # 添加选填参数
+        if optional:
+            params.update(optional)
         
         # 发送请求
         payload = urllib.urlencode(params)
-    
-        r = requests.request(method, url, params=payload)
+
+        r = requests.post(HUOBI_TRADE_API, params=payload)
         if r.status_code == 200:
             data = r.json()
             return data
@@ -111,197 +140,525 @@ class HuobiApi(object):
                 data = self.processRequest(req)
                 
                 # 请求失败
-                if data is None:
-                    error = u'请求失败'
-                    self.onError(error, req, reqID)
-                elif 'error_code' in data:
-                    error = u'请求出错，错误代码：%s' % data['error_code']
+                if 'code' in data and 'message' in data:
+                    error = u'错误信息：%s' %data['message']
                     self.onError(error, req, reqID)
                 # 请求成功
                 else:
                     if self.DEBUG:
-                        print callback.__name__                        
+                        print callback.__name__
                     callback(data, req, reqID)
-
-                # 流控等待
-                sleep(self.interval)
                 
             except Empty:
                 pass    
             
     #----------------------------------------------------------------------
-    def sendRequest(self, function, params, callback):
+    def sendRequest(self, method, params, callback, optional=None):
         """发送请求"""
         # 请求编号加1
         self.reqID += 1
         
         # 生成请求字典并放入队列中
         req = {}
-        req['function'] = function
+        req['method'] = method
         req['params'] = params
         req['callback'] = callback
+        req['optional'] = optional
         req['reqID'] = self.reqID
         self.reqQueue.put(req)
         
         # 返回请求编号
         return self.reqID
+        
+    ####################################################
+    ## 主动函数
+    ####################################################    
+    
+    #----------------------------------------------------------------------
+    def init(self, accessKey, secretKey):
+        """初始化"""
+        self.accessKey = accessKey
+        self.secretKey = secretKey
+        
+        self.active = True
+        self.reqThread.start()
+        
+    #----------------------------------------------------------------------
+    def exit(self):
+        """退出"""
+        self.active = False
+        
+        if self.reqThread.isAlive():
+            self.reqThread.join()    
+    
+    #----------------------------------------------------------------------
+    def getAccountInfo(self, market='cny'):
+        """查询账户"""
+        method = FUNCTIONCODE_GETACCOUNTINFO
+        params = {}
+        callback = self.onGetAccountInfo
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)
+    
+    #----------------------------------------------------------------------
+    def getOrders(self, coinType=COINTYPE_BTC, market='cny'):
+        """查询委托"""
+        method = FUNCTIONCODE_GETORDERS
+        params = {'coin_type': coinType}
+        callback = self.onGetOrders
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)
+        
+    #----------------------------------------------------------------------
+    def orderInfo(self, id_, coinType=COINTYPE_BTC, market='cny'):
+        """获取委托详情"""
+        method = FUNCTIONCODE_ORDERINFO
+        params = {
+            'coin_type': coinType,
+            'id': id_
+        }
+        callback = self.onOrderInfo
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)
+    
+    #----------------------------------------------------------------------
+    def buy(self, price, amount, coinType=COINTYPE_BTC, 
+            tradePassword='', tradeId = '', market='cny'):
+        """委托买入"""
+        method = FUNCTIONCODE_BUY
+        params = {
+            'coin_type': coinType,
+            'price': price,
+            'amount': amount
+        }
+        callback = self.onBuy
+        optional = {
+            'trade_password': tradePassword,
+            'trade_id': tradeId,
+            'market': market
+        }
+        return self.sendRequest(method, params, callback, optional)
+
+    #----------------------------------------------------------------------
+    def sell(self, price, amount, coinType=COINTYPE_BTC, 
+            tradePassword='', tradeId = '', market='cny'):
+        """委托卖出"""
+        method = FUNCTIONCODE_SELL
+        params = {
+            'coin_type': coinType,
+            'price': price,
+            'amount': amount
+        }
+        callback = self.onSell
+        optional = {
+            'trade_password': tradePassword,
+            'trade_id': tradeId,
+            'market': market
+        }
+        return self.sendRequest(method, params, callback, optional)
+    
+    #----------------------------------------------------------------------
+    def buyMarket(self, amount, coinType=COINTYPE_BTC, 
+                  tradePassword='', tradeId = '', market='cny'):
+        """市价买入"""
+        method = FUNCTIONCODE_BUYMARKET
+        params = {
+            'coin_type': coinType,
+            'amount': amount
+        }
+        callback = self.onBuyMarket
+        optional = {
+            'trade_password': tradePassword,
+            'trade_id': tradeId,
+            'market': market
+        }
+        return self.sendRequest(method, params, callback, optional) 
+    
+    #----------------------------------------------------------------------
+    def sellMarket(self, amount, coinType=COINTYPE_BTC, 
+                  tradePassword='', tradeId = '', market='cny'):
+        """市价卖出"""
+        method = FUNCTIONCODE_SELLMARKET
+        params = {
+            'coin_type': coinType,
+            'amount': amount
+        }
+        callback = self.onSellMarket
+        optional = {
+            'trade_password': tradePassword,
+            'trade_id': tradeId,
+            'market': market
+        }
+        return self.sendRequest(method, params, callback, optional)      
+    
+    #----------------------------------------------------------------------
+    def cancelOrder(self, id_, coinType=COINTYPE_BTC, market='cny'):
+        """撤销委托"""
+        method = FUNCTIONCODE_CANCELORDER
+        params = {
+            'coin_type': coinType,
+            'id': id_
+        }
+        callback = self.onCancelOrder
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)    
+
+    #----------------------------------------------------------------------
+    def getNewDealOrders(self, market='cny'):
+        """查询最新10条成交"""
+        method = FUNCTIONCODE_GETNEWDEALORDERS
+        params = {}
+        callback = self.onGetNewDealOrders
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)
+    
+    #----------------------------------------------------------------------
+    def getOrderIdByTradeId(self, tradeId, coinType=COINTYPE_BTC, 
+                            market='cny'):
+        """通过成交编号查询委托编号"""
+        method = FUNCTIONCODE_GETORDERIDBYTRADEID
+        params = {
+            'coin_type': coinType,
+            'trade_id': tradeId
+        }
+        callback = self.onGetOrderIdByTradeId
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional) 
+    
+    #----------------------------------------------------------------------
+    def withdrawCoin(self, withdrawAddress, withdrawAmount,
+                     coinType=COINTYPE_BTC, tradePassword='',
+                     market='cny', withdrawFee=0.0001):
+        """提币"""
+        method = FUNCTIONCODE_WITHDRAWCOIN
+        params = {
+            'coin_type': coinType,
+            'withdraw_address': withdrawAddress,
+            'withdraw_amount': withdrawAmount
+        }
+        callback = self.onWithdrawCoin
+        optional = {
+            'market': market,
+            'withdraw_fee': withdrawFee
+        }
+        return self.sendRequest(method, params, callback, optional)  
+    
+    #----------------------------------------------------------------------
+    def cancelWithdrawCoin(self, id_, market='cny'):
+        """取消提币"""
+        method = FUNCTIONCODE_CANCELWITHDRAWCOIN
+        params = {'withdraw_coin_id': id_}
+        callback = self.onCancelWithdrawCoin
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)         
+    
+    #----------------------------------------------------------------------
+    def onGetWithdrawCoinResult(self, id_, market='cny'):
+        """查询提币结果"""
+        method = FUNCTIONCODE_GETWITHDRAWCOINRESULT
+        params = {'withdraw_coin_id': id_}
+        callback = self.onGetWithdrawCoinResult
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)         
+    
+    #----------------------------------------------------------------------
+    def transfer(self, amountFrom, amountTo, amount, 
+                 coinType=COINTYPE_BTC ):
+        """账户内转账"""
+        method = FUNCTIONCODE_TRANSFER
+        params = {
+            'amount_from': amountFrom,
+            'amount_to': amountTo,
+            'amount': amount,
+            'coin_type': coinType
+        }
+        callback = self.onTransfer
+        optional = {}
+        return self.sendRequest(method, params, callback, optional)          
+        
+    #----------------------------------------------------------------------
+    def loan(self, amount, loan_type=LOANTYPE_CNY, 
+             market=MARKETTYPE_CNY):
+        """申请杠杆"""
+        method = FUNCTIONCODE_LOAN
+        params = {
+            'amount': amount,
+            'loan_type': loan_type
+        }
+        callback = self.onLoan
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)
+    
+    #----------------------------------------------------------------------
+    def repayment(self, id_, amount, repayAll=0,
+                  market=MARKETTYPE_CNY):
+        """归还杠杆"""
+        method = FUNCTIONCODE_REPAYMENT
+        params = {
+            'loan_id': id_,
+            'amount': amount
+        }
+        callback = self.onRepayment
+        optional = {
+            'repay_all': repayAll,
+            'market': market
+        }
+        return self.sendRequest(method, params, callback, optional)
+    
+    #----------------------------------------------------------------------
+    def getLoanAvailable(self, market='cny'):
+        """查询杠杆额度"""
+        method = FUNCTIONCODE_GETLOANAVAILABLE
+        params = {}
+        callback = self.onLoanAvailable
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)
+    
+    #----------------------------------------------------------------------
+    def getLoans(self, market='cny'):
+        """查询杠杆列表"""
+        method = FUNCTIONCODE_GETLOANS
+        params = {}
+        callback = self.onGetLoans
+        optional = {'market': market}
+        return self.sendRequest(method, params, callback, optional)    
+    
+    ####################################################
+    ## 回调函数
+    ####################################################
     
     #----------------------------------------------------------------------
     def onError(self, error, req, reqID):
         """错误推送"""
-        print error, req, reqID
+        print error, reqID    
 
-    ###############################################
-    # 行情接口
-    ###############################################
+    #----------------------------------------------------------------------
+    def onGetAccountInfo(self, data, req, reqID):
+        """查询账户回调"""
+        print data
     
     #----------------------------------------------------------------------
-    def getTicker(self, symbol):
-        """查询行情"""
-        function = FUNCTION_TICKER
-        params = {'symbol': symbol}
-        callback = self.onGetTicker
-        return self.sendRequest(function, params, callback)
-
-    # ----------------------------------------------------------------------
-    def getDepth(self, symbol, size, merge):
-        """查询深度"""
-        function = FUNCTION_DEPTH
-        params = {
-            'symbol': symbol,
-            'size': size,
-            'mege': merge
-        }
-        callback = self.onGetDepth
-        return self.sendRequest(function, params, callback)
-
-    # ----------------------------------------------------------------------
-    def getTrades(self, symbol, size, time):
-        """查询历史成交"""
-        function = FUNCTION_TRADES
-        params = {
-            'symbol': symbol,
-            'size': size,
-            'time': time
-        }
-        callback = self.onGetTrades
-        return self.sendRequest(function, params, callback)
-
-    # ----------------------------------------------------------------------
-    def getKline(self, symbol, size, type_, time):
-        """查询K线"""
-        function = FUNCTION_KLINE
-        params = {
-            'symbol': symbol,
-            'size': size,
-            'type': type_,
-            'time': time
-        }
-        callback = self.onGetKline
-        return self.sendRequest(function, params, callback)
+    def onGetOrders(self, data, req, reqID, fuck):
+        """查询委托回调"""
+        print data
+        
+    #----------------------------------------------------------------------
+    def onOrderInfo(self, data, req, reqID):
+        """委托详情回调"""
+        print data
 
     #----------------------------------------------------------------------
-    def onGetTicker(self, data, req, reqID):
-        """查询行情回调"""
-        print data, reqID
-
-    # ----------------------------------------------------------------------
-    def onGetDepth(self, data, req, reqID):
-        """查询深度回调"""
-        print data, reqID
-
-    # ----------------------------------------------------------------------
-    def onGetTrades(self, data, req, reqID):
-        """查询历史成交"""
-        print data, reqID
-
-    # ----------------------------------------------------------------------
-    def onGetKline(self, data, req, reqID):
-        """查询Ｋ线回报"""
-        print data, reqID
-
-    ###############################################
-    # 交易接口
-    ###############################################
-
-    # ----------------------------------------------------------------------
-    def getUserInfo(self):
-        """查询账户信息"""
-        function = FUNCTION_USERINFO
-        params = {}
-        callback = self.onGetUserInfo
-        return self.sendRequest(function, params, callback)
-
-    # ----------------------------------------------------------------------
-    def createOrder(self, symbol, type_, price, amount):
-        """发送委托"""
-        function = FUNCTION_CREATEORDER
-        params = {
-            'symbol': symbol,
-            'type': type_,
-            'price': price,
-            'amount': amount
-        }
-        callback = self.onCreateOrder
-        return self.sendRequest(function, params, callback)
-
-    # ----------------------------------------------------------------------
-    def cancelOrder(self, symbol, orderId):
-        """撤单"""
-        function = FUNCTION_CANCELORDER
-        params = {
-            'symbol': symbol,
-            'order_id': orderId
-        }
-        callback = self.onCancelOrder
-        return self.sendRequest(function, params, callback)
-
-    # ----------------------------------------------------------------------
-    def getOrdersInfo(self, symbol, orderId):
-        """查询委托"""
-        function = FUNCTION_ORDERSINFO
-        params = {
-            'symbol': symbol,
-            'order_id': orderId
-        }
-        callback = self.onGetOrdersInfo
-        return self.sendRequest(function, params, callback)
-
-    # ----------------------------------------------------------------------
-    def getOrdersInfoHistory(self, symbol, status, currentPage, pageLength):
-        """撤单"""
-        function = FUNCTION_ORDERSINFOHISTORY
-        params = {
-            'symbol': symbol,
-            'status': status,
-            'current_page': currentPage,
-            'page_length': pageLength
-        }
-        callback = self.onGetOrdersInfoHistory
-        return self.sendRequest(function, params, callback)
-
-    # ----------------------------------------------------------------------
-    def onGetUserInfo(self, data, req, reqID):
-        """查询账户信息"""
-        print data, reqID
-
-    # ----------------------------------------------------------------------
-    def onCreateOrder(self, data, req, reqID):
-        """委托回报"""
-        print data, reqID
-
-    # ----------------------------------------------------------------------
+    def onBuy(self, data, req, reqID):
+        """买入回调"""
+        print data
+        
+    #----------------------------------------------------------------------
+    def onSell(self, data, req, reqID):
+        """卖出回调"""
+        print data    
+        
+    #----------------------------------------------------------------------
+    def onBuyMarket(self, data, req, reqID):
+        """市价买入回调"""
+        print data
+        
+    #----------------------------------------------------------------------
+    def onSellMarket(self, data, req, reqID):
+        """市价卖出回调"""
+        print data        
+        
+    #----------------------------------------------------------------------
     def onCancelOrder(self, data, req, reqID):
-        """撤单回报"""
-        print data, reqID
+        """撤单回调"""
+        print data
+    
+    #----------------------------------------------------------------------
+    def onGetNewDealOrders(self, data, req, reqID):
+        """查询最新成交回调"""
+        print data    
+        
+    #----------------------------------------------------------------------
+    def onGetOrderIdByTradeId(self, data, req, reqID):
+        """通过成交编号查询委托编号回调"""
+        print data    
+        
+    #----------------------------------------------------------------------
+    def onWithdrawCoin(self, data, req, reqID):
+        """提币回调"""
+        print data
+        
+    #----------------------------------------------------------------------
+    def onCancelWithdrawCoin(self, data, req, reqID):
+        """取消提币回调"""
+        print data      
+        
+    #----------------------------------------------------------------------
+    def onGetWithdrawCoinResult(self, data, req, reqID):
+        """查询提币结果回调"""
+        print data           
+        
+    #----------------------------------------------------------------------
+    def onTransfer(self, data, req, reqID):
+        """转账回调"""
+        print data
+        
+    #----------------------------------------------------------------------
+    def onLoan(self, data, req, reqID):
+        """申请杠杆回调"""
+        print data      
+        
+    #----------------------------------------------------------------------
+    def onRepayment(self, data, req, reqID):
+        """归还杠杆回调"""
+        print data    
+    
+    #----------------------------------------------------------------------
+    def onLoanAvailable(self, data, req, reqID):
+        """查询杠杆额度回调"""
+        print data      
+        
+    #----------------------------------------------------------------------
+    def onGetLoans(self, data, req, reqID):
+        """查询杠杆列表"""
+        print data
 
-    # ----------------------------------------------------------------------
-    def onGetOrdersInfo(self, data, req, reqID):
-        """查询委托回报"""
-        print data, reqID
 
-    # ----------------------------------------------------------------------
-    def onGetOrdersInfoHistory(self, data, req, reqID):
-        """撤单回报"""
-        print data, reqID
+########################################################################
+class DataApi(object):
+    """行情接口"""
 
+    #----------------------------------------------------------------------
+    def __init__(self):
+        """Constructor"""
+        self.ws = None
+        self.url = ''
+        
+        self.reqid = 0
+        self.active = False
+        self.thread = Thread(target=self.run)
+        
+        self.subDict = {}
+        
+    #----------------------------------------------------------------------
+    def run(self):
+        """执行连接"""
+        while self.active:
+            try:
+                stream = self.ws.recv()
+                result = zlib.decompress(stream, 47).decode('utf-8')
+                data = json.loads(result)
+                self.onData(data)
+            except zlib.error:
+                self.onError(u'数据解压出错：%s' %stream)
+            except _exceptions.WebSocketConnectionClosedException:
+                self.onError(u'行情服务器连接断开：%s' %stream)
+                break
+        
+    #----------------------------------------------------------------------
+    def connect(self, url):
+        """连接"""
+        self.url = url
+        
+        try:
+            self.ws = create_connection(self.url)
+            
+            self.active = True
+            self.thread.start()
+            
+            return True
+        except:
+            self.onError(u'行情服务器连接失败')
+            return False
+        
+    #----------------------------------------------------------------------
+    def sendReq(self, req):
+        """发送请求"""
+        stream = json.dumps(req)
+        self.ws.send(stream)            
+        
+    #----------------------------------------------------------------------
+    def pong(self, data):
+        """响应心跳"""
+        req = {'pong': data['ping']}
+        self.sendReq(req)
+    
+    #----------------------------------------------------------------------
+    def subTopic(self, topic):
+        """订阅主题"""
+        if topic in self.subDict:
+            return
+        
+        self.reqid += 1
+        req = {
+            'sub': topic,
+            'id': str(self.reqid)
+        }
+        self.sendReq(req)
+        
+        self.subDict[topic] = str(self.reqid)
+    
+    #----------------------------------------------------------------------
+    def unsubTopic(self, topic):
+        """取消订阅主题"""
+        if topic not in self.subDict:
+            return
+        req = {
+            'unsub': topic,
+            'id': self.subDict[topic]
+        }
+        self.sendReq(req)
+        
+        del self.subDict[topic]
+    
+    #----------------------------------------------------------------------
+    def subscribeMarketDepth(self, symbol):
+        """订阅行情深度"""
+        topic = 'market.%s.depth.step5' %symbol
+        self.subTopic(topic)
+        
+    #----------------------------------------------------------------------
+    def subscribeTradeDetail(self, symbol):
+        """订阅成交细节"""
+        topic = 'market.%s.trade.detail' %symbol
+        self.subTopic(topic)
+        
+    #----------------------------------------------------------------------
+    def subscribeMarketDetail(self, symbol):
+        """订阅市场细节"""
+        topic = 'market.%s.detail' %symbol
+        self.subTopic(topic)
+        
+    #----------------------------------------------------------------------
+    def onError(self, msg):
+        """错误推送"""
+        print msg
+        
+    #----------------------------------------------------------------------
+    def onData(self, data):
+        """数据推送"""
+        if 'ping' in data:
+            self.pong(data)
+        elif 'ch' in data:
+            if 'depth.step' in data['ch']:
+                self.onMarketDepth(data)
+            elif 'trade.detail' in data['ch']:
+                self.onTradeDetail(data)
+            elif 'detail' in data['ch']:
+                self.onMarketDetail(data)
+        elif 'err-code' in data:
+            self.onError(u'错误代码：%s, 信息：%s' %(data['err-code'], data['err-msg']))
+    
+    #----------------------------------------------------------------------
+    def onMarketDepth(self, data):
+        """行情深度推送 """
+        print data
+    
+    #----------------------------------------------------------------------
+    def onTradeDetail(self, data):
+        """成交细节推送"""
+        print data
+    
+    #----------------------------------------------------------------------
+    def onMarketDetail(self, data):
+        """市场细节推送"""
+        print data
