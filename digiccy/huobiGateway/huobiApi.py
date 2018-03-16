@@ -112,22 +112,23 @@ class TradeApi(object):
         # 添加签名
         sign = signature(params)
         params['sign'] = sign
+        
         del params['secret_key']
         
         # 添加选填参数
         if optional:
             params.update(optional)
-        
+        print params
         # 发送请求
         payload = urllib.urlencode(params)
-
+        print payload
         r = requests.post(HUOBI_TRADE_API, params=payload)
         if r.status_code == 200:
             data = r.json()
             return data
         else:
-            return None        
-    
+            return None
+
     #----------------------------------------------------------------------
     def processQueue(self):
         """处理请求队列中的请求"""

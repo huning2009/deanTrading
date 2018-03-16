@@ -14,16 +14,16 @@ def testTrade():
     api.init(accessKey, secretKey)
     
     # 查询账户，测试通过
-    api.getAccountInfo()
+    # api.getAccountInfo()
     
     # 查询委托，测试通过
     #api.getOrders()
     
     # 买入，测试通过
-    #api.buy(7100, 0.0095)
+    # api.buy(7100, 0.0095)
     
     # 卖出，测试通过
-    #api.sell(7120, 0.0095)
+    api.sell(7120, 0.0095)
     
     # 撤单，测试通过
     #api.cancelOrder(3915047376L)
