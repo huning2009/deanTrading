@@ -13,8 +13,8 @@ from threading import Condition
 from Queue import Queue
 from threading import Thread
 
-import vnhuobi
-from vtGateway import *
+import huobiApi
+from vnpy.trader.vtGateway import *
 
 
 SYMBOL_BTCCNY = 'BTCCNY'
@@ -22,9 +22,9 @@ SYMBOL_LTCCNY = 'LTCCNY'
 SYMBOL_BTCUSD = 'BTCUSD'
 
 SYMBOL_MAP = {}
-SYMBOL_MAP[(vnhuobi.COINTYPE_BTC, 'cny')] = SYMBOL_BTCCNY
-SYMBOL_MAP[(vnhuobi.COINTYPE_LTC, 'cny')] = SYMBOL_LTCCNY
-SYMBOL_MAP[(vnhuobi.COINTYPE_BTC, 'usd')] = SYMBOL_BTCUSD
+SYMBOL_MAP[(huobiApi.COINTYPE_BTC, 'cny')] = SYMBOL_BTCCNY
+SYMBOL_MAP[(huobiApi.COINTYPE_LTC, 'cny')] = SYMBOL_LTCCNY
+SYMBOL_MAP[(huobiApi.COINTYPE_BTC, 'usd')] = SYMBOL_BTCUSD
 SYMBOL_MAP_REVERSE = {v: k for k, v in SYMBOL_MAP.items()}
 
 MDSYMBOL_MAP = {}
@@ -167,7 +167,7 @@ class HuobiGateway(VtGateway):
     
 
 ########################################################################
-class HuobiTradeApi(vnhuobi.TradeApi):
+class HuobiTradeApi(huobiApi.TradeApi):
     """交易接口"""
 
     #----------------------------------------------------------------------
@@ -452,11 +452,11 @@ class HuobiTradeApi(vnhuobi.TradeApi):
         self.init(accessKey, secretKey)
 
         # 查询未成交委托
-        self.getOrders(vnhuobi.COINTYPE_BTC, self.market)
+        self.getOrders(huobiApi.COINTYPE_BTC, self.market)
 
-        if self.market == vnhuobi.MARKETTYPE_CNY:
+        if self.market == huobiApi.MARKETTYPE_CNY:
             # 只有人民币市场才有莱特币
-            self.getOrders(vnhuobi.COINTYPE_LTC, self.market)
+            self.getOrders(huobiApi.COINTYPE_LTC, self.market)
 
     # ----------------------------------------------------------------------
     def queryWorkingOrders(self):
@@ -534,7 +534,7 @@ class HuobiTradeApi(vnhuobi.TradeApi):
 
 
 ########################################################################
-class HuobiDataApi(vnhuobi.DataApi):
+class HuobiDataApi(huobiApi.DataApi):
     """行情接口"""
 
     #----------------------------------------------------------------------
@@ -618,12 +618,12 @@ class HuobiDataApi(vnhuobi.DataApi):
         self.init(interval, debug)
 
         # 订阅行情并推送合约信息
-        if self.market == vnhuobi.MARKETTYPE_CNY:
-            self.subscribeQuote(vnhuobi.SYMBOL_BTCCNY)
-            self.subscribeQuote(vnhuobi.SYMBOL_LTCCNY)
+        if self.market == huobiApi.MARKETTYPE_CNY:
+            self.subscribeQuote(huobiApi.SYMBOL_BTCCNY)
+            self.subscribeQuote(huobiApi.SYMBOL_LTCCNY)
 
-            self.subscribeDepth(vnhuobi.SYMBOL_BTCCNY, 5)
-            self.subscribeDepth(vnhuobi.SYMBOL_LTCCNY, 5)
+            self.subscribeDepth(huobiApi.SYMBOL_BTCCNY, 5)
+            self.subscribeDepth(huobiApi.SYMBOL_LTCCNY, 5)
 
             contract = VtContractData()
             contract.gatewayName = self.gatewayName
@@ -647,9 +647,9 @@ class HuobiDataApi(vnhuobi.DataApi):
             contract.productClass = PRODUCT_SPOT
             self.gateway.onContract(contract)
         else:
-            self.subscribeQuote(vnhuobi.SYMBOL_BTCUSD)
+            self.subscribeQuote(huobiApi.SYMBOL_BTCUSD)
 
-            self.subscribeDepth(vnhuobi.SYMBOL_BTCUSD)
+            self.subscribeDepth(huobiApi.SYMBOL_BTCUSD)
 
             contract = VtContractData()
             contract.gatewayName = self.gatewayName

@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-from vnhuobi import *
+from huobiApi import *
 
 #----------------------------------------------------------------------
 def testTrade():
@@ -41,6 +41,6 @@ def testTrade():
     
     
 if __name__ == '__main__':
-    #testTrade()
+    testTrade()
     
-    testData()
+    # testData()
