@@ -110,6 +110,7 @@ class TradeApi(object):
         try:
             response = requests.get(url, postdata, headers=headers, timeout=TIMEOUT)
             if response.status_code == 200:
+                print 'httpGet over:%s' % datetime.now()
                 return True, response.json()
             else:
                 return False, u'GET请求失败，状态代码：%s' %response.status_code
@@ -181,7 +182,7 @@ class TradeApi(object):
         """处理请求"""
         path, params, func, callback, reqid = req
         result, data = func(path, params)
-        
+        print 'processReq  over: %s' % datetime.now()
         if result:
             if data['status'] == 'ok':
                 callback(data['data'], reqid)

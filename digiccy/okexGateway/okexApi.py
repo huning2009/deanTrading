@@ -255,7 +255,7 @@ class TradeApi(object):
         path = 'v1/userinfo.do'
  
         params = {}
-        func = self.apiGet
+        func = self.apiPost
         callback = self.onGetAccountBalance
     
         return self.addReq(path, params, func, callback) 
@@ -320,7 +320,7 @@ class TradeApi(object):
     #----------------------------------------------------------------------
     def getOrder(self, symbol, orderid):
         """查询某一委托"""
-        path = /v1/order_info.do
+        path = '/v1/order_info.do'
     
         params = {'symbol':symbol, 'orderid':orderid}
     
