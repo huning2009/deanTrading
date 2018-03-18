@@ -1,412 +1,620 @@
-# encoding: UTF-8
+# encoding: utf-8
 
+import urllib
+import hmac
+import base64
 import hashlib
-import zlib
-import json
-from time import sleep
+import requests 
+from copy import copy
+from datetime import datetime
 from threading import Thread
+from queue import Queue, Empty
+from multiprocessing.dummy import Pool
 
-import websocket    
+import json
+import zlib
+from websocket import create_connection, _exceptions
 
-# OKEX网站 vnpy1.5
-OKEX_USD_SPOT = 'wss://real.okex.com:10441/websocket'               # OKEX 现货地址
-OKEX_USD_CONTRACT = 'wss://real.okex.com:10440/websocket/okexapi'   # OKEX 期货地址
 
-SPOT_CURRENCY = ["usdt",
-                 "btc",
-                 "ltc",
-                 "eth",
-                 "etc",
-                 "bch"]
+# 常量定义
+TIMEOUT = 5
+OKEX_API_HOST = "www.okex.com/api/"
+HADAX_API_HOST = "api.hadax.com"
+LANG = 'zh-CN'
 
-SPOT_SYMBOL = ["ltc_btc",
-               "eth_btc",
-               "etc_btc",
-               "bch_btc",
-               "btc_usdt",
-               "eth_usdt",
-               "ltc_usdt",
-               "etc_usdt",
-               "bch_usdt",
-               "etc_eth",
-               "bt1_btc",
-               "bt2_btc",
-               "btg_btc",
-               "qtum_btc",
-               "hsr_btc",
-               "neo_btc",
-               "gas_btc",
-               "qtum_usdt",
-               "hsr_usdt",
-               "neo_usdt",
-               "gas_usdt"]
+DEFAULT_GET_HEADERS = {
+    "Content-type": "application/x-www-form-urlencoded",
+    'Accept': 'application/json',
+    'Accept-Language': LANG,
+    'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0'
+}
 
-KLINE_PERIOD = ["1min",
-                "3min",
-                "5min",
-                "15min",
-                "30min",
-                "1hour",
-                "2hour",
-                "4hour",
-                "6hour",
-                "12hour",
-                "day",
-                "3day",
-                "week"]
+DEFAULT_POST_HEADERS = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Accept-Language': LANG,
+    "User-Agent": "Chrome/39.0.2171.71",
+    'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0'    
+    #'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0'
+}
 
-CONTRACT_SYMBOL = ["btc",
-                   "ltc",
-                   "eth",
-                   "etc",
-                   "bch"]
 
-CONTRACT_TYPE = ["this_week",
-                 "next_week",
-                 "quarter"]
+#----------------------------------------------------------------------
+def createSign(params, method, host, path, secretKey):
+    """创建签名"""
+    sortedParams = sorted(params.items(), key=lambda d: d[0], reverse=False)
+    encodeParams = urllib.urlencode(sortedParams)
+    
+    payload = [method, host, path, encodeParams]
+    payload = '\n'.join(payload)
+    payload = payload.encode(encoding='UTF8')
+
+    secretKey = secretKey.encode(encoding='UTF8')
+
+    digest = hmac.new(secretKey, payload, digestmod=hashlib.sha256).digest()
+
+    signature = base64.b64encode(digest)
+    signature = signature.decode()
+    return signature    
 
 
 ########################################################################
-class OkexApi(object):    
-    """交易接口"""
+class TradeApi(object):
+    """交易API"""
+    OKEX = 'okex'
+    HADAX = 'hadax'
 
     #----------------------------------------------------------------------
     def __init__(self):
         """Constructor"""
-        self.host = ''          # 服务器
-        self.apiKey = ''        # 用户名
-        self.secretKey = ''     # 密码
-  
-        self.ws = None          # websocket应用对象  现货对象
-        self.thread = None      # 初始化线程
-
-    #----------------------------------------------------------------------
-    def reconnect(self):
-        """重新连接"""
-        # 首先关闭之前的连接
-        self.close()
+        self.accessKey = ''
+        self.secretKey = ''
+    
+        self.active = False         # API工作状态   
+        self.reqid = 0              # 请求编号
+        self.queue = Queue()        # 请求队列
+        self.pool = None            # 线程池
         
-        # 再执行重连任务
-        self.ws = websocket.WebSocketApp(self.host, 
-                                         on_message=self.onMessage,
-                                         on_error=self.onError,
-                                         on_close=self.onClose,
-                                         on_open=self.onOpen)        
-    
-        self.thread = Thread(target=self.ws.run_forever)
-        self.thread.start()
-    
     #----------------------------------------------------------------------
-    def connect(self, apiKey, secretKey, trace=False):
-        self.host = OKEX_USD_SPOT
-        self.apiKey = apiKey
-        self.secretKey = secretKey
-
-        websocket.enableTrace(trace)
-
-        self.ws = websocket.WebSocketApp(self.host, 
-                                             on_message=self.onMessage,
-                                             on_error=self.onError,
-                                             on_close=self.onClose,
-                                             on_open=self.onOpen)        
+    def init(self, host, accessKey, secretKey):
+        """初始化"""
+        if host == self.OKEX:
+            self.hostname = OKEX_API_HOST
+        else:
+            self.hostname = HADAX_API_HOST
+        self.hosturl = 'https://%s' %self.hostname
             
-        self.thread = Thread(target=self.ws.run_forever)
-        self.thread.start()
-
-    #----------------------------------------------------------------------
-    def readData(self, evt):
-        """解码推送收到的数据"""
-        data = json.loads(evt)
-        return data
-
-    #----------------------------------------------------------------------
-    def close(self):
-        """关闭接口"""
-        if self.thread and self.thread.isAlive():
-            self.ws.close()
-            self.thread.join()
-
-    #----------------------------------------------------------------------
-    def onMessage(self, ws, evt):
-        """信息推送""" 
-        print evt
+        self.accessKey = accessKey
+        self.secretKey = secretKey
         
     #----------------------------------------------------------------------
-    def onError(self, ws, evt):
-        """错误推送"""
-        print 'onError'
-        print evt
+    def start(self, n=10):
+        """启动"""
+        self.active = True
+        self.pool = Pool(n)
+        self.pool.map_async(self.run, range(n))
         
     #----------------------------------------------------------------------
-    def onClose(self, ws):
-        """接口断开"""
-        print 'onClose'
+    def stop(self):
+        """停止"""
+        self.active = False
+        self.pool.close()
+        self.pool.join()
         
     #----------------------------------------------------------------------
-    def onOpen(self, ws):
-        """接口打开"""
-        print 'onOpen'
+    def httpGet(self, url, params):
+        """HTTP GET"""        
+        headers = copy(DEFAULT_GET_HEADERS)
+        postdata = urllib.urlencode(params)
         
-    #----------------------------------------------------------------------
-    def generateSign(self, params):
-        """生成签名"""
-        l = []
-        for key in sorted(params.keys()):
-            l.append('%s=%s' %(key, params[key]))
-        l.append('secret_key=%s' %self.secretKey)
-        sign = '&'.join(l)
-        return hashlib.md5(sign.encode('utf-8')).hexdigest().upper()
-
-    #----------------------------------------------------------------------
-    def sendTradingRequest(self, channel, params):
-        """发送交易请求"""
-        # 在参数字典中加上api_key和签名字段
-        params['api_key'] = self.apiKey
-        params['sign'] = self.generateSign(params)
-        
-        # 生成请求
-        d = {}
-        d['event'] = 'addChannel'
-        d['channel'] = channel        
-        d['parameters'] = params
-        
-        # 使用json打包并发送
-        j = json.dumps(d)
-        
-        # 若触发异常则重连
         try:
-            self.ws.send(j)
-        except websocket.WebSocketConnectionClosedException:
-            pass 
-
-    #----------------------------------------------------------------------
-    def sendDataRequest(self, channel):
-        """发送数据请求"""
-        d = {}
-        d['event'] = 'addChannel'
-        d['channel'] = channel
-        j = json.dumps(d)
+            response = requests.get(url, postdata, headers=headers, timeout=TIMEOUT)
+            if response.status_code == 200:
+                return True, response.json()
+            else:
+                return False, u'GET请求失败，状态代码：%s' %response.status_code
+        except Exception as e:
+            return False, u'GET请求触发异常，原因：%s' %e
+    
+    #----------------------------------------------------------------------    
+    def httpPost(self, url, params, add_to_headers=None):
+        """HTTP POST"""       
+        headers = copy(DEFAULT_POST_HEADERS)
+        postdata = json.dumps(params)
         
-        # 若触发异常则重连
         try:
-            self.ws.send(j)
-        except websocket.WebSocketConnectionClosedException:
-            pass
-
+            response = requests.post(url, postdata, headers=headers, timeout=TIMEOUT)
+            if response.status_code == 200:
+                return True, response.json()
+            else:
+                return False, u'POST请求失败，返回信息：%s' %response.json()
+        except Exception as e:
+            return False, u'POST请求触发异常，原因：%s' %e
+        
     #----------------------------------------------------------------------
-    def login(self):
+    def generateSignParams(self):
+        """生成签名参数"""
+        timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+        d = {
+            'AccessKeyId': self.accessKey,
+            'SignatureMethod': 'HmacSHA256',
+            'SignatureVersion': '2',
+            'Timestamp': timestamp
+        }    
+        
+        return d
+        
+    #----------------------------------------------------------------------
+    def apiGet(self, path, params):
+        """API GET"""
+        method = 'GET'
+        
+        params.update(self.generateSignParams())
+        params['Signature'] = createSign(params, method, self.hostname, path, self.secretKey)
+        
+        url = self.hosturl + path
+        
+        return self.httpGet(url, params)
+    
+    #----------------------------------------------------------------------
+    def apiPost(self, path, params):
+        """API POST"""
+        method = 'POST'
+        
+        signParams = self.generateSignParams()
+        signParams['Signature'] = createSign(signParams, method, self.hostname, path, self.secretKey)
+        
+        url = self.hosturl + path + '?' + urllib.urlencode(signParams)
+
+        return self.httpPost(url, params)
+    
+    #----------------------------------------------------------------------
+    def addReq(self, path, params, func, callback):
+        """添加请求"""
+        self.reqid += 1
+        req = (path, params, func, callback, self.reqid)
+        self.queue.put(req)
+        return self.reqid
+    
+    #----------------------------------------------------------------------
+    def processReq(self, req):
+        """处理请求"""
+        path, params, func, callback, reqid = req
+        result, data = func(path, params)
+        
+        if result:
+            if data['status'] == 'ok':
+                callback(data['data'], reqid)
+            else:
+                msg = u'错误代码：%s，错误信息：%s' %(data['err-code'], data['err-msg'])
+                self.onError(msg, reqid)
+        else:
+            self.onError(data, reqid)
+    
+    #----------------------------------------------------------------------
+    def run(self, n):
+        """连续运行"""
+        while self.active:    
+            try:
+                req = self.queue.get(timeout=1)
+                self.processReq(req)
+            except Empty:
+                pass
+    
+    #----------------------------------------------------------------------
+    # def getSymbols(self):
+    #     """查询合约代码"""
+    #     if self.hostname == OKEX_API_HOST:
+    #         path = '/v1/common/symbols'
+    #     else:
+    #         path = '/v1/hadax/common/symbols'
+
+    #     params = {}
+    #     func = self.apiGet
+    #     callback = self.onGetSymbols
+        
+    #     return self.addReq(path, params, func, callback)
+    
+    # #----------------------------------------------------------------------
+    # def getCurrencys(self):
+    #     """查询支持货币"""
+    #     if self.hostname == OKEX_API_HOST:
+    #         path = '/v1/common/currencys'
+    #     else:
+    #         path = '/v1/hadax/common/currencys'
+
+    #     params = {}
+    #     func = self.apiGet
+    #     callback = self.onGetCurrencys
+        
+    #     return self.addReq(path, params, func, callback)   
+    
+    # #----------------------------------------------------------------------
+    # def getTimestamp(self):
+    #     """查询系统时间"""
+    #     path = '/v1/common/timestamp'
+    #     params = {}
+    #     func = self.apiGet
+    #     callback = self.onGetCurrencys
+        
+    #     return self.addReq(path, params, func, callback) 
+    
+    # #----------------------------------------------------------------------
+    # def getAccounts(self):
+    #     """查询账户"""
+    #     path = '/v1/account/accounts'
+    #     params = {}
+    #     func = self.apiGet
+    #     callback = self.onGetAccounts
+    
+    #     return self.addReq(path, params, func, callback)         
+    
+    #----------------------------------------------------------------------
+    def getAccountBalance(self):
+        """查询余额"""
+        path = 'v1/userinfo.do'
+ 
         params = {}
-        params['api_key'] = self.apiKey
-        params['sign'] = self.generateSign(params)
+        func = self.apiGet
+        callback = self.onGetAccountBalance
+    
+        return self.addReq(path, params, func, callback) 
+    
+    #----------------------------------------------------------------------
+    # def getOrders(self, symbol, states, types=None, startDate=None, 
+    #               endDate=None, from_=None, direct=None, size=None):
+    #     """查询委托"""
+    #     path = '/v1/order/orders'
         
-        # 生成请求
-        d = {}
-        d['event'] = 'login'
-        d['parameters'] = params
+    #     params = {
+    #         'symbol': symbol,
+    #         'states': states
+    #     }
         
-        # 使用json打包并发送
-        j = json.dumps(d)
+    #     if types:
+    #         params['types'] = types
+    #     if startDate:
+    #         params['start-date'] = startDate
+    #     if endDate:
+    #         params['end-date'] = endDate        
+    #     if from_:
+    #         params['from'] = from_
+    #     if direct:
+    #         params['direct'] = direct
+    #     if size:
+    #         params['size'] = size        
+    
+    #     func = self.apiGet
+    #     callback = self.onGetOrders
+    
+    #     return self.addReq(path, params, func, callback)     
+    
+    #----------------------------------------------------------------------
+    # def getMatchResults(self, symbol, types=None, startDate=None, 
+    #               endDate=None, from_=None, direct=None, size=None):
+    #     """查询委托"""
+    #     path = '/v1/order/matchresults'
+
+    #     params = {
+    #         'symbol': symbol
+    #     }
+
+    #     if types:
+    #         params['types'] = types
+    #     if startDate:
+    #         params['start-date'] = startDate
+    #     if endDate:
+    #         params['end-date'] = endDate        
+    #     if from_:
+    #         params['from'] = from_
+    #     if direct:
+    #         params['direct'] = direct
+    #     if size:
+    #         params['size'] = size        
+
+    #     func = self.apiGet
+    #     callback = self.onGetMatchResults
+
+    #     return self.addReq(path, params, func, callback)   
+    
+    #----------------------------------------------------------------------
+    def getOrder(self, symbol, orderid):
+        """查询某一委托"""
+        path = /v1/order_info.do
+    
+        params = {'symbol':symbol, 'orderid':orderid}
+    
+        func = self.apiGet
+        callback = self.onGetOrder
+    
+        return self.addReq(path, params, func, callback)             
+    
+    #----------------------------------------------------------------------
+    # def getMatchResult(self, orderid):
+    #     """查询某一委托"""
+    #     path = '/v1/order/orders/%s/matchresults' %orderid
+    
+    #     params = {}
+    
+    #     func = self.apiGet
+    #     callback = self.onGetMatchResult
+    
+    #     return self.addReq(path, params, func, callback)     
+    
+    #----------------------------------------------------------------------
+    def placeOrder(self, amount, symbol, type_, price=None, source=None):
+        """下单"""
+        path = 'v1/trade'
+
+        params = {
+            'amount': amount,
+            'symbol': symbol,
+            'type': type_
+        }
         
-        # 若触发异常则重连
+        if price:
+            params['price'] = price
+        if source:
+            params['source'] = source     
+
+        func = self.apiPost
+        callback = self.onPlaceOrder
+
+        return self.addReq(path, params, func, callback)           
+    
+    #----------------------------------------------------------------------
+    def batchPlaceOrder(self, symbol, type_, orders_data, source=None):
+        """下单"""
+        path = 'v1/batch_trade.do'
+
+        params = {
+            'orders_data': orders_data,
+            'symbol': symbol,
+            'type': type_
+        }
+        
+        if price:
+            params['price'] = price
+        if source:
+            params['source'] = source     
+
+        func = self.apiPost
+        callback = self.onPlaceOrder
+
+        return self.addReq(path, params, func, callback)    
+
+    #----------------------------------------------------------------------
+    def cancelOrder(self, symbol, orderid):
+        """撤单"""
+        path = '/v1/cancel_order.do'
+        
+        params = {'symbol':symbol, 'orderid':orderid}
+        
+        func = self.apiPost
+        callback = self.onCancelOrder
+
+        return self.addReq(path, params, func, callback)          
+    
+    #----------------------------------------------------------------------
+    # def batchCancel(self, orderids):
+    #     """批量撤单"""
+    #     path = '/v1/order/orders/batchcancel'
+    
+    #     params = {
+    #         'order-ids': orderids
+    #     }
+    
+    #     func = self.apiPost
+    #     callback = self.onBatchCancel
+    
+    #     return self.addReq(path, params, func, callback)     
+        
+    #----------------------------------------------------------------------
+    def onError(self, msg, reqid):
+        """错误回调"""
+        print msg, reqid
+        
+    #----------------------------------------------------------------------
+    def onGetSymbols(self, data, reqid):
+        """查询代码回调"""
+        #print reqid, data 
+        for d in data['data']:
+            print d
+    
+    #----------------------------------------------------------------------
+    def onGetCurrencys(self, data, reqid):
+        """查询货币回调"""
+        print reqid, data        
+    
+    #----------------------------------------------------------------------
+    def onGetTimestamp(self, data, reqid):
+        """查询时间回调"""
+        print reqid, data    
+        
+    #----------------------------------------------------------------------
+    def onGetAccounts(self, data, reqid):
+        """查询账户回调"""
+        print reqid, data     
+    
+    #----------------------------------------------------------------------
+    def onGetAccountBalance(self, data, reqid):
+        """查询余额回调"""
+        print reqid, data
+        for d in data['data']['list']:
+            print d
+        
+    #----------------------------------------------------------------------
+    def onGetOrders(self, data, reqid):
+        """查询委托回调"""
+        print reqid, data    
+        
+    #----------------------------------------------------------------------
+    def onGetMatchResults(self, data, reqid):
+        """查询成交回调"""
+        print reqid, data      
+        
+    #----------------------------------------------------------------------
+    def onGetOrder(self, data, reqid):
+        """查询单一委托回调"""
+        print reqid, data    
+        
+    #----------------------------------------------------------------------
+    def onGetMatchResult(self, data, reqid):
+        """查询单一成交回调"""
+        print reqid, data    
+        
+    #----------------------------------------------------------------------
+    def onPlaceOrder(self, data, reqid):
+        """委托回调"""
+        print reqid, data
+    
+    #----------------------------------------------------------------------
+    def onCancelOrder(self, data, reqid):
+        """撤单回调"""
+        print reqid, data          
+        
+    #----------------------------------------------------------------------
+    def onBatchCancel(self, data, reqid):
+        """批量撤单回调"""
+        print reqid, data      
+
+
+########################################################################
+class DataApi(object):
+    """行情接口"""
+
+    #----------------------------------------------------------------------
+    def __init__(self):
+        """Constructor"""
+        self.ws = None
+        self.url = ''
+        
+        self.reqid = 0
+        self.active = False
+        self.thread = Thread(target=self.run)
+        
+        self.subDict = {}
+        
+    #----------------------------------------------------------------------
+    def run(self):
+        """执行连接"""
+        while self.active:
+            try:
+                stream = self.ws.recv()
+                result = zlib.decompress(stream, 47).decode('utf-8')
+                data = json.loads(result)
+                self.onData(data)
+            except zlib.error:
+                self.onError(u'数据解压出错：%s' %stream)
+            except _exceptions.WebSocketConnectionClosedException:
+                self.onError(u'行情服务器连接断开：%s' %stream)
+                break
+        
+    #----------------------------------------------------------------------
+    def connect(self, url):
+        """连接"""
+        self.url = url
+        
         try:
-            self.ws.send(j)
+            self.ws = create_connection(self.url)
+            
+            self.active = True
+            self.thread.start()
+            
             return True
-        except websocket.WebSocketConnectionClosedException:
+        except:
+            self.onError(u'行情服务器连接失败')
             return False
-
-
-########################################################################
-class OkexSpotApi(OkexApi):    
-    """现货交易接口"""
-
-    #----------------------------------------------------------------------
-    def __init__(self):
-        """Constructor"""
-        super(OkexSpotApi, self).__init__()
-
-    #----------------------------------------------------------------------
-    def subscribeSpotTicker(self, symbol):
-        """订阅现货的Tick"""
-        channel = 'ok_sub_spot_%s_ticker' %symbol
-        self.sendDataRequest(channel)
-
-    #----------------------------------------------------------------------
-    def subscribeSpotDepth(self, symbol, depth=0):
-        """订阅现货的深度"""
-        channel = 'ok_sub_spot_%s_depth' %symbol
-        if depth:
-            channel = channel + '_' + str(depth)
-        self.sendDataRequest(channel)
-
-    #----------------------------------------------------------------------
-    def subscribeSpotDeals(self, symbol):
-        channel = 'ok_sub_spot_%s_deals' %symbol
-        self.sendDataRequest(channel)
-
-    #----------------------------------------------------------------------
-    def subscribeSpotKlines(self, symbol, period):
-        channel = 'ok_sub_spot_%s_kline_%s' %(symbol, period)
-        self.sendDataRequest(channel)
-
-    #----------------------------------------------------------------------
-    def spotTrade(self, symbol, type_, price, amount):
-        """现货委托"""
-        params = {}
-        params['symbol'] = str(symbol)
-        params['type'] = str(type_)
-        params['price'] = str(price)
-        params['amount'] = str(amount)
         
-        channel = 'ok_spot_order'
-        
-        self.sendTradingRequest(channel, params)
-
     #----------------------------------------------------------------------
-    def spotCancelOrder(self, symbol, orderid):
-        """现货撤单"""
-        params = {}
-        params['symbol'] = str(symbol)
-        params['order_id'] = str(orderid)
+    def sendReq(self, req):
+        """发送请求"""
+        stream = json.dumps(req)
+        self.ws.send(stream)            
         
-        channel = 'ok_spot_cancel_order'
-
-        self.sendTradingRequest(channel, params)
+    #----------------------------------------------------------------------
+    def pong(self, data):
+        """响应心跳"""
+        req = {'pong': data['ping']}
+        self.sendReq(req)
     
     #----------------------------------------------------------------------
-    def spotUserInfo(self):
-        """查询现货账户"""
-        channel = 'ok_spot_userinfo'
-        self.sendTradingRequest(channel, {})
-
-    #----------------------------------------------------------------------
-    def spotOrderInfo(self, symbol, orderid):
-        """查询现货委托信息"""
-        params = {}
-        params['symbol'] = str(symbol)
-        params['order_id'] = str(orderid)
+    def subTopic(self, topic):
+        """订阅主题"""
+        if topic in self.subDict:
+            return
         
-        channel = 'ok_spot_orderinfo'
+        self.reqid += 1
+        req = {
+            'sub': topic,
+            'id': str(self.reqid)
+        }
+        self.sendReq(req)
         
-        self.sendTradingRequest(channel, params)
-
-
-
-########################################################################
-class OkexFuturesApi(OkexApi):
-    """期货交易接口
+        self.subDict[topic] = str(self.reqid)
     
-    交割推送信息：
-    [{
-        "channel": "btc_forecast_price",
-        "timestamp":"1490341322021",
-        "data": "998.8"
-    }]
-    data(string): 预估交割价格
-    timestamp(string): 时间戳
+    #----------------------------------------------------------------------
+    def unsubTopic(self, topic):
+        """取消订阅主题"""
+        if topic not in self.subDict:
+            return
+        req = {
+            'unsub': topic,
+            'id': self.subDict[topic]
+        }
+        self.sendReq(req)
+        
+        del self.subDict[topic]
     
-    无需订阅，交割前一小时自动返回
-    """
-
     #----------------------------------------------------------------------
-    def __init__(self):
-        """Constructor"""
-        super(OkexFuturesApi, self).__init__()
-
-    #----------------------------------------------------------------------
-    def subsribeFuturesTicker(self, symbol, contractType):
-        """订阅期货行情"""
-        channel ='ok_sub_futureusd_%s_ticker_%s' %(symbol, contractType)
-        self.sendDataRequest(channel)
-
-    #----------------------------------------------------------------------
-    def subscribeFuturesKline(self, symbol, contractType, period):
-        """订阅期货K线"""
-        channel = 'ok_sub_futureusd_%s_kline_%s_%s' %(symbol, contractType, period)
-        self.sendDataRequest(channel)
-
-    #----------------------------------------------------------------------
-    def subscribeFuturesDepth(self, symbol, contractType, depth=0):
-        """订阅期货深度"""
-        channel = 'ok_sub_futureusd_%s_depth_%s' %(symbol, contractType)
-        if depth:
-            channel = channel + '_' + str(depth)
-        self.sendDataRequest(channel)
-
-    #----------------------------------------------------------------------
-    def subscribeFuturesTrades(self, symbol, contractType):
-        """订阅期货成交"""
-        channel = 'ok_sub_futureusd_%s_trade_%s' %(symbol, contractType)
-        self.sendDataRequest(channel)
-
-    #----------------------------------------------------------------------
-    def subscribeFuturesIndex(self, symbol):
-        """订阅期货指数"""
-        channel = 'ok_sub_futureusd_%s_index' %symbol
-        self.sendDataRequest(channel)
+    def subscribeMarketDepth(self, symbol):
+        """订阅行情深度"""
+        topic = 'market.%s.depth.step5' %symbol
+        self.subTopic(topic)
         
     #----------------------------------------------------------------------
-    def futuresTrade(self, symbol, contractType, type_, price, amount, matchPrice='0', leverRate='10'):
-        """期货委托"""
-        params = {}
-        params['symbol'] = str(symbol)
-        params['contract_type'] = str(contractType)
-        params['price'] = str(price)
-        params['amount'] = str(amount)
-        params['type'] = type_                # 1:开多 2:开空 3:平多 4:平空
-        params['match_price'] = matchPrice    # 是否为对手价： 0:不是 1:是 当取值为1时,price无效
-        params['lever_rate'] = leverRate
-        
-        channel = 'ok_futureusd_trade'
-        
-        self.sendTradingRequest(channel, params)
-
-    #----------------------------------------------------------------------
-    def futuresCancelOrder(self, symbol, orderid, contractType):
-        """期货撤单"""
-        params = {}
-        params['symbol'] = str(symbol)
-        params['order_id'] = str(orderid)
-        params['contract_type'] = str(contractType)
-        
-        channel = 'ok_futureusd_cancel_order'
-
-        self.sendTradingRequest(channel, params)
-
-    #----------------------------------------------------------------------
-    def futuresUserInfo(self):
-        """查询期货账户"""
-        channel = 'ok_futureusd_userinfo'
-        self.sendTradingRequest(channel, {})
-
-    #----------------------------------------------------------------------
-    def futuresOrderInfo(self, symbol, orderid, contractType, status, current_page, page_length=10):
-        """查询期货委托"""
-        params = {}
-        params['symbol'] = str(symbol)
-        params['order_id'] = str(orderid)
-        params['contract_type'] = str(contractType)
-        params['status'] = str(status)
-        params['current_page'] = str(current_page)
-        params['page_length'] = str(page_length)
-        
-        channel = 'ok_futureusd_orderinfo'
-        
-        self.sendTradingRequest(channel, params)
-
-    #----------------------------------------------------------------------
-    def subscribeFuturesTrades( self):
-        channel = 'ok_sub_futureusd_trades'
-        self.sendTradingRequest(channel, {})
-
-    #----------------------------------------------------------------------
-    def subscribeFuturesUserInfo(self):
-        """订阅期货账户信息"""
-        channel = 'ok_sub_futureusd_userinfo' 
-        self.sendTradingRequest(channel, {})
+    def subscribeTradeDetail(self, symbol):
+        """订阅成交细节"""
+        topic = 'market.%s.trade.detail' %symbol
+        self.subTopic(topic)
         
     #----------------------------------------------------------------------
-    def subscribeFuturesPositions(self):
-        """订阅期货持仓信息"""
-        channel = 'ok_sub_futureusd_positions' 
-        self.sendTradingRequest(channel, {})    
+    def subscribeMarketDetail(self, symbol):
+        """订阅市场细节"""
+        topic = 'market.%s.detail' %symbol
+        self.subTopic(topic)
+        
+    #----------------------------------------------------------------------
+    def onError(self, msg):
+        """错误推送"""
+        print msg
+        
+    #----------------------------------------------------------------------
+    def onData(self, data):
+        """数据推送"""
+        if 'ping' in data:
+            self.pong(data)
+        elif 'ch' in data:
+            if 'depth.step' in data['ch']:
+                self.onMarketDepth(data)
+            elif 'trade.detail' in data['ch']:
+                self.onTradeDetail(data)
+            elif 'detail' in data['ch']:
+                self.onMarketDetail(data)
+        elif 'err-code' in data:
+            self.onError(u'错误代码：%s, 信息：%s' %(data['err-code'], data['err-msg']))
     
+    #----------------------------------------------------------------------
+    def onMarketDepth(self, data):
+        """行情深度推送 """
+        print data
+    
+    #----------------------------------------------------------------------
+    def onTradeDetail(self, data):
+        """成交细节推送"""
+        print data
+    
+    #----------------------------------------------------------------------
+    def onMarketDetail(self, data):
+        """市场细节推送"""
+        print data
