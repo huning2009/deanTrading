@@ -38,7 +38,7 @@ def runChildProcess():
     ee.register(EVENT_TABTRADING_LOG, le.processLogEvent)
     le.info(u'注册日志事件监听')
     
-    me.connect('huobi')
+    me.connect('HUOBI')
     le.info(u'连接huobi接口')
     
     sleep(5)    # 等待CTP接口初始化
