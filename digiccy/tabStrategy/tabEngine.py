@@ -23,7 +23,7 @@ from .tabAlgo import TabAlgoD
 ########################################################################
 class TabDataEngine(object):
     """价差数据计算引擎"""
-    settingFileName = 'Tab_setting.json'
+    settingFileName = 'TAB_setting.json'
     settingFilePath = getJsonPath(settingFileName, __file__)
 
     #----------------------------------------------------------------------
@@ -50,9 +50,9 @@ class TabDataEngine(object):
                     result, msg = self.createSpread(setting)
                     self.writeLog(msg)
                     
-                self.writeLog(u'价差配置加载完成')
+                self.writeLog(u'tab配置加载完成')
         except:
-            content = u'价差配置加载出错，原因：' + traceback.format_exc()
+            content = u'tab配置加载出错，原因：' + traceback.format_exc()
             self.writeLog(content)
     
     #----------------------------------------------------------------------

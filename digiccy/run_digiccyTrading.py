@@ -28,7 +28,6 @@ def runChildProcess():
     le.info(u'启动digiccy策略运行子进程')
     
     ee = EventEngine2()
-    le.info(u'事件引擎创建成功')
     
     me = MainEngine(ee)
     le.info(u'主引擎创建成功')
@@ -41,18 +40,14 @@ def runChildProcess():
     
     me.connect('HUOBI')
     le.info(u'连接huobi接口')
-    req = VtSubscribeReq()
-    req.symbol = 'ethbtc'
-    me.subscribe(, 'HUOBI')
-    
+
     sleep(5)    # 等待CTP接口初始化
 
     me.addApp(tabStrategy)
 
     tab = me.getApp(tabStrategy.appName)
-    
-    # tab.loadSetting()
-    # le.info(u'CTA策略载入成功')
+    tab.init()
+    le.info(u'tabEngine初始化完成')
     
     # tab.initAll()
     # le.info(u'CTA策略初始化成功')
