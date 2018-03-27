@@ -4,7 +4,7 @@ from vnpy.trader import vtConstant
 from huobiGateway import HuobiGateway
 
 gatewayClass = HuobiGateway
-gatewayName = 'Huobi'
+gatewayName = 'huobi'
 gatewayDisplayName = u'huobi'
 gatewayType = vtConstant.GATEWAYTYPE_BTC
 gatewayQryEnabled = True

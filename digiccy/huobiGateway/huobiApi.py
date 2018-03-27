@@ -5,6 +5,7 @@ import hmac
 import base64
 import hashlib
 import requests 
+import traceback
 from copy import copy
 from datetime import datetime
 from threading import Thread
@@ -33,9 +34,7 @@ DEFAULT_POST_HEADERS = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'Accept-Language': LANG,
-    "User-Agent": "Chrome/39.0.2171.71",
     'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0'    
-    #'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0'
 }
 
 
@@ -63,6 +62,9 @@ class TradeApi(object):
     """交易API"""
     HUOBI = 'huobi'
     HADAX = 'hadax'
+    
+    SYNC_MODE = 'sync'
+    ASYNC_MODE = 'async'
 
     #----------------------------------------------------------------------
     def __init__(self):
@@ -70,13 +72,14 @@ class TradeApi(object):
         self.accessKey = ''
         self.secretKey = ''
     
+        self.mode = self.ASYNC_MODE
         self.active = False         # API工作状态   
         self.reqid = 0              # 请求编号
         self.queue = Queue()        # 请求队列
         self.pool = None            # 线程池
         
     #----------------------------------------------------------------------
-    def init(self, host, accessKey, secretKey):
+    def init(self, host, accessKey, secretKey, mode=None):
         """初始化"""
         if host == self.HUOBI:
             self.hostname = HUOBI_API_HOST
@@ -87,12 +90,21 @@ class TradeApi(object):
         self.accessKey = accessKey
         self.secretKey = secretKey
         
+        if mode:
+            self.mode = mode
+            
+        self.proxies = {}
+        
+        return True
+        
     #----------------------------------------------------------------------
     def start(self, n=10):
         """启动"""
         self.active = True
-        self.pool = Pool(n)
-        self.pool.map_async(self.run, range(n))
+        
+        if self.mode == self.ASYNC_MODE:
+            self.pool = Pool(n)
+            self.pool.map_async(self.run, range(n))
         
     #----------------------------------------------------------------------
     def stop(self):
@@ -110,7 +122,6 @@ class TradeApi(object):
         try:
             response = requests.get(url, postdata, headers=headers, timeout=TIMEOUT)
             if response.status_code == 200:
-                print 'httpGet over:%s' % datetime.now()
                 return True, response.json()
             else:
                 return False, u'GET请求失败，状态代码：%s' %response.status_code
@@ -171,18 +182,23 @@ class TradeApi(object):
     
     #----------------------------------------------------------------------
     def addReq(self, path, params, func, callback):
-        """添加请求"""
-        self.reqid += 1
-        req = (path, params, func, callback, self.reqid)
-        self.queue.put(req)
-        return self.reqid
+        """添加请求"""       
+        # 异步模式
+        if self.mode == self.ASYNC_MODE:
+            self.reqid += 1
+            req = (path, params, func, callback, self.reqid)
+            self.queue.put(req)
+            return self.reqid
+        # 同步模式
+        else:
+            return func(path, params)
     
     #----------------------------------------------------------------------
     def processReq(self, req):
         """处理请求"""
         path, params, func, callback, reqid = req
         result, data = func(path, params)
-        print 'processReq  over: %s' % datetime.now()
+        
         if result:
             if data['status'] == 'ok':
                 callback(data['data'], reqid)
@@ -236,7 +252,7 @@ class TradeApi(object):
         path = '/v1/common/timestamp'
         params = {}
         func = self.apiGet
-        callback = self.onGetCurrencys
+        callback = self.onGetTimestamp
         
         return self.addReq(path, params, func, callback) 
     
@@ -405,7 +421,7 @@ class TradeApi(object):
     def onGetSymbols(self, data, reqid):
         """查询代码回调"""
         #print reqid, data 
-        for d in data['data']:
+        for d in data:
             print d
     
     #----------------------------------------------------------------------
@@ -494,24 +510,38 @@ class DataApi(object):
             except zlib.error:
                 self.onError(u'数据解压出错：%s' %stream)
             except _exceptions.WebSocketConnectionClosedException:
-                self.onError(u'行情服务器连接断开：%s' %stream)
+                self.onError(u'行情服务器连接断开：%s' %str(stream))
                 break
         
     #----------------------------------------------------------------------
-    def connect(self, url):
+    def connect(self, url, proxyHost='', proxyPort=0):
         """连接"""
         self.url = url
         
         try:
-            self.ws = create_connection(self.url)
+            if not proxyHost:
+                self.ws = create_connection(self.url)
+            else:
+                self.ws = create_connection(self.url, 
+                                            http_proxy_host=proxyHost, 
+                                            http_proxy_port=proxyPort)
             
             self.active = True
             self.thread.start()
             
             return True
         except:
-            self.onError(u'行情服务器连接失败')
+            msg = traceback.format_exc()
+            self.onError(u'行情服务器连接失败：%s' %msg)
             return False
+        
+    #----------------------------------------------------------------------
+    def close(self):
+        """停止"""
+        if self.active:
+            self.active = False
+            self.thread.join()
+            self.ws.close()
         
     #----------------------------------------------------------------------
     def sendReq(self, req):
@@ -556,7 +586,7 @@ class DataApi(object):
     #----------------------------------------------------------------------
     def subscribeMarketDepth(self, symbol):
         """订阅行情深度"""
-        topic = 'market.%s.depth.step5' %symbol
+        topic = 'market.%s.depth.step0' %symbol
         self.subTopic(topic)
         
     #----------------------------------------------------------------------

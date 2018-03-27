@@ -9,7 +9,7 @@ from vnpy.trader.vtEvent import EVENT_LOG
 from vnpy.trader.vtEngine import MainEngine, LogEngine
 from tabStrategy.tabBase import EVENT_TABTRADING_LOG
 
-import okexGateway
+# import okexGateway
 import huobiGateway
 import tabStrategy
  
@@ -30,17 +30,18 @@ def runChildProcess():
     le.info(u'事件引擎创建成功')
     
     me = MainEngine(ee)
-    me.addGateway(okexGateway)
     le.info(u'主引擎创建成功')
+    me.addGateway(huobiGateway)
+    le.info(u'huobiGateway创建成功')
     
     ee.register(EVENT_LOG, le.processLogEvent)
     ee.register(EVENT_TABTRADING_LOG, le.processLogEvent)
     le.info(u'注册日志事件监听')
     
-    # me.connect('CTP')
-    # le.info(u'连接CTP接口')
+    me.connect('huobi')
+    le.info(u'连接huobi接口')
     
-    # sleep(20)    # 等待CTP接口初始化
+    sleep(5)    # 等待CTP接口初始化
 
     me.addApp(tabStrategy)
 
