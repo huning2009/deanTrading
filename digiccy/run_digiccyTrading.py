@@ -6,6 +6,7 @@ from datetime import datetime, time
 
 from vnpy.event import EventEngine2
 from vnpy.trader.vtEvent import EVENT_LOG
+from vnpy.trader.vtObject import VtSubscribeReq
 from vnpy.trader.vtEngine import MainEngine, LogEngine
 from tabStrategy.tabBase import EVENT_TABTRADING_LOG
 
@@ -40,6 +41,9 @@ def runChildProcess():
     
     me.connect('HUOBI')
     le.info(u'连接huobi接口')
+    req = VtSubscribeReq()
+    req.symbol = 'ethbtc'
+    me.subscribe(, 'HUOBI')
     
     sleep(5)    # 等待CTP接口初始化
 
