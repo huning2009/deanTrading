@@ -10,7 +10,7 @@ from huobiApi import DataApi
 #if __name__ == '__main__':
     #while(1):
         #try:
-            #ws = create_connection("wss://api.huobipro.com/ws")
+            #ws = create_connection("wss://api.huobipro.com/ws", "127.0.0.1", "1080")
             #break
         #except:
             #print('connect ws error,retry...')
@@ -52,7 +52,7 @@ from huobiApi import DataApi
 
 
 api = DataApi()
-api.connect("wss://api.huobipro.com/ws")
+api.connect("wss://api.huobipro.com/ws", "127.0.0.1", "1080")
 #api.subscribeMarketDepth('ethusdt')
 #api.subscribeTradeDetail('ethusdt')
 api.subscribeMarketDetail('ethusdt')
