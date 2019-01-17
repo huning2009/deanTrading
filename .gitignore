@@ -7,7 +7,6 @@
 *.temp
 *.vt
 *.log
-*.json
 
 # API的.con文件
 *.con
