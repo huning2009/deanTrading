@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from jqdatasdk import *
 
-login = auth('15542377707','huqinghua129')
+login = auth('1558888','8888')
 print('login')
 client = MongoClient('localhost', 27017)
 # # all_securities = get_all_securities(types=[], date=None)
