@@ -1,28 +1,31 @@
 {
-    "name": "etf_portfolio", 
-    "model": "bsCython",
+    "name": "meal_portfolio", 
+    "model": "crrCython",
     "underlying": [
-        "510050"
+        "m1905",
+        "m1909",
+        "m2001",
+        "SR905"
     ],     
     "chain": [
         {
-            "underlyingSymbol": "510050", 
-            "chainSymbol": "510050-1804", 
-            "r": 0.04
-        },
-        {
-            "underlyingSymbol": "510050", 
-            "chainSymbol": "510050-1805", 
+            "underlyingSymbol": "m1905", 
+            "chainSymbol": "m1905", 
             "r": 0.03
         },
         {
-            "underlyingSymbol": "510050", 
-            "chainSymbol": "510050-1806", 
+            "underlyingSymbol": "m1909", 
+            "chainSymbol": "m1909", 
             "r": 0.03
         },
         {
-            "underlyingSymbol": "510050", 
-            "chainSymbol": "510050-1809", 
+            "underlyingSymbol": "m2001", 
+            "chainSymbol": "m2001", 
+            "r": 0.03
+        },
+        {
+            "underlyingSymbol": "SR905", 
+            "chainSymbol": "SR905", 
             "r": 0.03
         }
     ]
