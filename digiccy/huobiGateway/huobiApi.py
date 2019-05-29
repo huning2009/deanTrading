@@ -114,6 +114,12 @@ class TradeApi(object):
         self.pool.join()
         
     #----------------------------------------------------------------------
+    def close(self):
+        """停止"""
+        self.active = False
+        self.pool.close()
+        self.pool.join()
+    #----------------------------------------------------------------------
     def httpGet(self, url, params):
         """HTTP GET"""        
         headers = copy(DEFAULT_GET_HEADERS)
@@ -124,9 +130,9 @@ class TradeApi(object):
             if response.status_code == 200:
                 return True, response.json()
             else:
-                return False, u'GET请求失败，状态代码：%s' %response.status_code
+                return False, u'GET request failed，status code：%s' %response.status_code
         except Exception as e:
-            return False, u'GET请求触发异常，原因：%s' %e
+            return False, u'GET request unusually，reason：%s' %e
     
     #----------------------------------------------------------------------    
     def httpPost(self, url, params, add_to_headers=None):
@@ -139,9 +145,9 @@ class TradeApi(object):
             if response.status_code == 200:
                 return True, response.json()
             else:
-                return False, u'POST请求失败，返回信息：%s' %response.json()
+                return False, u'POST request failed，response：%s' %response.json()
         except Exception as e:
-            return False, u'POST请求触发异常，原因：%s' %e
+            return False, u'POST request unusually，reason：%s' %e
         
     #----------------------------------------------------------------------
     def generateSignParams(self):
@@ -197,13 +203,15 @@ class TradeApi(object):
     def processReq(self, req):
         """处理请求"""
         path, params, func, callback, reqid = req
+        # print 'processReq path:%s, params:%s, reqid:%s' % (path, params,reqid)
         result, data = func(path, params)
+        # print 'huobi processReq result:%s, status:%s' % (result, data['status'])
         
         if result:
             if data['status'] == 'ok':
                 callback(data['data'], reqid)
             else:
-                msg = u'错误代码：%s，错误信息：%s' %(data['err-code'], data['err-msg'])
+                msg = u'error code：%s，error info：%s' %(data['err-code'], data['err-msg'])
                 self.onError(msg, reqid)
         else:
             self.onError(data, reqid)
@@ -383,8 +391,8 @@ class TradeApi(object):
 
         func = self.apiPost
         callback = self.onPlaceOrder
-
-        return self.addReq(path, params, func, callback)           
+        # print 'huobiApi has placeOrdered'       
+        return self.addReq(path, params, func, callback)    
     
     #----------------------------------------------------------------------
     def cancelOrder(self, orderid):
@@ -396,6 +404,7 @@ class TradeApi(object):
         func = self.apiPost
         callback = self.onCancelOrder
 
+        print 'huobiApi cancelOrder:%s' % orderid
         return self.addReq(path, params, func, callback)          
     
     #----------------------------------------------------------------------
@@ -508,9 +517,11 @@ class DataApi(object):
                 data = json.loads(result)
                 self.onData(data)
             except zlib.error:
-                self.onError(u'数据解压出错：%s' %stream)
+                self.onError(u'data decompress failed!')
+                print stream
             except _exceptions.WebSocketConnectionClosedException:
-                self.onError(u'行情服务器连接断开：%s' %str(stream))
+                self.onError(u'data server connect breaked off!')
+                print stream
                 break
         
     #----------------------------------------------------------------------
@@ -532,7 +543,7 @@ class DataApi(object):
             return True
         except:
             msg = traceback.format_exc()
-            self.onError(u'行情服务器连接失败：%s' %msg)
+            self.onError(u'data server connect failed：%s' %msg)
             return False
         
     #----------------------------------------------------------------------
@@ -619,7 +630,7 @@ class DataApi(object):
             elif 'detail' in data['ch']:
                 self.onMarketDetail(data)
         elif 'err-code' in data:
-            self.onError(u'错误代码：%s, 信息：%s' %(data['err-code'], data['err-msg']))
+            self.onError(u'error code：%s, error info：%s' %(data['err-code'], data['err-msg']))
     
     #----------------------------------------------------------------------
     def onMarketDepth(self, data):

@@ -3,6 +3,7 @@
 import json
 import traceback
 import shelve
+import datetime as dt
 
 from vnpy.event import Event
 from vnpy.trader.vtFunction import getJsonPath, getTempPath
@@ -36,7 +37,9 @@ class TabDataEngine(object):
         self.legDict = {}                   # vtSymbol:TabLeg
         self.spreadDict = {}                # name:TabSpread
         self.vtSymbolSpreadDict = {}        # vtSymbol:TabSpread
-        
+        self.minute = 0
+        self.lastTick = VtLogData()
+
         self.registerEvent()
         
     #----------------------------------------------------------------------
@@ -142,6 +145,7 @@ class TabDataEngine(object):
         """处理行情推送"""
         # 检查行情是否需要处理
         tick = event.dict_['data']
+        self.lastTick = tick
         # print tick.__dict__
         if tick.vtSymbol not in self.legDict:
             return
@@ -254,6 +258,7 @@ class TabDataEngine(object):
         self.eventEngine.register(EVENT_TICK, self.processTickEvent)
         self.eventEngine.register(EVENT_TRADE, self.processTradeEvent)
         self.eventEngine.register(EVENT_POSITION, self.processPosEvent)
+        self.eventEngine.register(EVENT_TIMER, self.timeFunc)
         
     #----------------------------------------------------------------------
     def subscribeMarketData(self, vtSymbol):
@@ -269,6 +274,15 @@ class TabDataEngine(object):
         
         self.mainEngine.subscribe(req, contract.gatewayName)
         
+    #----------------------------------------------------------------------
+    def timeFunc(self, event):
+        """发出日志"""
+        now = dt.datetime.now()
+        now_minute = now.minute
+
+        if self.minute != now_minute:
+            self.minute = now_minute
+            print 'TIMEFUNC LASTTICK:%s' % self.lastTick.__dict__
     #----------------------------------------------------------------------
     def writeLog(self, content):
         """发出日志"""
@@ -576,6 +590,7 @@ class TabEngine(object):
         self.dataEngine.loadSetting()
         self.algoEngine.loadSetting()
         
+        self.mainEngine.gatewayDict['BINANCE'].creatConnection()
     #----------------------------------------------------------------------
 
     #----------------------------------------------------------------------

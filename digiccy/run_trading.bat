@@ -1,2 +1,0 @@
-python run_digiccyTrading.py
-pause

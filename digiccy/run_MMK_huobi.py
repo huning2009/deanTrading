@@ -1,23 +1,37 @@
 # encoding: UTF-8
 
+import os,sys
+myStrategyPath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'mmkStrategy/strategy')
+# print 'myStrategyPath:%s' % myStrategyPath
+sys.path.append(myStrategyPath)
+
 import multiprocessing
 from time import sleep
 from datetime import datetime, time
 
 from vnpy.event import EventEngine2
-from vnpy.trader.vtEvent import EVENT_LOG
+from vnpy.trader.vtEvent import EVENT_LOG, EVENT_ERROR
 from vnpy.trader.vtObject import VtSubscribeReq
 from vnpy.trader.vtEngine import MainEngine, LogEngine
-from tabStrategy.tabBase import EVENT_TABTRADING_LOG
+from mmkStrategy.mmkBase import EVENT_MMK_LOG, EVENT_MMK_STRATEGY
 
 # import okexGateway
 import huobiGateway
-import tabStrategy
+import mmkStrategy
  
+#----------------------------------------------------------------------
+def processError(event):
+    error = event.dict_['data']
+    try:
+        print u'######error gatewayName:%s' % error.gatewayName
+        print u'######error errorID:%s' % error.errorID
+        print u'######error errorMsg:%s' % error.errorMsg
+    except:
+        print '###### print error failed!'
 #----------------------------------------------------------------------
 def runChildProcess():
     """子进程运行函数"""
-    print '-'*20
+    print '*'*50
     
     # 创建日志引擎
     le = LogEngine()
@@ -25,46 +39,51 @@ def runChildProcess():
     le.addConsoleHandler()
     le.addFileHandler()
     
-    le.info(u'启动digiccy策略运行子进程')
+    le.info(u'marketMaker childProcess is working')
     
     ee = EventEngine2()
     
     me = MainEngine(ee)
-    le.info(u'主引擎创建成功')
+    le.info(u'MainEngine has been established')
     me.addGateway(huobiGateway)
-    le.info(u'huobiGateway创建成功')
+    le.info(u'huobiGateway has been established')
     
     ee.register(EVENT_LOG, le.processLogEvent)
-    ee.register(EVENT_TABTRADING_LOG, le.processLogEvent)
-    le.info(u'注册日志事件监听')
+    ee.register(EVENT_MMK_LOG, le.processLogEvent)
+    ee.register(EVENT_ERROR, processError)
+    le.info(u'register log event monitor')
     
     me.connect('HUOBI')
-    le.info(u'连接huobi接口')
+    le.info(u'connect huobiGateway')
 
     sleep(5)    # 等待CTP接口初始化
 
-    me.addApp(tabStrategy)
+    # for k,v in me.dataEngine.contractDict.items():
+    #     print '%s:%s' % (k,v.__dict__)
 
-    tab = me.getApp(tabStrategy.appName)
-    tab.init()
-    le.info(u'tabEngine初始化完成')
+    me.addApp(mmkStrategy)
+
+    mmk = me.getApp(mmkStrategy.appName)
+
+    mmk.loadSetting()
+    # le.info(u'MMK策略载入成功')
     
-    # tab.initAll()
-    # le.info(u'CTA策略初始化成功')
+    mmk.initAll()
+    # le.info(u'MMK策略初始化成功')
     
-    # tab.startAll()
-    # le.info(u'CTA策略启动成功')
+    mmk.startAll()
+    # le.info(u'MMK策略启动成功')
     
     while True:
-        sleep(1)
-        cmd = raw_input()
-        if cmd == "exit":
-            me.exit()
-            print 'me.exit & exit!'
-            exit()
-        elif cmd == "stopAll":
-            cta.stopAll()
-            print 'CTA stopAll completed!'
+        sleep(10)
+        # cmd = raw_input()
+        # if cmd == "exit":
+        #     me.exit()
+        #     print 'me.exit & exit!'
+        #     exit()
+        # elif cmd == "stopAll":
+        #     cta.stopAll()
+        #     print 'CTA stopAll completed!'
 
 #----------------------------------------------------------------------
 def runParentProcess():
