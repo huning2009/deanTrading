@@ -4,21 +4,9 @@ from jqdatasdk import *
 import json
 import datetime as dtt
 import sqlite3
-from peewee import (
-    AutoField,
-    CharField,
-    Database,
-    DateTimeField,
-    FloatField,
-    Model,
-    MySQLDatabase,
-    PostgresqlDatabase,
-    SqliteDatabase,
-    chunked,
-)
+
 from vnpy.trader.setting import get_settings, SETTINGS
 from vnpy.trader.database.initialize import init
-from vnpy.trader.utility import load_json
 from vnpy.trader.object import BarData, TickData
 from vnpy.trader.constant import Direction, Exchange, Interval, Offset, Status, Product, OptionType, OrderType
 
@@ -32,8 +20,10 @@ def login_joinquant():
 # # print(all_securities)
 #---------------------------------------------------------------------------------------------------------
 def get_database_manager():
+	# print("SRTTING")
+	# print(SETTINGS)
 	settings = get_settings("database.")
-	print(settings)
+	# print(settings)
 	database_manager: "BaseDatabaseManager" = init(settings=settings)
 	# print(database_manager.class_bar.__dict__)
 	return database_manager
@@ -41,9 +31,9 @@ def get_database_manager():
 
 def download_contract_ochl(contract, start_date="", end_date="",frequency='daily'):
 	if not start_date:
-		start_date = '20%s-%s-01' % (int(contract.split('.')[0][1:3])-1, contract.split('.')[0][3:5])
+		start_date = '20%s-%s-01' % (int(contract.split('.')[0][2:4])-1, contract.split('.')[0][4:6])
 	if not end_date:
-		end_date = '20%s-%s-30' % (contract.split('.')[0][1:3], contract.split('.')[0][3:5])
+		end_date = '20%s-%s-30' % (contract.split('.')[0][2:4], contract.split('.')[0][4:6])
 	print(contract,start_date,end_date)
 	price = get_price(contract, start_date=start_date, end_date=end_date, frequency=frequency, fields=['open', 'close', 'high', 'low', 'volume'], skip_paused=False, fq='pre')
 	price.dropna(axis=0, how='all', inplace=True)
@@ -90,17 +80,19 @@ def first_download_all_contract():
 #---------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------
-login_joinquant()
-database_manager = get_database_manager()
+def main():
+	login_joinquant()
+	database_manager = get_database_manager()
 
-# end_date = "2018-09-30"
-end_date = dtt.datetime.now().strftime("%Y-%m-%d")
-ohlc_df, symbol = download_contract_ochl("C1909.XDCE", end_date=end_date, frequency="1m")
-datas = df_to_BarDataList(ohlc_df, symbol)
-database_manager.save_bar_data(datas)
+	end_date = "2018-09-30"
+	end_date = dtt.datetime.now().strftime("%Y-%m-%d")
+	ohlc_df, symbol = download_contract_ochl("SC1909.XINE", end_date=end_date, frequency="1m")
+	datas = df_to_BarDataList(ohlc_df, symbol)
+	database_manager.save_bar_data(datas)
 
-
-
+# main()
+if __name__ == '__main__':
+	main()
 # first_download_all_contract()
 # 
 # price,contract = download_contract_ochl("C1909.XDCE", end_date=end_date, frequency="1m")

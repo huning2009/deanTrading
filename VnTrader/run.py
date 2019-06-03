@@ -1,85 +1,26 @@
 # encoding: UTF-8
-
-# 重载sys模块，设置默认字符串编码方式为utf8
-try:
-    reload         # Python 2
-except NameError:  # Python 3
-    from importlib import reload
-
-import sys
-reload(sys)
-
-try:
-    sys.setdefaultencoding('utf8')
-except AttributeError:
-    pass
-
-# 判断操作系统
-import platform
-system = platform.system()
-
-# vn.trader模块
 from vnpy.event import EventEngine
-from vnpy.trader.vtEngine import MainEngine
-from vnpy.trader.uiQt import createQApp
-from vnpy.trader.uiMainWindow import MainWindow
+from vnpy.trader.engine import MainEngine
+from vnpy.trader.ui import MainWindow, create_qapp
+from vnpy.gateway.ctp import CtpGateway
+from vnpy.app.cta_strategy import CtaStrategyApp
+from vnpy.app.cta_backtester import CtaBacktesterApp
 
-# 加载底层接口
-from vnpy.trader.gateway import (ctpGateway, huobiGateway)
-
-if system == 'Linux':
-    # from vnpy.trader.gateway import xtpGateway
-    pass
-elif system == 'Windows':
-    from vnpy.trader.gateway import (femasGateway, xspeedGateway,
-                                     secGateway)
-
-# 加载上层应用
-from vnpy.trader.app import (riskManager, ctaStrategy, 
-                             spreadTrading, algoTrading,
-                             tradeCopy, optionMaster)
-
-
-#----------------------------------------------------------------------
 def main():
-    """主程序入口"""
-    # 创建Qt应用对象
-    qApp = createQApp()
+    """Start VN Trader"""
+    qapp = create_qapp()
 
-    # 创建事件引擎
-    ee = EventEngine()
+    event_engine = EventEngine()
+    main_engine = MainEngine(event_engine)
+    
+    main_engine.add_gateway(CtpGateway)
+    main_engine.add_app(CtaStrategyApp)
+    main_engine.add_app(CtaBacktesterApp)
 
-    # 创建主引擎
-    me = MainEngine(ee)
+    main_window = MainWindow(main_engine, event_engine)
+    main_window.showMaximized()
 
-    # 添加交易接口
-    me.addGateway(ctpGateway)
-    # me.addGateway(ibGateway)
-    me.addGateway(huobiGateway)
+    qapp.exec()
 
-    if system == 'Windows':
-        me.addGateway(femasGateway)
-        me.addGateway(xspeedGateway)
-        me.addGateway(secGateway)
-
-    # if system == 'Linux':
-    #     me.addGateway(xtpGateway)
-
-    # 添加上层应用
-    me.addApp(riskManager)
-    me.addApp(optionMaster)
-    me.addApp(ctaStrategy)
-    me.addApp(spreadTrading)
-    me.addApp(algoTrading)
-    me.addApp(tradeCopy)
-
-    # 创建主窗口
-    mw = MainWindow(me, ee)
-    mw.showMaximized()
-
-    # 在主线程中启动Qt事件循环
-    sys.exit(qApp.exec_())
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
