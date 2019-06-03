@@ -1,4 +1,5 @@
 # deanTrading
+python:  (os.path.dirname(os.path.dirname(__file__)))
 contract >>CTP
 	SPD_CZCE
 		{'optionType': u'', 'strikePrice': 0.0, 'gatewayName': 'CTP', 'name': u'\u8de8\u671f\u5957\u5229-TA905/TA908', 'exchange': 'CZCE', 'underlyingSymbol': '', 'symbol': 'SPD TA905&TA908', 'priceTick': 2.0, 'expiryDate': '', 'rawData': None, 'productClass': u'\u7ec4\u5408', 'vtSymbol': 'SPD TA905&TA908', 'size': 1}

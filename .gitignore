@@ -10,3 +10,5 @@
 
 # API的.con文件
 *.con
+*.json
+*.db

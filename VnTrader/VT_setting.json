@@ -1,23 +1,22 @@
 {
-	"fontFamily": "微软雅黑",
-	"fontSize": 12,
+    "font.family": "Arial",
+    "font.size": 12,
 
-	"mongoHost": "localhost",
-	"mongoPort": 27017,
-	"mongoLogging": true,
+    "email.server": "smtp.qq.com",
+    "email.port": 465,
+    "email.username": "",
+    "email.password": "",
+    "email.sender": "",
+    "email.receiver": "",
 
-	"darkStyle": true,
-	"language": "chinese",
+    "rqdata.username": "",
+    "rqdata.password": "",
 
-	"logActive": true,
-	"logLevel": "debug",
-	"logConsole": true,
-	"logFile": true,
-
-	"tdPenalty": ["IF", "IH", "IC"],
-
-	"maxDecimal": 4,
-
-	"rqUsername": "",
-	"rqPassword": ""
+    "database.driver": "sqlite", 
+    "database.database": "OHLCData.db", 
+    "database.host": "localhost",
+    "database.port": 3306,
+    "database.user": "root",
+    "database.password": "",
+    "database.authentication_source": "admin",  
 }
