@@ -1,9 +1,15 @@
 import os
 from enum import Enum
 from pathlib import Path
+import re
+import datetime as dtt
 
-cwd = Path.home()
-print(cwd)
+
+
+end_date = dtt.datetime.now().strftime("%Y-%m-%d")
+print(end_date)
+# cwd = Path.home()
+# print(cwd)
 # class Direction(Enum):
 #     """
 #     Direction of order/trade/position.

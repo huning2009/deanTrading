@@ -4,6 +4,7 @@ from jqdatasdk import *
 import json
 import datetime as dtt
 import sqlite3
+import re
 
 from vnpy.trader.setting import get_settings, SETTINGS
 from vnpy.trader.database.initialize import init
@@ -30,10 +31,11 @@ def get_database_manager():
 #---------------------------------------------------------------------------------------------------------
 
 def download_contract_ochl(contract, start_date="", end_date="",frequency='daily'):
+
 	if not start_date:
-		start_date = '20%s-%s-01' % (int(contract.split('.')[0][2:4])-1, contract.split('.')[0][4:6])
+		start_date = '20%s-%s-01' % (int(re.findall(r"\d+", contract)[0][:2])-1, int(re.findall(r"\d+", contract)[0][-2:]))
 	if not end_date:
-		end_date = '20%s-%s-30' % (contract.split('.')[0][2:4], contract.split('.')[0][4:6])
+		end_date = dtt.datetime.now().strftime("%Y-%m-%d")
 	print(contract,start_date,end_date)
 	price = get_price(contract, start_date=start_date, end_date=end_date, frequency=frequency, fields=['open', 'close', 'high', 'low', 'volume'], skip_paused=False, fq='pre')
 	price.dropna(axis=0, how='all', inplace=True)
@@ -41,16 +43,21 @@ def download_contract_ochl(contract, start_date="", end_date="",frequency='daily
 
 #---------------------------------------------------------------------------------------------------------
 def df_to_BarDataList(ohlc_df, symbol):
+	if symbol.split('.')[1][1:] == "ZCE":
+		exchange = Exchange("CZCE")
+	else:
+		exchange = Exchange(symbol.split('.')[1][1:])
+		
 	barDataList = []
-	for index in ohlc_df.index:
+	for index, value in ohlc_df.iterrows():
 		index = index.strftime("%Y-%m-%d %H:%M:%S")
 		datetime = dtt.datetime.strptime(index, "%Y-%m-%d %H:%M:%S")
-		barData = BarData(None, symbol.split('.')[0], Exchange(symbol.split('.')[1][1:]), datetime)
-		barData.volume = ohlc_df.loc[index, "volume"]
-		barData.open_price = ohlc_df.loc[index, "open"]
-		barData.high_price = ohlc_df.loc[index, "high"]
-		barData.low_price = ohlc_df.loc[index, "low"]
-		barData.close_price = ohlc_df.loc[index, "close"]
+		barData = BarData(None, symbol.split('.')[0], exchange, datetime)
+		barData.volume = value["volume"]
+		barData.open_price = value["open"]
+		barData.high_price = value["high"]
+		barData.low_price = value["low"]
+		barData.close_price = value["close"]
 		barData.interval = Interval('1m')
 
 		barDataList.append(barData)
@@ -84,9 +91,10 @@ def main():
 	login_joinquant()
 	database_manager = get_database_manager()
 
-	end_date = "2018-09-30"
-	end_date = dtt.datetime.now().strftime("%Y-%m-%d")
-	ohlc_df, symbol = download_contract_ochl("SC1909.XINE", end_date=end_date, frequency="1m")
+	# end_date = "2018-09-30"
+	# end_date = dtt.datetime.now().strftime("%Y-%m-%d")
+	# XSGE	XINE	XZCE	XDCE
+	ohlc_df, symbol = download_contract_ochl("SR1909.XZCE", frequency="1m")
 	datas = df_to_BarDataList(ohlc_df, symbol)
 	database_manager.save_bar_data(datas)
 

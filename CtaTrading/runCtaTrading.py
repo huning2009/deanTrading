@@ -1,85 +1,58 @@
 # encoding: UTF-8
 
-import os,sys
-myFun_Obj_Path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-myStrategyPath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'strategy')
-sys.path.append(myFun_Obj_Path)
-sys.path.append(myStrategyPath)
-
 import multiprocessing
 from time import sleep
 from datetime import datetime, time
-from pymongo import MongoClient
 
-from vnpy.event import EventEngine2
-from vnpy.trader.vtEvent import EVENT_LOG
-from vnpy.trader.vtEngine import MainEngine, LogEngine
-from vnpy.trader.gateway import ctpGateway
-from vnpy.trader.app import ctaStrategy
-from vnpy.trader.app.ctaStrategy.ctaBase import EVENT_CTA_LOG
+from vnpy.event import EventEngine
+from vnpy.trader.event import EVENT_TIMER, EVENT_LOG
+from vnpy.trader.engine import MainEngine, LogEngine
+from vnpy.gateway.ctp import CtpGateway
+from vnpy.app.cta_strategy import CtaStrategyApp
+from vnpy.app.cta_strategy.base import EVENT_CTA_LOG
 
-from vnpy.trader.vtGlobal import globalSetting
- 
 #----------------------------------------------------------------------
 def runChildProcess():
     """子进程运行函数"""
-    print '-'*20
+    print('-'*20)
     
     # 创建日志引擎
-    le = LogEngine()
-    le.setLogLevel(le.LEVEL_INFO)
-    le.addConsoleHandler()
-    le.addFileHandler()
-    
-    le.info(u'启动CTA策略运行子进程')
-    
-    ee = EventEngine2()
-    le.info(u'事件引擎创建成功')
-    
+    ee = EventEngine()
     me = MainEngine(ee)
-    me.addGateway(ctpGateway)
-    le.info(u'主引擎创建成功')
 
-    try:
-        me.dbClient = MongoClient(globalSetting['mongoHost'], globalSetting['mongoPort'], connectTimeoutMS=500)
-        me.dbClient['admin'].authenticate('Dean2', 'Dean0129')
-        me.dbClient.server_info()
-        print(u'MongoDB连接成功')
-    except:
-        print(u'MongoDB连接失败')
+    le = LogEngine(me, ee)
+    le.add_console_handler()
+    le.add_file_handler()
     
-    ee.register(EVENT_LOG, le.processLogEvent)
-    ee.register(EVENT_CTA_LOG, le.processLogEvent)
-    le.info(u'注册日志事件监听')
+
+    me.add_gateway(CtpGateway)
+
+    ee.register(EVENT_LOG, le.process_log_event)
+    ee.register(EVENT_CTA_LOG, le.process_log_event)
     
-    me.connect('CTP')
-    le.info(u'连接CTP接口')
     
     sleep(20)    # 等待CTP接口初始化
 
-    me.addApp(ctaStrategy)
+    me.add_app(CtaStrategyApp)
 
-    cta = me.getApp(ctaStrategy.appName)
+    cta = me.apps[CtaStrategyApp.app_name]
+        
+    cta.init_all_strategies()
     
-    cta.loadSetting()
-    # le.info(u'CTA策略载入成功')
+    cta.start_all_strategies()
     
-    cta.initAll()
-    # le.info(u'CTA策略初始化成功')
-    
-    cta.startAll()
-    # le.info(u'CTA策略启动成功')
-    
+    # me.connect('CTP')
+
     while True:
         sleep(1)
         cmd = raw_input()
         if cmd == "exit":
             me.exit()
-            print 'me.exit & exit!'
+            print('me.exit & exit!')
             exit()
         elif cmd == "stopAll":
             cta.stopAll()
-            print 'CTA stopAll completed!'
+            print('CTA stopAll completed!')
 
 #----------------------------------------------------------------------
 def runParentProcess():
