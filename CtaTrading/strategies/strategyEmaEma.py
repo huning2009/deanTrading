@@ -81,32 +81,32 @@ class EmaEmaStrategy(CtaTemplate):
             self.shortPrice = 0
             self.highPrice = 0
             self.lowPrice = 0
-            if self.bg.last_bar.close_price > self.emaema[-1]:
-                self.buy(self.bg.last_bar.high_price, self.fixed_size)
+            if self.ema[-1] > self.emaema[-1]:
+                self.buy(self.bg.last_bar.high_price+3, self.fixed_size)
                 self.sell(self.bg.last_bar.close_price-5, self.fixed_size, True)
                 self.longPrice = self.bg.last_bar.close_price
                 self.highPrice = self.bg.last_bar.high_price
 
-            elif self.bg.last_bar.close_price < self.emaema[-1]:
-                self.short(self.bg.last_bar.low_price, self.fixed_size)
+            elif self.ema[-1] < self.emaema[-1]:
+                self.short(self.bg.last_bar.low_price-3, self.fixed_size)
                 self.cover(self.bg.last_bar.close_price+5, self.fixed_size, True)
                 self.shortPrice = self.bg.last_bar.close_price
                 self.lowPrice = self.bg.last_bar.low_price
 
         elif self.pos > 0:
-            if self.bg.last_bar.close_price < self.emaema[-1]:
-                self.sell(self.bg.last_bar.close_price, self.fixed_size)
+            if self.ema[-1] < self.emaema[-1]:
+                self.sell(self.bg.last_bar.close_price-3, self.fixed_size)
             elif self.bg.last_bar.close_price < self.highPrice-5:
-                self.sell(self.bg.last_bar.close_price, self.fixed_size)
+                self.sell(self.bg.last_bar.close_price-3, self.fixed_size)
             else:
                 self.sell(self.longPrice-5, self.fixed_size, True)
 
             self.highPrice = self.bg.last_bar.high_price
         elif self.pos < 0:
-            if self.bg.last_bar.close_price > self.emaema[-1]:
-                self.cover(self.bg.last_bar.close_price, self.fixed_size)
+            if self.ema[-1] > self.emaema[-1]:
+                self.cover(self.bg.last_bar.close_price+3, self.fixed_size)
             elif self.bg.last_bar.close_price > self.lowPrice+5:
-                self.cover(self.bg.last_bar.close_price, self.fixed_size)
+                self.cover(self.bg.last_bar.close_price+3, self.fixed_size)
             else:
                 self.cover(self.shortPrice+5, self.fixed_size, True)
 

@@ -58,7 +58,7 @@ def df_to_BarDataList(ohlc_df, symbol):
 		barData.high_price = value["high"]
 		barData.low_price = value["low"]
 		barData.close_price = value["close"]
-		barData.interval = Interval('1m')
+		barData.interval = Interval('d')
 
 		barDataList.append(barData)
 
@@ -94,7 +94,8 @@ def main():
 	# end_date = "2018-09-30"
 	# end_date = dtt.datetime.now().strftime("%Y-%m-%d")
 	# XSGE	XINE	XZCE	XDCE
-	ohlc_df, symbol = download_contract_ochl("SR1909.XZCE", frequency="1m")
+	ohlc_df, symbol = download_contract_ochl("RB1909.XSGE", frequency="daily")
+	print(ohlc_df)
 	datas = df_to_BarDataList(ohlc_df, symbol)
 	database_manager.save_bar_data(datas)
 
