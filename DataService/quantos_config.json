@@ -1,9 +1,0 @@
-{
-	"MONGO_HOST": "localhost",
-	"MONGO_PORT": 27017,
-
-	"SYMBOLS": ["c1905", "510300"],
-
-	"USERNAME": "1558888888",
-	"TOKEN": "eyJhbGciOiJIUzI1NiJ9.eyJjcmVhdGVfdGltZSI6IjE1NDgwNTk5OTAwOTAiLCJpc3MiOiJhdXRoMCIsImlkIjoiMTU1NDIzNzc3MDcifQ.ROaM_Uhx947nOcy8OoLeCWqNYbDYGVnKOxc3Zu-n1ck"
-}
