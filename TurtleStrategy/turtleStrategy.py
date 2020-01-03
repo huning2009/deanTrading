@@ -2,9 +2,8 @@
 
 from collections import defaultdict
 
-from vnpy.trader.vtConstant import (DIRECTION_LONG, DIRECTION_SHORT,
-                                    OFFSET_OPEN, OFFSET_CLOSE)
-from vnpy.trader.vtUtility import ArrayManager
+from vnpy.trader.constant import (Direction, Offset)
+from vnpy.trader.utility import ArrayManager
 
 
 MAX_PRODUCT_POS = 4         # 单品种最大持仓
@@ -84,7 +83,7 @@ class TurtleSignal(object):
     def onBar(self, bar):
         """"""
         self.bar = bar
-        self.am.updateBar(bar)
+        self.am.update_bar(bar)
         if not self.am.inited:
             return
         
@@ -105,12 +104,12 @@ class TurtleSignal(object):
         if self.unit > 0:
             longExit = max(self.longStop, self.exitDown)
             
-            if bar.low <= longExit:
+            if bar.low_price <= longExit:
                 self.sell(longExit)
                 return
         elif self.unit < 0:
             shortExit = min(self.shortStop, self.exitUp)
-            if bar.high >= shortExit:
+            if bar.high_price >= shortExit:
                 self.cover(shortExit)
                 return
         
@@ -118,19 +117,19 @@ class TurtleSignal(object):
         if self.unit >= 0:
             trade = False
             
-            if bar.high >= self.longEntry1 and self.unit < 1:
+            if bar.high_price >= self.longEntry1 and self.unit < 1:
                 self.buy(self.longEntry1, 1)
                 trade = True
             
-            if bar.high >= self.longEntry2 and self.unit < 2:
+            if bar.high_price >= self.longEntry2 and self.unit < 2:
                 self.buy(self.longEntry2, 1)
                 trade = True
             
-            if bar.high >= self.longEntry3 and self.unit < 3:
+            if bar.high_price >= self.longEntry3 and self.unit < 3:
                 self.buy(self.longEntry3, 1)
                 trade = True
             
-            if bar.high >= self.longEntry4 and self.unit < 4:
+            if bar.high_price >= self.longEntry4 and self.unit < 4:
                 self.buy(self.longEntry4, 1)
                 trade = True
             
@@ -139,16 +138,16 @@ class TurtleSignal(object):
             
         # 没有仓位或者持有空头仓位的时候，可以做空（加仓）
         if self.unit <= 0:
-            if bar.low <= self.shortEntry1 and self.unit > -1:
+            if bar.low_price <= self.shortEntry1 and self.unit > -1:
                 self.short(self.shortEntry1, 1)
             
-            if bar.low <= self.shortEntry2 and self.unit > -2:
+            if bar.low_price <= self.shortEntry2 and self.unit > -2:
                 self.short(self.shortEntry2, 1)
             
-            if bar.low <= self.shortEntry3 and self.unit > -3:
+            if bar.low_price <= self.shortEntry3 and self.unit > -3:
                 self.short(self.shortEntry3, 1)
             
-            if bar.low <= self.shortEntry4 and self.unit > -4:
+            if bar.low_price <= self.shortEntry4 and self.unit > -4:
                 self.short(self.shortEntry4, 1)
             
     #----------------------------------------------------------------------
@@ -181,10 +180,10 @@ class TurtleSignal(object):
     #----------------------------------------------------------------------
     def buy(self, price, volume):
         """买入开仓"""
-        price = self.calculateTradePrice(DIRECTION_LONG, price)
+        price = self.calculateTradePrice(Direction.LONG, price)
         
         self.open(price, volume)
-        self.newSignal(DIRECTION_LONG, OFFSET_OPEN, price, volume)
+        self.newSignal(Direction.LONG, Offset.OPEN, price, volume)
         
         # 以最后一次加仓价格，加上两倍N计算止损
         self.longStop = price - self.atrVolatility * 2
@@ -192,19 +191,19 @@ class TurtleSignal(object):
     #----------------------------------------------------------------------
     def sell(self, price):
         """卖出平仓"""
-        price = self.calculateTradePrice(DIRECTION_SHORT, price)
+        price = self.calculateTradePrice(Direction.SHORT, price)
         volume = abs(self.unit)
         
         self.close(price)
-        self.newSignal(DIRECTION_SHORT, OFFSET_CLOSE, price, volume)
+        self.newSignal(Direction.SHORT, Offset.CLOSE, price, volume)
     
     #----------------------------------------------------------------------
     def short(self, price, volume):
         """卖出开仓"""
-        price = self.calculateTradePrice(DIRECTION_SHORT, price)
+        price = self.calculateTradePrice(Direction.SHORT, price)
         
         self.open(price, -volume)
-        self.newSignal(DIRECTION_SHORT, OFFSET_OPEN, price, volume)
+        self.newSignal(Direction.SHORT, Offset.OPEN, price, volume)
         
         # 以最后一次加仓价格，加上两倍N计算止损
         self.shortStop = price + self.atrVolatility * 2
@@ -212,11 +211,11 @@ class TurtleSignal(object):
     #----------------------------------------------------------------------
     def cover(self, price):
         """买入平仓"""
-        price = self.calculateTradePrice(DIRECTION_LONG, price)
+        price = self.calculateTradePrice(Direction.LONG, price)
         volume = abs(self.unit)
         
         self.close(price)
-        self.newSignal(DIRECTION_LONG, OFFSET_CLOSE, price, volume)
+        self.newSignal(Direction.LONG, Offset.CLOSE, price, volume)
 
     #----------------------------------------------------------------------
     def open(self, price, change):
@@ -249,11 +248,11 @@ class TurtleSignal(object):
     def calculateTradePrice(self, direction, price):
         """计算成交价格"""
         # 买入时，停止单成交的最优价格不能低于当前K线开盘价
-        if direction == DIRECTION_LONG:
-            tradePrice = max(self.bar.open, price)
+        if direction == Direction.LONG:
+            tradePrice = max(self.bar.open_price, price)
         # 卖出时，停止单成交的最优价格不能高于当前K线开盘价
         else:
-            tradePrice = min(self.bar.open, price)
+            tradePrice = min(self.bar.open_price, price)
         
         return tradePrice
 
@@ -301,7 +300,7 @@ class TurtlePortfolio(object):
     #----------------------------------------------------------------------
     def onBar(self, bar):
         """"""
-        for signal in self.signalDict[bar.vtSymbol]:
+        for signal in self.signalDict[bar.symbol]:
             signal.onBar(bar)
     
     #----------------------------------------------------------------------
@@ -320,7 +319,7 @@ class TurtlePortfolio(object):
             multiplier = self.multiplierDict[signal.vtSymbol]
             
         # 开仓
-        if offset == OFFSET_OPEN:
+        if offset == Offset.OPEN:
             # 检查上一次是否为盈利
             if signal.profitCheck:
                 pnl = signal.getLastPnl()
@@ -328,7 +327,7 @@ class TurtlePortfolio(object):
                     return
                 
             # 买入
-            if direction == DIRECTION_LONG:
+            if direction == Direction.LONG:
                 # 组合持仓不能超过上限
                 if self.totalLong >= MAX_DIRECTION_POS:
                     return
@@ -345,7 +344,7 @@ class TurtlePortfolio(object):
                     return
         # 平仓
         else:
-            if direction == DIRECTION_LONG:
+            if direction == Direction.LONG:
                 # 必须有空头持仓
                 if unit >= 0:
                     return
@@ -364,7 +363,7 @@ class TurtlePortfolio(object):
             return
             
         # 开仓则缓存该信号的交易状态
-        if offset == OFFSET_OPEN:
+        if offset == Offset.OPEN:
             self.tradingDict[signal.vtSymbol] = signal
         # 平仓则清除该信号
         else:
@@ -376,7 +375,7 @@ class TurtlePortfolio(object):
     def sendOrder(self, vtSymbol, direction, offset, price, volume, multiplier):
         """"""
         # 计算合约持仓
-        if direction == DIRECTION_LONG:
+        if direction == Direction.LONG:
             self.unitDict[vtSymbol] += volume
             self.posDict[vtSymbol] += volume * multiplier
         else:

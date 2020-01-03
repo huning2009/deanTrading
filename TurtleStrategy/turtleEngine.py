@@ -10,8 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pymongo import MongoClient
 
-from vnpy.trader.vtObject import VtBarData
-from vnpy.trader.vtConstant import DIRECTION_LONG, DIRECTION_SHORT
+from vnpy.trader.object import BarData
+from vnpy.trader.constant import Direction, Exchange, Interval
+from vnpy.trader.database import database_manager
 
 from turtleStrategy import TurtlePortfolio
 
@@ -48,6 +49,8 @@ class BacktestingEngine(object):
         self.startDt = None
         self.endDt = None
         self.currentDt = None
+
+        self.db_manager = database_manager
         
         self.dataDict = OrderedDict()
         self.tradeDict = OrderedDict()
@@ -86,24 +89,14 @@ class BacktestingEngine(object):
     #----------------------------------------------------------------------
     def loadData(self):
         """加载数据"""
-        mc = MongoClient()
-        db = mc[DAILY_DB_NAME]
-        
         for vtSymbol in self.vtSymbolList:
-            flt = {'datetime':{'$gte':self.startDt,
-                               '$lte':self.endDt}} 
+            seq = self.db_manager.load_bar_data(vtSymbol, Exchange.CFFEX, Interval.DAILY, self.startDt, self.endDt)
             
-            collection = db[vtSymbol]
-            cursor = collection.find(flt).sort('datetime')
-            
-            for d in cursor:
-                bar = VtBarData()
-                bar.__dict__ = d
-                
+            for bar in seq:    
                 barDict = self.dataDict.setdefault(bar.datetime, OrderedDict())
-                barDict[bar.vtSymbol] = bar
+                barDict[bar.symbol] = bar
             
-            self.output(u'%s数据加载完成，总数据量：%s' %(vtSymbol, cursor.count()))
+            self.output(u'%s数据加载完成，总数据量：%s' %(vtSymbol, len(seq)))
         
         self.output(u'全部数据加载完成')
     
@@ -377,7 +370,7 @@ class DailyResult(object):
     #----------------------------------------------------------------------
     def updateBar(self, bar):
         """更新K线"""
-        self.closeDict[bar.vtSymbol] = bar.close
+        self.closeDict[bar.symbol] = bar.close_price
     
     #----------------------------------------------------------------------
     def updatePreviousClose(self, d):
@@ -396,7 +389,7 @@ class DailyResult(object):
             fixedCommission = FIXED_COMMISSION_DICT[vtSymbol]
             
             for trade in l:
-                if trade.direction == DIRECTION_LONG:
+                if trade.direction == Direction.LONG:
                     side = 1
                 else:
                     side = -1
