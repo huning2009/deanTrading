@@ -90,7 +90,7 @@ class BacktestingEngine(object):
     def loadData(self):
         """加载数据"""
         for vtSymbol in self.vtSymbolList:
-            seq = self.db_manager.load_bar_data(vtSymbol, Exchange.CFFEX, Interval.DAILY, self.startDt, self.endDt)
+            seq = self.db_manager.load_bar_data(vtSymbol, Exchange.DCE, Interval.DAILY, self.startDt, self.endDt)
             
             for bar in seq:    
                 barDict = self.dataDict.setdefault(bar.datetime, OrderedDict())

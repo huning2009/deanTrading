@@ -14,6 +14,7 @@ for i in range(df.shape[0]):
 	low_price = df.iloc[i,3]
 	close_price = df.iloc[i,1]
 	barData = BarData(symbol='000905', datetime=datetime, volume=volume, open_price=open_price, high_price=high_price, low_price=low_price, close_price=close_price, gateway_name='csv', exchange=Exchange.CFFEX, interval=Interval.DAILY)
+	print(barData)
 	s.append(barData)
 
 database_manager.save_bar_data(s)
