@@ -20,9 +20,6 @@ from .infoObject import init, EVENT_CTA_TRADE, EVENT_CTA_SIGNAL, EVENT_CTA_POSIT
 
 APP_NAME = "TradeInfoRecorder"
 
-EVENT_RECORDER_CTA_INFO = "eRecorderCtaInfo"
-
-
 class RecorderEngine(BaseEngine):
     """"""
     # setting_filename = "trade_recorder_setting.json"
