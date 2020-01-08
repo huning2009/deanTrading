@@ -14,6 +14,11 @@ from peewee import (
 from vnpy.trader.setting import get_settings
 from vnpy.trader.utility import get_file_path
 
+EVENT_CTA_TRADE = "eCtaTrade."
+EVENT_CTA_SIGNAL = "eCtaSignal."
+EVENT_CTA_POSITION = "eCtaPosition."
+EVENT_CTA_PARAMS = "eCtaParams."
+
 
 def init():
 	settings = get_settings("database.")

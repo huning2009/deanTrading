@@ -16,7 +16,8 @@ from vnpy.trader.object import (
 from vnpy.trader.event import EVENT_TICK, EVENT_CONTRACT
 from vnpy.trader.utility import load_json, save_json, BarGenerator
 from vnpy.app.spread_trading.base import EVENT_SPREAD_DATA, SpreadData
-from .infoObject import recorder_db_manager
+from .infoObject import init, EVENT_CTA_TRADE, EVENT_CTA_SIGNAL, EVENT_CTA_POSITION, EVENT_CTA_PARAMS
+
 APP_NAME = "TradeInfoRecorder"
 
 EVENT_RECORDER_CTA_INFO = "eRecorderCtaInfo"
@@ -34,7 +35,7 @@ class RecorderEngine(BaseEngine):
         self.thread = Thread(target=self.run)
         self.active = False
 
-        self.db = get_db()
+        self.recorder_db_manager = init()
 
         # self.load_setting()
         self.register_event()
@@ -44,14 +45,18 @@ class RecorderEngine(BaseEngine):
         """"""
         while self.active:
             try:
-                task = self.queue.get(timeout=1)
-                task_type, data = task
+                event = self.queue.get(timeout=1)
 
-                if task_type == "cta_info":
-                    recorder_db_manager.insert(data)
-                # elif task_type == "bar":
-                #     database_manager.save_bar_data([data])
-
+                if event.type == EVENT_CTA_TRADE:
+                    self.recorder_db_manager.save_ctatrade(event.data)
+                elif event.type == EVENT_CTA_SIGNAL:
+                    self.recorder_db_manager.save_ctasignal(event.data)
+                elif event.type == EVENT_CTA_POSITION:
+                    self.recorder_db_manager.save_ctaposition(event.data)
+                elif event.type == EVENT_CTA_PARAMS:
+                    self.recorder_db_manager.save_ctaparams(event.data)
+                else:
+                    print("recorder_db_manager no type")
             except Empty:
                 continue
 
@@ -69,8 +74,10 @@ class RecorderEngine(BaseEngine):
 
     def register_event(self):
         """"""
-        self.event_engine.register(
-            EVENT_RECORDER_CTA_INFO, self.reorder_cta_info)
+        self.event_engine.register(EVENT_CTA_TRADE, self.recorder_cta_info)
+        self.event_engine.register(EVENT_CTA_SIGNAL, self.recorder_cta_info)
+        self.event_engine.register(EVENT_CTA_POSITION, self.recorder_cta_info)
+        self.event_engine.register(EVENT_CTA_PARAMS, self.recorder_cta_info)
 
     def write_log(self, msg: str):
         """"""
@@ -80,7 +87,6 @@ class RecorderEngine(BaseEngine):
         )
         self.event_engine.put(event)
 
-    def reorder_cta_info(self, event: Event):
+    def recorder_cta_info(self, event: Event):
         """"""
-        task = ("cta_info", copy(event.data))
-        self.queue.put(task)
+        self.queue.put(event)
