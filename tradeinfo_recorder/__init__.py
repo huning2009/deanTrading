@@ -5,7 +5,7 @@ from vnpy.trader.app import BaseApp
 from .engine import RecorderEngine, APP_NAME
 
 
-class DataRecorderApp(BaseApp):
+class InfoRecorderApp(BaseApp):
     """"""
     app_name = APP_NAME
     app_module = __module__

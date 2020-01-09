@@ -14,7 +14,7 @@ from vnpy.trader.engine import MainEngine
 from vnpy.gateway.ctp import CtpGateway
 from vnpy.app.cta_strategy import CtaStrategyApp
 from vnpy.app.cta_strategy.base import EVENT_CTA_LOG
-from tradeinfo_recorder import DataRecorderApp
+from tradeinfo_recorder import InfoRecorderApp
 
 SETTINGS["log.active"] = True
 SETTINGS["log.level"] = INFO
@@ -35,7 +35,7 @@ def run_child():
     main_engine = MainEngine(event_engine)
     main_engine.add_gateway(CtpGateway)
 
-    inforecorder_engine = main_engine.add_app(DataRecorderApp)
+    inforecorder_engine = main_engine.add_app(InfoRecorderApp)
     cta_engine = main_engine.add_app(CtaStrategyApp)
     main_engine.write_log("主引擎创建成功")
 
@@ -59,8 +59,8 @@ def run_child():
     main_engine.write_log("CTA策略全部启动")
 
     while True:
-        sleep(1)
-        cmd = raw_input()
+        sleep(5)
+        cmd = input()
         if cmd == "exit":
             me.exit()
             print('me.exit & exit!')
