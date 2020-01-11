@@ -17,10 +17,10 @@ class EmaEmaStrategy(CtaTemplate):
     author = "DEAN"
 
     ema_period = 20
-    bar_minute = 30
+    k_minute = 30
     fixed_size = 1
 
-    parameters = ["ema_period", "fixed_size"]
+    parameters = ["k_minute", "ema_period", "fixed_size"]
     variables = ["boll_up", "boll_down", "cci_value", "atr_value",
                  "intra_trade_high", "intra_trade_low", "long_stop", "short_stop"]
 
@@ -30,7 +30,7 @@ class EmaEmaStrategy(CtaTemplate):
             cta_engine, strategy_name, vt_symbol, setting
         )
 
-        self.bg = BarGenerator(self.on_bar, self.bar_minute, self.on_mymin_bar)
+        self.bg = BarGenerator(self.on_bar, self.k_minute, self.on_mymin_bar)
         self.am = ArrayManager()
 
     def on_init(self):

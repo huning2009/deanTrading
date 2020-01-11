@@ -1,5 +1,6 @@
-import os, sys
-sys.path.append(os.path.abspath('..'))
+# import os, sys, pathlib
+# deanTrading_path = pathlib.Path(__file__).resolve().parent.parent
+# sys.path.append(str(deanTrading_path))
 
 import json
 import multiprocessing
@@ -9,6 +10,7 @@ from logging import INFO
 
 from vnpy.event import EventEngine
 from vnpy.trader.setting import SETTINGS
+from vnpy.trader.utility import load_json
 from vnpy.trader.engine import MainEngine
 
 from vnpy.gateway.ctp import CtpGateway
@@ -20,10 +22,7 @@ SETTINGS["log.active"] = True
 SETTINGS["log.level"] = INFO
 SETTINGS["log.console"] = True
 
-ctp_path = os.path.join(os.path.abspath('..'), 'connect_ctp.json')
-with open(ctp_path) as f:
-    ctp_setting = json.load(f)
-    print(ctp_setting)
+ctp_setting = load_json('connect_ctp.json')
 
 def run_child():
     """
@@ -35,7 +34,7 @@ def run_child():
     main_engine = MainEngine(event_engine)
     main_engine.add_gateway(CtpGateway)
 
-    inforecorder_engine = main_engine.add_app(InfoRecorderApp)
+    main_engine.add_app(InfoRecorderApp)
     cta_engine = main_engine.add_app(CtaStrategyApp)
     main_engine.write_log("主引擎创建成功")
 
@@ -62,12 +61,7 @@ def run_child():
         sleep(5)
         cmd = input()
         if cmd == "exit":
-            me.exit()
-            print('me.exit & exit!')
-            exit()
-        elif cmd == "stopAll":
-            cta.stopAll()
-            print('CTA stopAll completed!')
+            main_engine.close()
 
 #----------------------------------------------------------------------
 def run_parent():
