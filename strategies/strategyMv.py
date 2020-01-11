@@ -25,7 +25,6 @@ from vnpy.app.cta_strategy import (
 )
 from vnpy.app.cta_strategy.base import StopOrderStatus, Direction, Offset
 from vnpy.trader.constant import Status
-from myObject import MyBarGenerator
 
 
 EVENT_TIMER = 'eTimer' 
@@ -72,7 +71,7 @@ class MvStrategy(CtaTemplate):
         """Constructor"""
         super(MvStrategy, self).__init__(ctaEngine, setting)
         
-        # self.bm = MyBarGenerator(self.onBar, self.xMinBar, self.onFiveBar)
+        # self.bm = BarGenerator(self.onBar, self.xMinBar, self.onFiveBar)
         # self.am = ArrayManager()
 
         # self.ctaEngine.eventEngine.register(EVENT_TIMER, self.onTimeFunc)

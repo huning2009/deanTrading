@@ -25,7 +25,6 @@ from vnpy.app.cta_strategy import (
 )
 from vnpy.app.cta_strategy.base import StopOrderStatus, Direction, Offset
 from vnpy.trader.constant import Status
-from myObject import MyBarGenerator
 
 
 EVENT_TIMER = 'eTimer' 
@@ -78,7 +77,7 @@ class DynamicBreakOut2Strategy(CtaTemplate):
     def __init__(self, ctaEngine, setting):
         """Constructor"""
         super(DynamicBreakOut2Strategy, self).__init__(ctaEngine, setting)
-        self.bg = MyBarGenerator(self.on_bar, self.xMinBar, self.onFiveBar)
+        self.bg = BarGenerator(self.on_bar, self.xMinBar, self.onFiveBar)
         self.am = ArrayManager(60)
 
         # self.ctaEngine.eventEngine.register(EVENT_TIMER, self.onTimeFunc)
@@ -109,12 +108,12 @@ class DynamicBreakOut2Strategy(CtaTemplate):
     #----------------------------------------------------------------------
     def on_tick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
-        self.bg.updateTick(tick)
+        self.bg.update_tick(tick)
 
     #----------------------------------------------------------------------
     def on_bar(self, bar):
         """收到Bar推送（必须由用户继承实现）"""
-        self.bg.updateBar(bar)
+        self.bg.update_bar(bar)
 
         if not self.am.inited:
             return        

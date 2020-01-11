@@ -23,7 +23,6 @@ from vnpy.app.cta_strategy import (
 )
 from vnpy.app.cta_strategy.base import StopOrderStatus, Direction, Offset
 from vnpy.trader.constant import Status
-from myObject import MyBarGenerator
 
 
 
@@ -76,7 +75,7 @@ class TurtleCCIStrategy(CtaTemplate):
         """Constructor"""
         super(TurtleCCIStrategy, self).__init__(ctaEngine, setting)
         
-        self.bm = MyBarGenerator(self.on_bar, 15, self.onFiveBar)
+        self.bm = BarGenerator(self.on_bar, 15, self.onFiveBar)
         self.am = ArrayManager()
         
     #----------------------------------------------------------------------
@@ -104,12 +103,12 @@ class TurtleCCIStrategy(CtaTemplate):
     #----------------------------------------------------------------------
     def on_tick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
-        self.bm.updateTick(tick)
+        self.bm.update_tick(tick)
 
     #----------------------------------------------------------------------
     def on_bar(self, bar):
         """收到Bar推送（必须由用户继承实现）"""
-        self.bm.updateBar(bar)
+        self.bm.update_bar(bar)
     
     #----------------------------------------------------------------------
     def orderIDConvert(self, orderList):

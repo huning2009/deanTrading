@@ -1,7 +1,6 @@
 # encoding: UTF-8
 import datetime as dtt
-from vnpy.trader.vtConstant import (EMPTY_STRING, EMPTY_UNICODE, EMPTY_FLOAT, EMPTY_INT)
-from vnpy.trader.vtObject import VtBarData
+from vnpy.trader.object import BarData
 
 ########################################################################
 # 数据库名称

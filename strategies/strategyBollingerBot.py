@@ -22,7 +22,6 @@ from vnpy.app.cta_strategy import (
     ArrayManager,
 )
 from vnpy.app.cta_strategy.base import StopOrderStatus
-from myObject import MyBarGenerator
 
 
 
@@ -92,7 +91,7 @@ class BollingerBotStrategy(CtaTemplate):
         """Constructor"""
         super(BollingerBotStrategy, self).__init__(ctaEngine, setting)
         
-        self.bm = MyBarGenerator(self.onBar, 15, self.onFiveBar)
+        self.bm = BarGenerator(self.on_bar, 15, self.onFiveBar)
         self.am = ArrayManager()
         
     #----------------------------------------------------------------------
@@ -120,12 +119,12 @@ class BollingerBotStrategy(CtaTemplate):
     #----------------------------------------------------------------------
     def on_tick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
-        self.bm.updateTick(tick)
+        self.bm.update_tick(tick)
 
     #----------------------------------------------------------------------
     def on_bar(self, bar):
         """收到Bar推送（必须由用户继承实现）"""
-        self.bm.updateBar(bar)
+        self.bm.update_bar(bar)
     
     #----------------------------------------------------------------------
     def orderIDConvert(self, orderList):

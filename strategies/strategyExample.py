@@ -8,6 +8,8 @@ from vnpy.app.cta_strategy import (
     BarGenerator,
     ArrayManager,
 )
+from vnpy.app.cta_strategy.base import StopOrderStatus, Direction, Offset
+from vnpy.trader.constant import Status
 
 
 class ExampleStrategy(CtaTemplate):

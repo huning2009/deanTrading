@@ -25,7 +25,6 @@ from vnpy.app.cta_strategy import (
 )
 from vnpy.app.cta_strategy.base import StopOrderStatus, Direction, Offset
 from vnpy.trader.constant import Status
-from myObject import MyBarGenerator
 
 
 EVENT_TIMER = 'eTimer' 
@@ -88,7 +87,7 @@ class HLBeatStrategy(CtaTemplate):
     def __init__(self, ctaEngine, setting):
         """Constructor"""
         super(HLBeatStrategy, self).__init__(ctaEngine, setting)
-        self.bm = MyBarGenerator(self.on_bar, self.xMinBar, self.onFiveBar)
+        self.bm = BarGenerator(self.on_bar, self.xMinBar, self.onFiveBar)
         self.am = ArrayManager()
 
         self.cta_engine.eventEngine.register(EVENT_TIMER, self.onTimeFunc)
@@ -119,12 +118,12 @@ class HLBeatStrategy(CtaTemplate):
     #----------------------------------------------------------------------
     def on_tick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
-        self.bm.updateTick(tick)
+        self.bm.update_tick(tick)
 
     #----------------------------------------------------------------------
     def on_bar(self, bar):
         """收到Bar推送（必须由用户继承实现）"""
-        self.bm.updateBar(bar)
+        self.bm.update_bar(bar)
 
         if not self.am.inited or not self.trading:
             return        
