@@ -13,9 +13,18 @@ import numpy as np
 from time import sleep
 import datetime as dt
 
-from vnpy.trader.vtObject import VtBarData
-from vnpy.trader.vtConstant import *
-from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate, ArrayManager, STOPORDER_TRIGGERED, STOPORDER_CANCELLED
+from vnpy.app.cta_strategy import (
+    CtaTemplate,
+    StopOrder,
+    TickData,
+    BarData,
+    TradeData,
+    OrderData,
+    BarGenerator,
+    ArrayManager,
+)
+from vnpy.app.cta_strategy.base import StopOrderStatus, Direction, Offset
+from vnpy.trader.constant import Status
 from myObject import MyBarGenerator
 
 
@@ -57,7 +66,7 @@ class DynamicBreakOut2Strategy(CtaTemplate):
 
 
     # 参数列表，保存了参数的名称
-    paramList = ['name', 'className', 'author', 'vtSymbol', "fixedSize", "xMinBar", "ATR_N"]    
+    paramList = ['className', 'author', 'vtSymbol', "fixedSize", "xMinBar", "ATR_N"]    
 
     # 变量列表，保存了变量的名称
     varList = []
@@ -69,43 +78,41 @@ class DynamicBreakOut2Strategy(CtaTemplate):
     def __init__(self, ctaEngine, setting):
         """Constructor"""
         super(DynamicBreakOut2Strategy, self).__init__(ctaEngine, setting)
-        self.bg = MyBarGenerator(self.onBar, self.xMinBar, self.onFiveBar)
+        self.bg = MyBarGenerator(self.on_bar, self.xMinBar, self.onFiveBar)
         self.am = ArrayManager(60)
 
         # self.ctaEngine.eventEngine.register(EVENT_TIMER, self.onTimeFunc)
         
     #----------------------------------------------------------------------
-    def onInit(self):
+    def on_init(self):
         """初始化策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略初始化' %self.name)
+        self.write_log(u'策略初始化')
         
         # 载入历史数据，并采用回放计算的方式初始化策略数值
-        initData = self.loadBar(self.initDays)
-        for bar in initData:
-            self.onBar(bar)
+        self.load_bar(self.initDays)
 
-        self.putEvent()
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStart(self):
+    def on_start(self):
         """启动策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略启动' %self.name)
-        self.putEvent()
+        self.write_log(u'策略启动')
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStop(self):
+    def on_stop(self):
         """停止策略（必须由用户继承实现）"""
 
-        self.writeCtaLog(u'%s策略停止' %self.name)
-        self.putEvent()
+        self.write_log(u'策略停止')
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onTick(self, tick):
+    def on_tick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
         self.bg.updateTick(tick)
 
     #----------------------------------------------------------------------
-    def onBar(self, bar):
+    def on_bar(self, bar):
         """收到Bar推送（必须由用户继承实现）"""
         self.bg.updateBar(bar)
 
@@ -163,7 +170,7 @@ class DynamicBreakOut2Strategy(CtaTemplate):
     def onFiveBar(self, bar, lastTick):
         """收到5分钟K线"""        
         # 保存K线数据
-        self.am.updateBar(bar)
+        self.am.update_bar(bar)
         if not self.am.inited:
             return        
 
@@ -182,8 +189,8 @@ class DynamicBreakOut2Strategy(CtaTemplate):
         self.entryDown = min(min(self.am.low[-self.lookBackDays:]), DnBand)
         self.exitUp = max(MidLine, self.entryUp-self.ATR_N*self.ATR)
         self.exitDown = min(MidLine, self.entryDown+self.ATR_N*self.ATR)
-        print self.entryUp,self.entryDown
-        print self.exitUp,self.exitDown
+        print(self.entryUp,self.entryDown)
+        print(self.exitUp,self.exitDown)
         # 判断是否进行交易，只发开仓单
         if not self.buyOrderID or self.buyOrderID in self.orderList:
             if self.pos == 0:
@@ -198,7 +205,7 @@ class DynamicBreakOut2Strategy(CtaTemplate):
                     self.orderList.append(self.buyOrderID)
 
                 elif self.longEntry != self.entryUp:
-                    self.cancelOrder(self.buyOrderID)
+                    self.cancel_order(self.buyOrderID)
                     # if (self.entryUp-self.entryDown)/self.entryUp < 0.006:
                     #     print u'%s 高低点太窄，放弃交易！' % self.vtSymbol
                     #     return
@@ -221,7 +228,7 @@ class DynamicBreakOut2Strategy(CtaTemplate):
                     self.orderList.append(self.shortOrderID)
 
                 elif self.shortEntry != self.entryDown:
-                    self.cancelOrder(self.shortOrderID)
+                    self.cancel_order(self.shortOrderID)
                     # if (self.entryUp-self.entryDown)/self.entryUp < 0.006:
                     #     print u'%s 高低点太窄，放弃交易！' % self.vtSymbol
                     #     return
@@ -232,10 +239,10 @@ class DynamicBreakOut2Strategy(CtaTemplate):
                     self.orderList.append(self.shortOrderID)
 
         # 发出状态更新事件
-        # self.putEvent()        
+        # self.put_event()        
 
     #----------------------------------------------------------------------
-    def onOrder(self, order):
+    def on_order(self, order):
         """收到委托变化推送（必须由用户继承实现）"""
         # print u'委托变化推送：%s' % order.__dict__
         # if self.buyOrderID:
@@ -260,8 +267,8 @@ class DynamicBreakOut2Strategy(CtaTemplate):
         #             self.coverOrderID =  self.cover(self.shortExit, self.fixedSize, False)
         #             print u'###空头平仓，单号：%s' % self.coverOrderID
         #             self.coverOrderID = self.orderIDConvert(self.coverOrderID)
-        if order.offset in [OFFSET_CLOSE, OFFSET_CLOSETODAY, OFFSET_CLOSEYESTERDAY]:
-            if order.status == STATUS_ALLTRADED:
+        if order.offset in [Offset.CLOSE, Offset.CLOSETODAY, Offset.CLOSEYESTERDAY]:
+            if order.status == Status.ALLTRADED:
                 self.buyOrderID = None
                 self.shortOrderID = None
                 self.longExit = 0
@@ -270,7 +277,7 @@ class DynamicBreakOut2Strategy(CtaTemplate):
         pass
 
     #----------------------------------------------------------------------
-    def onTrade(self, trade):
+    def on_trade(self, trade):
         """收到成交推送（必须由用户继承实现）"""
         # print u'成交推送：%s' % trade.__dict__
         # if self.buyOrderID:
@@ -282,14 +289,14 @@ class DynamicBreakOut2Strategy(CtaTemplate):
         #         self.orderList.remove(self.shortOrderID)
 
         # 发出状态更新事件
-        # self.putEvent()
+        # self.put_event()
         pass
 
     #----------------------------------------------------------------------
-    def onStopOrder(self, so):
+    def on_stop_order(self, so):
         """停止单推送"""
-        if so.offset == OFFSET_OPEN:
-            if so.status == STOPORDER_CANCELLED or so.status == STOPORDER_TRIGGERED:
+        if so.offset == Offset.OPEN:
+            if so.status == StopOrderStatus.CANCELLED or so.status == StopOrderStatus.TRIGGERED:
                 self.orderList.remove(so.stopOrderID)
 
         # if so.offset in [OFFSET_CLOSE, OFFSET_CLOSETODAY, OFFSET_CLOSEYESTERDAY]:
@@ -319,7 +326,7 @@ class DynamicBreakOut2Strategy(CtaTemplate):
                 self.timeFuncTurn = True
 
         if now_hour == 2 and now_minute == 32 and self.timeFuncTurn:
-            self.ctaEngine.saveSyncData(self)
+            self.cta_engine.saveSyncData(self)
             self.timeFuncTurn = False
 
         elif now_hour == 15 and now_minute == 10 and self.timeFuncTurn:
@@ -330,6 +337,6 @@ class DynamicBreakOut2Strategy(CtaTemplate):
             self.longExit = 0
             self.shortExit = 0
             self.orderList = []
-            self.ctaEngine.saveSyncData(self)
+            self.cta_engine.saveSyncData(self)
             self.timeFuncTurn = False
 

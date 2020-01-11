@@ -11,9 +11,18 @@ from __future__ import division
 import talib
 import numpy as np
 
-from vnpy.trader.vtObject import VtBarData
-from vnpy.trader.vtConstant import EMPTY_STRING
-from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate, ArrayManager, STOPORDER_TRIGGERED, STOPORDER_CANCELLED
+from vnpy.app.cta_strategy import (
+    CtaTemplate,
+    StopOrder,
+    TickData,
+    BarData,
+    TradeData,
+    OrderData,
+    BarGenerator,
+    ArrayManager,
+)
+from vnpy.app.cta_strategy.base import StopOrderStatus, Direction, Offset
+from vnpy.trader.constant import Status
 from myObject import MyBarGenerator
 
 
@@ -67,40 +76,38 @@ class TurtleCCIStrategy(CtaTemplate):
         """Constructor"""
         super(TurtleCCIStrategy, self).__init__(ctaEngine, setting)
         
-        self.bm = MyBarGenerator(self.onBar, 15, self.onFiveBar)
+        self.bm = MyBarGenerator(self.on_bar, 15, self.onFiveBar)
         self.am = ArrayManager()
         
     #----------------------------------------------------------------------
-    def onInit(self):
+    def on_init(self):
         """初始化策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略初始化' %self.name)
+        self.write_log(u'策略初始化')
         
         # 载入历史数据，并采用回放计算的方式初始化策略数值
-        initData = self.loadBar(self.initDays)
-        for bar in initData:
-            self.onBar(bar)
+        self.load_bar(self.initDays)
 
-        self.putEvent()
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStart(self):
+    def on_start(self):
         """启动策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略启动' %self.name)
-        self.putEvent()
+        self.write_log(u'策略启动')
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStop(self):
+    def on_stop(self):
         """停止策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略停止' %self.name)
-        self.putEvent()
+        self.write_log(u'策略停止')
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onTick(self, tick):
+    def on_tick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
         self.bm.updateTick(tick)
 
     #----------------------------------------------------------------------
-    def onBar(self, bar):
+    def on_bar(self, bar):
         """收到Bar推送（必须由用户继承实现）"""
         self.bm.updateBar(bar)
     
@@ -114,12 +121,12 @@ class TurtleCCIStrategy(CtaTemplate):
     def onFiveBar(self, bar, lastTick):
         """收到5分钟K线"""        
         # 保存K线数据
-        self.am.updateBar(bar)
+        self.am.update_bar(bar)
         if not self.am.inited or not self.trading:
             return        
 
         # 撤销之前发出的尚未成交的委托（包括限价单和停止单）
-        print u'onFiveBar↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓,datetime:%s' % bar.datetime
+        print(u'onFiveBar↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓,datetime:%s' % bar.datetime)
         # 计算指标数值
         self.entryUp = max(self.am.high[-self.turtleWindow:])
         self.entryDown = min(self.am.low[-self.turtleWindow:])
@@ -137,13 +144,13 @@ class TurtleCCIStrategy(CtaTemplate):
                 if ma1 > ma2:
                     self.buyOrderID = self.buy(self.entryUp, self.fixedSize, True)
                     self.buyOrderID = self.orderIDConvert(self.buyOrderID)
-                    print 'None order!!!buyOrderID is : %s ' % self.buyOrderID
+                    print('None order!!!buyOrderID is : %s ' % self.buyOrderID)
                     if self.buyOrderID:
                         self.orderList.append(self.buyOrderID)
                 else:
                     self.shortOrderID = self.short(self.entryDown, self.fixedSize, True)
                     self.shortOrderID = self.orderIDConvert(self.shortOrderID)
-                    print 'None order!!!shortOrderID is : %s ' % self.shortOrderID
+                    print('None order!!!shortOrderID is : %s ' % self.shortOrderID)
                     if self.shortOrderID:
                         self.orderList.append(self.shortOrderID)
 
@@ -153,7 +160,7 @@ class TurtleCCIStrategy(CtaTemplate):
                     # ######此处实盘需要修改发单价格
                     self.sellOrderID = self.sell(bar.low*0.9, self.fixedSize)
                     self.sellOrderID = self.orderIDConvert(self.sellOrderID)
-                    print 'order None!!!sellOrderID is : %s ' % self.sellOrderID
+                    print('order None!!!sellOrderID is : %s ' % self.sellOrderID)
                     if self.sellOrderID:
                         self.orderList.append(self.sellOrderID)
             elif self.pos < 0:
@@ -162,23 +169,23 @@ class TurtleCCIStrategy(CtaTemplate):
                     # ######此处实盘需要修改发单价格
                     self.coverOrderID = self.cover(bar.high*0.9, self.fixedSize)
                     self.coverOrderID = self.orderIDConvert(self.coverOrderID)
-                    print 'order None!!!coverOrderID is : %s ' % self.coverOrderID
+                    print('order None!!!coverOrderID is : %s ' % self.coverOrderID)
                     if self.coverOrderID:
                         self.orderList.append(self.coverOrderID)
         else:
             if self.buyOrderID in self.orderList or self.shortOrderID in self.orderList:
-                self.cancelAll()
+                self.cancel_all()
                 # 下开仓单
                 if ma1 > ma2:
                     self.buyOrderID = self.buy(self.entryUp, self.fixedSize, True)
                     self.buyOrderID = self.orderIDConvert(self.buyOrderID)
-                    print 'buyOrderID is : %s ' % self.buyOrderID
+                    print('buyOrderID is : %s ' % self.buyOrderID)
                     if self.buyOrderID:
                         self.orderList.append(self.buyOrderID)
                 else:
                     self.shortOrderID = self.short(self.entryDown, self.fixedSize, True)
                     self.shortOrderID = self.orderIDConvert(self.shortOrderID)
-                    print 'shortOrderID is : %s ' % self.shortOrderID
+                    print('shortOrderID is : %s ' % self.shortOrderID)
                     if self.shortOrderID:
                         self.orderList.append(self.shortOrderID)
             else:
@@ -188,7 +195,7 @@ class TurtleCCIStrategy(CtaTemplate):
                         # ######此处实盘需要修改发单价格
                         self.sellOrderID = self.sell(bar.low*0.9, self.fixedSize)
                         self.sellOrderID = self.orderIDConvert(self.sellOrderID)
-                        print 'order None!!!sellOrderID is : %s ' % self.sellOrderID
+                        print('order None!!!sellOrderID is : %s ' % self.sellOrderID)
                         if self.sellOrderID:
                             self.orderList.append(self.sellOrderID)
                 elif self.pos < 0:
@@ -197,7 +204,7 @@ class TurtleCCIStrategy(CtaTemplate):
                         # ######此处实盘需要修改发单价格
                         self.coverOrderID = self.cover(bar.high*0.9, self.fixedSize)
                         self.coverOrderID = self.orderIDConvert(self.coverOrderID)
-                        print 'order None!!!coverOrderID is : %s ' % self.coverOrderID
+                        print('order None!!!coverOrderID is : %s ' % self.coverOrderID)
                         if self.coverOrderID:
                             self.orderList.append(self.coverOrderID)
                 elif self.pos == 0:
@@ -205,13 +212,13 @@ class TurtleCCIStrategy(CtaTemplate):
                     if ma1 > ma2:
                         self.buyOrderID = self.buy(self.entryUp, self.fixedSize, True)
                         self.buyOrderID = self.orderIDConvert(self.buyOrderID)
-                        print 'buyOrderID is : %s ' % self.buyOrderID
+                        print('buyOrderID is : %s ' % self.buyOrderID)
                         if self.buyOrderID:
                             self.orderList.append(self.buyOrderID)
                     else:
                         self.shortOrderID = self.short(self.entryDown, self.fixedSize, True)
                         self.shortOrderID = self.orderIDConvert(self.shortOrderID)
-                        print 'shortOrderID is : %s ' % self.shortOrderID
+                        print('shortOrderID is : %s ' % self.shortOrderID)
                         if self.shortOrderID:
                             self.orderList.append(self.shortOrderID)
 
@@ -219,22 +226,22 @@ class TurtleCCIStrategy(CtaTemplate):
         # self.putEvent()        
 
     #----------------------------------------------------------------------
-    def onOrder(self, order):
+    def on_order(self, order):
         """收到委托变化推送（必须由用户继承实现）"""
         pass
 
     #----------------------------------------------------------------------
-    def onTrade(self, trade):
+    def on_trade(self, trade):
         """收到成交推送（必须由用户继承实现）"""
-        print u'成交推送：%S' % trade
+        print(u'成交推送：%s' % trade)
         self.orderList.remove(trade.tradeID)
         # 发出状态更新事件
         # self.putEvent()
 
     #----------------------------------------------------------------------
-    def onStopOrder(self, so):
+    def on_stop_order(self, so):
         """停止单推送"""
-        print u'StopOrder回报,stopOrderID:%s, status:%s' % (so.stopOrderID, so.status)
-        if so.status == STOPORDER_CANCELLED or so.status == STOPORDER_TRIGGERED:
+        print(u'StopOrder回报,stopOrderID:%s, status:%s' % (so.stopOrderID, so.status))
+        if so.status == StopOrderStatus.CANCELLED or so.status == StopOrderStatus.TRIGGERED:
             self.orderList.remove(so.stopOrderID)
         pass

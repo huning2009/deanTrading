@@ -11,9 +11,17 @@ from __future__ import division
 import talib
 import numpy as np
 
-from vnpy.trader.vtObject import VtBarData
-from vnpy.trader.vtConstant import EMPTY_STRING
-from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate, ArrayManager, STOPORDER_TRIGGERED, STOPORDER_CANCELLED
+from vnpy.app.cta_strategy import (
+    CtaTemplate,
+    StopOrder,
+    TickData,
+    BarData,
+    TradeData,
+    OrderData,
+    BarGenerator,
+    ArrayManager,
+)
+from vnpy.app.cta_strategy.base import StopOrderStatus
 from myObject import MyBarGenerator
 
 
@@ -88,36 +96,34 @@ class BollingerBotStrategy(CtaTemplate):
         self.am = ArrayManager()
         
     #----------------------------------------------------------------------
-    def onInit(self):
+    def on_init(self):
         """初始化策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略初始化' %self.name)
+        self.write_log(u'策略初始化')
         
         # 载入历史数据，并采用回放计算的方式初始化策略数值
-        initData = self.loadBar(self.initDays)
-        for bar in initData:
-            self.onBar(bar)
+        self.load_bar(self.initDays)
 
-        self.putEvent()
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStart(self):
+    def on_start(self):
         """启动策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略启动' %self.name)
-        self.putEvent()
+        self.write_log(u'策略启动')
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStop(self):
+    def on_stop(self):
         """停止策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略停止' %self.name)
-        self.putEvent()
+        self.write_log(u'策略停止')
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onTick(self, tick):
+    def on_tick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
         self.bm.updateTick(tick)
 
     #----------------------------------------------------------------------
-    def onBar(self, bar):
+    def on_bar(self, bar):
         """收到Bar推送（必须由用户继承实现）"""
         self.bm.updateBar(bar)
     
@@ -131,12 +137,11 @@ class BollingerBotStrategy(CtaTemplate):
     def onFiveBar(self, bar):
         """收到5分钟K线"""        
         # 保存K线数据
-        self.am.updateBar(bar)
+        self.am.update_bar(bar)
         if not self.am.inited or not self.trading:
             return        
 
         # 撤销之前发出的尚未成交的委托（包括限价单和停止单）
-        print u'onFiveBar↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓,datetime:%s' % bar.datetime
         # 计算指标数值
         self.bollMid = self.am.sma(self.bollWindow)
         self.bollStd = self.am.std(self.bollWindow)
@@ -156,7 +161,7 @@ class BollingerBotStrategy(CtaTemplate):
                     self.longEntry = self.entryUp
                     self.buyOrderID = self.buy(self.longEntry, self.fixedSize, True)
                     self.buyOrderID = self.orderIDConvert(self.buyOrderID)
-                    print 'order None!!!buyOrderID is : %s ' % self.buyOrderID
+                    print('order None!!!buyOrderID is : %s ' % self.buyOrderID)
                     self.orderList.append(self.buyOrderID)
                     # 下平仓单
                     self.longExit = self.intraTradeHigh * (1 - self.trailingPrcnt/100)
@@ -164,7 +169,7 @@ class BollingerBotStrategy(CtaTemplate):
                     
                     self.sellOrderID = self.sell(self.longExit, abs(self.pos), True)
                     self.sellOrderID = self.orderIDConvert(self.sellOrderID)
-                    print 'order None!!!ellOrderID is : %s ' % self.sellOrderID
+                    print('order None!!!ellOrderID is : %s ' % self.sellOrderID)
                     self.orderList.append(self.sellOrderID)
             elif self.pos > 0:
                 self.intraTradeHigh = max(self.intraTradeHigh, bar.high)
@@ -174,18 +179,18 @@ class BollingerBotStrategy(CtaTemplate):
                 
                 self.sellOrderID = self.sell(self.longExit, abs(self.pos), True)
                 self.sellOrderID = self.orderIDConvert(self.sellOrderID)
-                print 'order None!!!sellOrderID is : %s ' % self.sellOrderID
+                print('order None!!!sellOrderID is : %s ' % self.sellOrderID)
                 self.orderList.append(self.sellOrderID)
 
         else:
             if self.buyOrderID in self.orderList:
                 self.intraTradeHigh = bar.high
-                self.cancelAll()
+                self.cancel_all()
                 # 下开仓单
                 if bar.close > self.maFilter and self.maFilter > self.maFilter1:
                     self.longEntry = self.entryUp
                     self.buyOrderID = self.buy(self.longEntry, self.fixedSize, True)
-                    print 'buyOrderID is : %s ' % self.buyOrderID
+                    print('buyOrderID is : %s ' % self.buyOrderID)
                     self.buyOrderID = self.orderIDConvert(self.buyOrderID)
                     self.orderList.append(self.buyOrderID)
                     # 下平仓单
@@ -194,19 +199,19 @@ class BollingerBotStrategy(CtaTemplate):
                     
                     self.sellOrderID = self.sell(self.longExit, abs(self.pos), True)
                     self.sellOrderID = self.orderIDConvert(self.sellOrderID)
-                    print 'sellOrderID is : %s ' % self.sellOrderID
+                    print('sellOrderID is : %s ' % self.sellOrderID)
                     self.orderList.append(self.sellOrderID)
             else:
                 if self.sellOrderID in self.orderList:                    
                     self.intraTradeHigh = max(self.intraTradeHigh, bar.high)
-                    self.cancelOrder(self.sellOrderID)
+                    self.cancel_order(self.sellOrderID)
                     # 下平仓单
                     self.longExit = self.intraTradeHigh * (1 - self.trailingPrcnt/100)
                     self.longExit = min(self.longExit, self.exitUp)
                     
                     self.sellOrderID = self.sell(self.longExit, abs(self.pos), True)
                     self.sellOrderID = self.orderIDConvert(self.sellOrderID)
-                    print 'sellOrderID is : %s ' % self.sellOrderID
+                    print('sellOrderID is : %s ' % self.sellOrderID)
                     self.orderList.append(self.sellOrderID)
                 else:
                     self.intraTradeHigh = bar.high
@@ -215,7 +220,7 @@ class BollingerBotStrategy(CtaTemplate):
                         self.longEntry = self.entryUp
                         self.buyOrderID = self.buy(self.longEntry, self.fixedSize, True)
                         self.buyOrderID = self.orderIDConvert(self.buyOrderID)
-                        print 'buyOrderID is : %s ' %self. buyOrderID
+                        print('buyOrderID is : %s ' %self. buyOrderID)
                         self.orderList.append(self.buyOrderID)
                         # 下平仓单
                         self.longExit = self.intraTradeHigh * (1 - self.trailingPrcnt/100)
@@ -223,7 +228,7 @@ class BollingerBotStrategy(CtaTemplate):
                         
                         self.sellOrderID = self.sell(self.longExit, abs(self.pos), True)
                         self.sellOrderID = self.orderIDConvert(self.sellOrderID)
-                        print 'sellOrderID is : %s ' % self.sellOrderID
+                        print('sellOrderID is : %s ' % self.sellOrderID)
                         self.orderList.append(self.sellOrderID)
 
         # 发出状态更新事件
@@ -237,12 +242,12 @@ class BollingerBotStrategy(CtaTemplate):
     #----------------------------------------------------------------------
     def onTrade(self, trade):
         # 发出状态更新事件
-        self.putEvent()
+        self.put_event()
 
     #----------------------------------------------------------------------
     def onStopOrder(self, so):
         """停止单推送"""
-        print u'StopOrder回报,stopOrderID:%s, status:%s' % (so.stopOrderID, so.status)
-        if so.status == STOPORDER_CANCELLED or so.status == STOPORDER_TRIGGERED:
+        print(u'StopOrder回报,stopOrderID:%s, status:%s' % (so.stopOrderID, so.status))
+        if so.status == StopOrderStatus.CANCELLED or so.status == StopOrderStatus.TRIGGERED:
             self.orderList.remove(so.stopOrderID)
         pass

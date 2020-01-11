@@ -13,9 +13,18 @@ import numpy as np
 from time import sleep
 import datetime as dt
 
-from vnpy.trader.vtObject import VtBarData
-from vnpy.trader.vtConstant import *
-from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate, ArrayManager, STOPORDER_TRIGGERED, STOPORDER_CANCELLED
+from vnpy.app.cta_strategy import (
+    CtaTemplate,
+    StopOrder,
+    TickData,
+    BarData,
+    TradeData,
+    OrderData,
+    BarGenerator,
+    ArrayManager,
+)
+from vnpy.app.cta_strategy.base import StopOrderStatus, Direction, Offset
+from vnpy.trader.constant import Status
 from myObject import MyBarGenerator
 
 
@@ -67,7 +76,7 @@ class HLBeatStrategy(CtaTemplate):
 
 
     # 参数列表，保存了参数的名称
-    paramList = ['name', 'className', 'author', 'vtSymbol', "turtleWindow", "ma1Window", "ma2Window", "xMinBar"]    
+    paramList = ['className', 'author', 'vtSymbol', "turtleWindow", "ma1Window", "ma2Window", "xMinBar"]    
 
     # 变量列表，保存了变量的名称
     varList = []
@@ -79,43 +88,41 @@ class HLBeatStrategy(CtaTemplate):
     def __init__(self, ctaEngine, setting):
         """Constructor"""
         super(HLBeatStrategy, self).__init__(ctaEngine, setting)
-        self.bm = MyBarGenerator(self.onBar, self.xMinBar, self.onFiveBar)
+        self.bm = MyBarGenerator(self.on_bar, self.xMinBar, self.onFiveBar)
         self.am = ArrayManager()
 
-        self.ctaEngine.eventEngine.register(EVENT_TIMER, self.onTimeFunc)
+        self.cta_engine.eventEngine.register(EVENT_TIMER, self.onTimeFunc)
         
     #----------------------------------------------------------------------
-    def onInit(self):
+    def on_init(self):
         """初始化策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略初始化' %self.name)
+        self.write_log(u'策略初始化')
         
         # 载入历史数据，并采用回放计算的方式初始化策略数值
-        initData = self.loadBar(self.initDays)
-        for bar in initData:
-            self.onBar(bar)
+        self.load_bar(self.initDays)
 
-        self.putEvent()
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStart(self):
+    def on_start(self):
         """启动策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略启动' %self.name)
-        self.putEvent()
+        self.write_log(u'策略启动')
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStop(self):
+    def on_stop(self):
         """停止策略（必须由用户继承实现）"""
 
-        self.writeCtaLog(u'%s策略停止' %self.name)
-        self.putEvent()
+        self.write_log(u'策略停止')
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onTick(self, tick):
+    def on_tick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
         self.bm.updateTick(tick)
 
     #----------------------------------------------------------------------
-    def onBar(self, bar):
+    def on_bar(self, bar):
         """收到Bar推送（必须由用户继承实现）"""
         self.bm.updateBar(bar)
 
@@ -132,33 +139,34 @@ class HLBeatStrategy(CtaTemplate):
                 self.longExit = self.exitDown
 
                 if self.sellOrderID:
-                    self.cancelOrder(self.sellOrderID)
+                    self.cancel_order
+                    (self.sellOrderID)
                 else:
-                    self.cancelAll()
+                    self.cancel_all()
 
                     self.sellOrderID =  self.sell(self.longExit, self.fixedSize, False)
-                    print u'None sellOrderID###多头平仓，单号：%s' % self.sellOrderID
+                    print(u'None sellOrderID###多头平仓，单号：%s' % self.sellOrderID)
                     self.sellOrderID = self.orderIDConvert(self.sellOrderID)
             else:
                 if self.longExit != self.exitDown:
                     self.longExit = self.exitDown
-                    self.cancelOrder(self.sellOrderID)
+                    self.cancel_order(self.sellOrderID)
 
         elif self.pos < 0:
             if not self.shortExit:
                 self.shortExit = self.exitUp
                 if self.coverOrderID:
-                    self.cancelOrder(self.coverOrderID)
+                    self.cancel_order(self.coverOrderID)
                 else:
-                    self.cancelAll()
+                    self.cancel_all()
 
                     self.coverOrderID =  self.cover(self.shortExit, self.fixedSize, False)
-                    print u'None coverOrderID###空头平仓，单号：%s' % self.coverOrderID
+                    print(u'None coverOrderID###空头平仓，单号：%s' % self.coverOrderID)
                     self.coverOrderID = self.orderIDConvert(self.coverOrderID)
             else:
                 if self.shortExit != self.exitUp:
                     self.shortExit = self.exitUp
-                    self.cancelOrder(self.coverOrderID)
+                    self.cancel_order(self.coverOrderID)
 
     
     #----------------------------------------------------------------------
@@ -171,15 +179,15 @@ class HLBeatStrategy(CtaTemplate):
     def onFiveBar(self, bar, lastTick):
         """收到5分钟K线"""        
         # 保存K线数据
-        self.am.updateBar(bar)
+        self.am.update_bar(bar)
         if not self.am.inited or not self.trading:
             return        
 
         # 计算指标数值
-        print u'highArray is ↓↓↓↓↓↓↓↓↓↓'
-        print self.am.high[-self.turtleWindow:]
-        print u'lowArray is ↓↓↓↓↓↓↓↓↓↓'
-        print self.am.low[-self.turtleWindow:]
+        print(u'highArray is ↓↓↓↓↓↓↓↓↓↓')
+        print(self.am.high[-self.turtleWindow:])
+        print(u'lowArray is ↓↓↓↓↓↓↓↓↓↓')
+        print(self.am.low[-self.turtleWindow:])
         self.entryUp = max(self.am.high[-self.turtleWindow:])
         self.entryDown = min(self.am.low[-self.turtleWindow:])
         # self.exitUp = min(self.am.low[-self.turtleWindow/2:])
@@ -194,7 +202,7 @@ class HLBeatStrategy(CtaTemplate):
             if self.pos == 0:
                 if not self.longEntry:
                     if (self.entryUp-self.entryDown)/self.entryUp < 0.006:
-                        print u'%s 高低点太窄，放弃交易！' % self.vtSymbol
+                        print(u'%s 高低点太窄，放弃交易！' % self.vt_symbol)
                         return
                     self.longEntry = self.entryDown
 
@@ -203,9 +211,9 @@ class HLBeatStrategy(CtaTemplate):
                     self.orderList.append(self.buyOrderID)
 
                 elif self.longEntry != self.entryDown:
-                    self.cancelOrder(self.buyOrderID)
+                    self.cancel_order(self.buyOrderID)
                     if (self.entryUp-self.entryDown)/self.entryUp < 0.006:
-                        print u'%s 高低点太窄，放弃交易！' % self.vtSymbol
+                        print(u'%s 高低点太窄，放弃交易！' % self.vt_symbol)
                         return
                     self.longEntry = self.entryDown
 
@@ -217,7 +225,7 @@ class HLBeatStrategy(CtaTemplate):
             if self.pos == 0:
                 if not self.shortEntry:
                     if (self.entryUp-self.entryDown)/self.entryUp < 0.006:
-                        print u'%s 高低点太窄，放弃交易！' % self.vtSymbol
+                        print(u'%s 高低点太窄，放弃交易！' % self.vt_symbol)
                         return
                     self.shortEntry = self.entryUp
 
@@ -226,9 +234,9 @@ class HLBeatStrategy(CtaTemplate):
                     self.orderList.append(self.shortOrderID)
 
                 elif self.shortEntry != self.entryUp:
-                    self.cancelOrder(self.shortOrderID)
+                    self.cancel_order(self.shortOrderID)
                     if (self.entryUp-self.entryDown)/self.entryUp < 0.006:
-                        print u'%s 高低点太窄，放弃交易！' % self.vtSymbol
+                        print(u'%s 高低点太窄，放弃交易！' % self.vt_symbol)
                         return
                     self.shortEntry = self.entryUp
 
@@ -240,7 +248,7 @@ class HLBeatStrategy(CtaTemplate):
         # self.putEvent()        
 
     #----------------------------------------------------------------------
-    def onOrder(self, order):
+    def on_order(self, order):
         """收到委托变化推送（必须由用户继承实现）"""
         # print u'委托变化推送：%s' % order.__dict__
         # if self.buyOrderID:
@@ -255,21 +263,21 @@ class HLBeatStrategy(CtaTemplate):
 
         if self.sellOrderID:
             if order.orderID == self.sellOrderID.split('.')[1]:
-                if order.status == STATUS_CANCELLED:
+                if order.status == Status.CANCELLED:
                     self.sellOrderID =  self.sell(self.longExit, self.fixedSize, False)
-                    print u'###多头平仓，单号：%s' % self.sellOrderID
+                    print(u'###多头平仓，单号：%s' % self.sellOrderID)
                     self.sellOrderID = self.orderIDConvert(self.sellOrderID)
         if self.coverOrderID:
             if order.orderID == self.coverOrderID.split('.')[1]:
-                if order.status == STATUS_CANCELLED:
+                if order.status == Status.CANCELLED:
                     self.coverOrderID =  self.cover(self.shortExit, self.fixedSize, False)
-                    print u'###空头平仓，单号：%s' % self.coverOrderID
+                    print(u'###空头平仓，单号：%s' % self.coverOrderID)
                     self.coverOrderID = self.orderIDConvert(self.coverOrderID)
 
         pass
 
     #----------------------------------------------------------------------
-    def onTrade(self, trade):
+    def on_trade(self, trade):
         """收到成交推送（必须由用户继承实现）"""
         # print u'成交推送：%s' % trade.__dict__
         if self.buyOrderID:
@@ -280,7 +288,7 @@ class HLBeatStrategy(CtaTemplate):
             if trade.tradeID == self.shortOrderID.split('.')[1]:
                 self.orderList.remove(self.shortOrderID)
 
-        if trade.offset in [OFFSET_CLOSE, OFFSET_CLOSETODAY, OFFSET_CLOSEYESTERDAY]:
+        if trade.offset in [Offset.CLOSE, Offset.CLOSETODAY, Offset.CLOSEYESTERDAY]:
             self.buyOrderID = None
             self.shortOrderID = None
             self.longExit = 0
@@ -291,7 +299,7 @@ class HLBeatStrategy(CtaTemplate):
         pass
 
     #----------------------------------------------------------------------
-    def onStopOrder(self, so):
+    def on_stop_order(self, so):
         """停止单推送"""
         # print u'StopOrder回报,stopOrderID:%s, status:%s' % (so.stopOrderID, so.status)
         # if so.status == STOPORDER_CANCELLED or so.status == STOPORDER_TRIGGERED:
@@ -310,7 +318,7 @@ class HLBeatStrategy(CtaTemplate):
                 self.timeFuncTurn = True
 
         if now_hour == 2 and now_minute == 32 and self.timeFuncTurn:
-            self.ctaEngine.saveSyncData(self)
+            self.cta_engine.saveSyncData(self)
             self.timeFuncTurn = False
 
         elif now_hour == 15 and now_minute == 10 and self.timeFuncTurn:
@@ -321,6 +329,6 @@ class HLBeatStrategy(CtaTemplate):
             self.longExit = 0
             self.shortExit = 0
             self.orderList = []
-            self.ctaEngine.saveSyncData(self)
+            self.cta_engine.saveSyncData(self)
             self.timeFuncTurn = False
 

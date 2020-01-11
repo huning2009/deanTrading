@@ -21,8 +21,7 @@ class EmaEmaStrategy(CtaTemplate):
     fixed_size = 1
 
     parameters = ["k_minute", "ema_period", "fixed_size"]
-    variables = ["boll_up", "boll_down", "cci_value", "atr_value",
-                 "intra_trade_high", "intra_trade_low", "long_stop", "short_stop"]
+    variables = []
 
     def __init__(self, cta_engine, strategy_name, vt_symbol, setting):
         """"""

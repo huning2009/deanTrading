@@ -4,6 +4,7 @@ import json
 import datetime as dtt
 import sqlite3
 import re
+import pathlib
 
 from vnpy.trader.setting import get_settings, SETTINGS
 from vnpy.trader.database.initialize import init
@@ -13,7 +14,8 @@ from vnpy.trader.constant import Direction, Exchange, Interval, Offset, Status, 
 
 #---------------------------------------------------------------------------------------------------------
 def login_joinquant():
-	config = open("../joinquant_config.json")
+	config_path = pathlib.Path(__file__).resolve().parent.parent.joinpath("joinquant_config.json")
+	config = open(config_path)
 	setting = json.load(config)
 	auth(setting["USERNAME"],setting["PASSWORD"])
 
@@ -128,9 +130,9 @@ def first_download_all_contract(db_manager, l, frequency="d"):
 #---------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------
-def get_data():
+def start_get_data():
 	# jqsymbol list
-	l = ['C1601.XDCE', 'C1701.XDCE', 'C1801.XDCE', 'C1901.XDCE', 'C2001.XDCE', 'C1605.XDCE', 'C1705.XDCE', 'C1805.XDCE', 'C1905.XDCE', 'C2005.XDCE', 'C1609.XDCE', 'C1709.XDCE', 'C1809.XDCE', 'C1909.XDCE', 'C2009.XDCE']
+	l = ['I1601.XDCE', 'I1701.XDCE', 'I1801.XDCE', 'I1901.XDCE', 'I2001.XDCE', 'I1605.XDCE', 'I1705.XDCE', 'I1805.XDCE', 'I1905.XDCE', 'I2005.XDCE', 'I1609.XDCE', 'I1709.XDCE', 'I1809.XDCE', 'I1909.XDCE', 'I2009.XDCE']
 	l2 = ['M1601.XDCE', 'M1701.XDCE', 'M1801.XDCE', 'M1901.XDCE', 'M2001.XDCE', 'M1605.XDCE', 'M1705.XDCE', 'M1805.XDCE', 'M1905.XDCE', 'M1609.XDCE', 'M1709.XDCE', 'M1809.XDCE', 'M1909.XDCE', ]
 	frequency="d"
 
@@ -145,7 +147,7 @@ def get_data():
 
 
 if __name__ == '__main__':
-	get_data()
+	start_get_data()
 # first_download_all_contract()
 #
 # price,contract = download_contract_ochl("C1909.XDCE", end_date=end_date, frequency="1m")

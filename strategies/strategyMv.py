@@ -13,9 +13,18 @@ import numpy as np
 from time import sleep
 import datetime as dt
 
-from vnpy.trader.vtObject import VtBarData
-from vnpy.trader.vtConstant import *
-from vnpy.trader.app.ctaStrategy.ctaTemplate import CtaTemplate, ArrayManager, STOPORDER_TRIGGERED, STOPORDER_CANCELLED
+from vnpy.app.cta_strategy import (
+    CtaTemplate,
+    StopOrder,
+    TickData,
+    BarData,
+    TradeData,
+    OrderData,
+    BarGenerator,
+    ArrayManager,
+)
+from vnpy.app.cta_strategy.base import StopOrderStatus, Direction, Offset
+from vnpy.trader.constant import Status
 from myObject import MyBarGenerator
 
 
@@ -50,7 +59,7 @@ class MvStrategy(CtaTemplate):
 
 
     # 参数列表，保存了参数的名称
-    paramList = ['name', 'className', 'author', 'vtSymbol']    
+    paramList = ['className', 'author', 'vtSymbol']    
 
     # 变量列表，保存了变量的名称
     varList = []
@@ -69,29 +78,29 @@ class MvStrategy(CtaTemplate):
         # self.ctaEngine.eventEngine.register(EVENT_TIMER, self.onTimeFunc)
         
     #----------------------------------------------------------------------
-    def onInit(self):
+    def on_init(self):
         """初始化策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略初始化' %self.name)
+        self.write_log(u'策略初始化')
         
         # 载入历史数据，并采用回放计算的方式初始化策略数值
         # initData = self.loadBar(self.initDays)
         # for bar in initData:
         #     self.onBar(bar)
 
-        self.putEvent()
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStart(self):
+    def on_start(self):
         """启动策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略启动' %self.name)
-        self.putEvent()
+        self.write_log(u'策略启动')
+        self.put_event()
 
     #----------------------------------------------------------------------
-    def onStop(self):
+    def on_stop(self):
         """停止策略（必须由用户继承实现）"""
 
-        self.writeCtaLog(u'%s策略停止' %self.name)
-        self.putEvent()
+        self.write_log(u'策略停止')
+        self.put_event()
 
     #----------------------------------------------------------------------
     def updateMv(self, tick):
@@ -142,7 +151,7 @@ class MvStrategy(CtaTemplate):
                 return False
 
     #----------------------------------------------------------------------
-    def onTick(self, tick):
+    def on_tick(self, tick):
         """收到行情TICK推送（必须由用户继承实现）"""
         # self.bm.updateTick(tick)
         if not self.updateMv(tick):
@@ -167,14 +176,14 @@ class MvStrategy(CtaTemplate):
                 if i > 0:
                     slmvN += 1 
             if slmvN > 2:
-                print '%s: buy 1 at %s' % (dt.datetime.now(), tick.askPrice1)
+                print('%s: buy 1 at %s' % (dt.datetime.now(), tick.askPrice1))
         if ssmv < min(self.sumShortMv[:-1])*2:
             ssmvN = 0
             for i in self.short_Mv:
                 if i < 0:
                     ssmvN += 1
             if ssmvN > 2:
-                print '%s: short 1 at %s' % (dt.datetime.now(), tick.bidPrice1)
+                print('%s: short 1 at %s' % (dt.datetime.now(), tick.bidPrice1))
 
         # print dt.datetime.now()
         # print self.long_Mv
@@ -183,7 +192,7 @@ class MvStrategy(CtaTemplate):
         # print self.sumShortMv
 
     #----------------------------------------------------------------------
-    def onBar(self, bar):
+    def on_bar(self, bar):
         """收到Bar推送（必须由用户继承实现）"""
         # self.bm.updateBar(bar)
 
@@ -309,7 +318,7 @@ class MvStrategy(CtaTemplate):
         pass    
 
     #----------------------------------------------------------------------
-    def onOrder(self, order):
+    def on_order(self, order):
         """收到委托变化推送（必须由用户继承实现）"""
         # print u'委托变化推送：%s' % order.__dict__
         # if self.buyOrderID:
@@ -338,7 +347,7 @@ class MvStrategy(CtaTemplate):
         pass
 
     #----------------------------------------------------------------------
-    def onTrade(self, trade):
+    def on_trade(self, trade):
         """收到成交推送（必须由用户继承实现）"""
         # print u'成交推送：%s' % trade.__dict__
         # if self.buyOrderID:
@@ -360,7 +369,7 @@ class MvStrategy(CtaTemplate):
         pass
 
     #----------------------------------------------------------------------
-    def onStopOrder(self, so):
+    def on_stop_order(self, so):
         """停止单推送"""
         # print u'StopOrder回报,stopOrderID:%s, status:%s' % (so.stopOrderID, so.status)
         # if so.status == STOPORDER_CANCELLED or so.status == STOPORDER_TRIGGERED:
