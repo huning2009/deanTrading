@@ -86,7 +86,7 @@ def insert_to_vnpydb(db_manager, price_df, jqsymbol, frequency='d'):
 		interval=Interval.DAILY
 	else:
 		# datetimestr = "%Y/%m/%d %H:%M:%S"
-		interval=Interval[frequency]
+		interval=Interval.MINUTE
 
 	if "DCE" in jqsymbol:
 		exchange = Exchange.DCE
@@ -132,9 +132,10 @@ def first_download_all_contract(db_manager, l, frequency="d"):
 #---------------------------------------------------------------------------------------------------------
 def start_get_data():
 	# jqsymbol list
-	l = ['I1601.XDCE', 'I1701.XDCE', 'I1801.XDCE', 'I1901.XDCE', 'I2001.XDCE', 'I1605.XDCE', 'I1705.XDCE', 'I1805.XDCE', 'I1905.XDCE', 'I2005.XDCE', 'I1609.XDCE', 'I1709.XDCE', 'I1809.XDCE', 'I1909.XDCE', 'I2009.XDCE']
+	l3 = [ 'I1709.XDCE', 'I1809.XDCE', 'I1909.XDCE', 'I2009.XDCE']
+	l = ['P1601.XDCE', 'P1701.XDCE', 'P1801.XDCE', 'P1901.XDCE', 'P2001.XDCE', 'P1605.XDCE', 'P1705.XDCE', 'P1805.XDCE', 'P1905.XDCE', 'P2005.XDCE', 'P1609.XDCE', 'P1709.XDCE', 'P1809.XDCE', 'P1909.XDCE', 'P2009.XDCE']
 	l2 = ['M1601.XDCE', 'M1701.XDCE', 'M1801.XDCE', 'M1901.XDCE', 'M2001.XDCE', 'M1605.XDCE', 'M1705.XDCE', 'M1805.XDCE', 'M1905.XDCE', 'M1609.XDCE', 'M1709.XDCE', 'M1809.XDCE', 'M1909.XDCE', ]
-	frequency="d"
+	frequency="1m"
 
 	login_joinquant()
 	database_manager = get_database_manager()

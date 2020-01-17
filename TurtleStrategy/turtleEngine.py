@@ -79,7 +79,6 @@ class BacktestingEngine(object):
                 VARIABLE_COMMISSION_DICT[d['vtSymbol']] = float(d['variableCommission'])
                 FIXED_COMMISSION_DICT[d['vtSymbol']] = float(d['fixedCommission'])
                 SLIPPAGE_DICT[d['vtSymbol']] = float(d['slippage'])
-            
         self.portfolio = TurtlePortfolio(self)
         self.portfolio.init(portfolioValue, self.vtSymbolList, SIZE_DICT)
         
@@ -90,9 +89,10 @@ class BacktestingEngine(object):
     def loadData(self):
         """加载数据"""
         for vtSymbol in self.vtSymbolList:
-            seq = self.db_manager.load_bar_data(vtSymbol, Exchange.DCE, Interval.DAILY, self.startDt, self.endDt)
+            seq = self.db_manager.load_bar_data(vtSymbol.split('.')[0], Exchange.DCE, Interval.DAILY, self.startDt, self.endDt)
             
             for bar in seq:    
+                bar.vtSymbol = f"{bar.symbol}.{bar.exchange.value}"
                 barDict = self.dataDict.setdefault(bar.datetime, OrderedDict())
                 barDict[bar.symbol] = bar
             
@@ -104,7 +104,6 @@ class BacktestingEngine(object):
     def runBacktesting(self):
         """运行回测"""
         self.output(u'开始回放K线数据')
-        
         for dt, barDict in self.dataDict.items():
             self.currentDt = dt
             
@@ -120,14 +119,12 @@ class BacktestingEngine(object):
             for bar in barDict.values():
                 self.portfolio.onBar(bar)
                 self.result.updateBar(bar)
-        
         self.output(u'K线数据回放结束')
     
     #----------------------------------------------------------------------
     def calculateResult(self, annualDays=240):
         """计算结果"""
         self.output(u'开始统计回测结果')
-        
         for result in self.resultList:
             result.calculatePnl()
         
@@ -370,7 +367,7 @@ class DailyResult(object):
     #----------------------------------------------------------------------
     def updateBar(self, bar):
         """更新K线"""
-        self.closeDict[bar.symbol] = bar.close_price
+        self.closeDict[bar.vtSymbol] = bar.close_price
     
     #----------------------------------------------------------------------
     def updatePreviousClose(self, d):

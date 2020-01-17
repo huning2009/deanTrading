@@ -1,3 +1,5 @@
 vtSymbol,size,priceTick,variableCommission,fixedCommission,slippage
-C1909,10,1,0,0,0
-C1905,10,1,0,0,0
+C1909.DCE,10,1,0,0,0
+C1905.DCE,10,1,0,0,0
+I1909.DCE,100,0.5,0,0,0
+I1905.DCE,100,0.5,0,0,0
