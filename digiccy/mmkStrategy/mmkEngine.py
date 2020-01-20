@@ -419,7 +419,7 @@ class MmkEngine(object):
             # 对于IB接口订阅行情时所需的货币和产品类型，从策略属性中获取
             req.currency = strategy.currency
             req.productClass = strategy.productClass
-            print 'mmkEngine subscribeMarketData:%s' % req.symbol
+            print('mmkEngine subscribeMarketData:%s' % req.symbol)
             self.mainEngine.subscribe(req, contract.gatewayName)
         else:
             self.writeMmkLog(u'%s的交易合约%s无法找到' %(strategy.name, strategy.vtSymbol))
@@ -582,7 +582,7 @@ class MmkEngine(object):
             
             # 发出日志
             content = u'策略%s触发异常已停止, error:%s' % (strategy.name, e)
-            print traceback.format_exc()
+            print(traceback.format_exc())
             self.writeMmkLog(content)
             
     #----------------------------------------------------------------------

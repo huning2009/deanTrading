@@ -29,11 +29,10 @@ statusMapReverse['canceled'] = STATUS_CANCELLED
 #----------------------------------------------------------------------
 def print_dict(d):
     """"""
-    print '-' * 30
     l = d.keys()
     l.sort()
     for k in l:
-        print '%s:%s' %(k, d[k])
+        print('%s:%s' %(k, d[k]))
     
 
 ########################################################################
@@ -294,7 +293,7 @@ class HuobiDataApi(DataApi):
     #----------------------------------------------------------------------
     def onTradeDetail(self, data):
         """成交细节推送"""
-        print data
+        print(data)
     
     #----------------------------------------------------------------------
     def onMarketDetail(self, data):
@@ -424,14 +423,14 @@ class HuobiTradeApi(TradeApi):
     def cancelOrder(self, cancelOrderReq):
         """撤单"""
         localid = cancelOrderReq.orderID
-        print 'HuobiGateway cancelOrder:%s' % localid
+        print('HuobiGateway cancelOrder:%s' % localid)
         orderID = self.localOrderDict.get(localid, None)
         
         if orderID:
             super(HuobiTradeApi, self).cancelOrder(orderID)
             if localid in self.cancelReqDict:
                 del self.cancelReqDict[localid]
-            print 'HuobiGateway cancelOrder localid:%s' % orderID
+            print('HuobiGateway cancelOrder localid:%s' % orderID)
         else:
             self.cancelReqDict[localid] = cancelOrderReq
         
