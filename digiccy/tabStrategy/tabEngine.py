@@ -43,7 +43,7 @@ class TabDataEngine(object):
     def loadSetting(self):
         """加载配置"""
         try:
-            print 'tab setting path:%s' % self.settingFilePath
+            print ('tab setting path:%s' % self.settingFilePath)
             with open(self.settingFilePath) as f:
                 l = json.load(f)
                 

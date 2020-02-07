@@ -52,7 +52,7 @@ from huobiApi import DataApi
 
 
 api = DataApi()
-api.connect("wss://api.huobipro.com/ws", "127.0.0.1", "1080")
+api.connect("wss://api.huobipro.com/ws", "127.0.0.1", "1081")
 #api.subscribeMarketDepth('ethusdt')
 #api.subscribeTradeDetail('ethusdt')
 api.subscribeMarketDetail('ethusdt')

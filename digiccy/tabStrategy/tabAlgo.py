@@ -201,15 +201,15 @@ class TabSniperAlgo(TabAlgoTemplate):
         if spread.askPrice <= self.buyPrice:
             # self.quoteActiveLeg(self.SPREAD_LONG)
             self.writeLog(u'buy signal')
-            print 'askPrice=%s, bidPrice=%s' % (spread.askPrice, spread.bidPrice)
-            print 'askVolume=%s, bidVolume=%s' % (spread.askVolume, spread.bidVolume)
+            print ('askPrice=%s, bidPrice=%s' % (spread.askPrice, spread.bidPrice))
+            print ('askVolume=%s, bidVolume=%s' % (spread.askVolume, spread.bidVolume))
         
         # 卖出
         elif spread.bidPrice >= self.sellPrice:
             # self.quoteActiveLeg(self.SPREAD_SHORT)
             self.writeLog(u'sell signal')
-            print 'askPrice=%s, bidPrice=%s' % (spread.askPrice, spread.bidPrice)
-            print 'askVolume=%s, bidVolume=%s' % (spread.askVolume, spread.bidVolume)
+            print ('askPrice=%s, bidPrice=%s' % (spread.askPrice, spread.bidPrice))
+            print ('askVolume=%s, bidVolume=%s' % (spread.askVolume, spread.bidVolume))
 
     #----------------------------------------------------------------------
     def updateSpreadPos(self, spread):
