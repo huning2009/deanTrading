@@ -6,8 +6,8 @@ from binanceApi import TradeApi
 def testTrade():
     """测试交易"""
 
-    accessKey = 'Cc930lEZ8ito3V8kzfPp3xEMtu2iYvd3WZOLz4QtbYu0bxCsWkE4iotURzJ4I8Zj'
-    secretKey = 'tn5JhGSXabQ3F44uIkVxPy5ZSpAcSY8CNPdfuJUm033kQLdrCJ1fn7iH9lVUFdqF'
+    accessKey = ''
+    secretKey = ''
     
     # 创建API对象并初始化
     api = TradeApi()
