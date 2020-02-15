@@ -47,7 +47,7 @@ event_engine.start()
 gateway = BinanceGateway(event_engine)
 gateway.connect(setting)
 
-req = SubscribeRequest("ethusdt", Exchange.HUOBI)
+req = SubscribeRequest("ETHUSDT", Exchange.HUOBI)
 gateway.subscribe(req)
 
 while True:

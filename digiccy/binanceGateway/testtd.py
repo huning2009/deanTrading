@@ -1,18 +1,13 @@
 # encoding: utf-8
 import time
-from binanceApi import *
-from vnpy.trader.vtFunction import getJsonPath, getTempPath
+from binanceApi import TradeApi
 
 #----------------------------------------------------------------------
 def testTrade():
     """测试交易"""
-    filePath = getJsonPath('BINANCE_connect.json', __file__)
-    f = file(filePath)
-    setting = json.load(f)
 
-
-    accessKey = str(setting['accessKey'])
-    secretKey = str(setting['secretKey'])
+    accessKey = 'Cc930lEZ8ito3V8kzfPp3xEMtu2iYvd3WZOLz4QtbYu0bxCsWkE4iotURzJ4I8Zj'
+    secretKey = 'tn5JhGSXabQ3F44uIkVxPy5ZSpAcSY8CNPdfuJUm033kQLdrCJ1fn7iH9lVUFdqF'
     
     # 创建API对象并初始化
     api = TradeApi()
@@ -21,22 +16,23 @@ def testTrade():
     api.start()
     
     # 查询
-    # api.getListenKey()
+    api.getListenKey()
     # res = api.getSymbols()
     # api.getTimestamp()
     # api.placeTestOrder('ETHUSDT', 'BUY', 1, 200)
     # res = api.getAccount()
     # res = api.getMyTrades('ETHUSDT')
-    for i in range(50000):
-        # res = api.getCurrentOpenOrders()
-        res = api.getOrder('ETHUSDT', origClientOrderId='BINANCE_152528_200067')
-        time.sleep(5)
+    # for i in range(50000):
+    #     # res = api.getCurrentOpenOrders()
+    #     res = api.getOrder('ETHUSDT', origClientOrderId='BINANCE_152528_200067')
+    #     time.sleep(5)
     
     
     # accountid = ''
     # symbol = 'aaceth'
     
-    #api.getAccounts()
+    api.getSymbols()
+    # api.getAccounts()
     #api.getAccountBalance(accountid)
     #api.getOrders(symbol, 'pre-submitted,submitted,partial-filled,partial-canceled,filled,canceled')
     #api.getOrders(symbol, 'filled')

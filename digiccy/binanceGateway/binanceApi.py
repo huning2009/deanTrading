@@ -19,7 +19,6 @@ from ast import literal_eval as eval
 import json
 import zlib
 from websocket import create_connection, _exceptions
-from vnpy.trader.vtGateway import *
 
 
 # 常量定义
@@ -263,7 +262,7 @@ class TradeApi(object):
             #     self.onError(msg, reqid)
         else:
             if 'Order does not exist' in data:
-                print 'Order does not exist:%s' % data
+                print ('Order does not exist:%s' % data)
             else:
                 self.onError(data, reqid)
     
@@ -414,7 +413,7 @@ class TradeApi(object):
             params['orderId'] = orderId
         else:
             params['origClientOrderId'] = origClientOrderId
-        print 'api getOrder params:%s' % params
+        print ('api getOrder params:%s' % params)
         func = self.apiGet
         callback = self.onGetOrder
     
@@ -522,7 +521,7 @@ class TradeApi(object):
         func = self.apiDel
         callback = self.onCancelOrder
 
-        print 'binanceApi cancelOrder:%s' % orderId
+        print ('binanceApi cancelOrder:%s' % orderId)
         return self.addReq(path, params, func, callback, True)         
     
     #----------------------------------------------------------------------
@@ -543,86 +542,86 @@ class TradeApi(object):
     def onGetListenKey(self, msg, reqid):
         """错误回调"""
         self.listenKey = msg['listenKey']
-        print msg, reqid
+        print (msg, reqid)
     #----------------------------------------------------------------------
     def onError(self, msg, reqid):
         """错误回调"""
-        print 'Order does not exist' in msg
-        print msg, reqid
+        print ('Order does not exist' in msg)
+        print (msg, reqid)
         
     #----------------------------------------------------------------------
     def onGetSymbols(self, data, reqid):
         """查询代码回调"""
-        print reqid, data 
+        print (reqid, data) 
         for d in data:
-            print d
-        print data['symbols'][0]
+            print (d)
+        print (data['symbols'][0])
 
     
     #----------------------------------------------------------------------
     def onGetCurrencys(self, data, reqid):
         """查询货币回调"""
-        print reqid, data        
+        print (reqid, data)        
     
     #----------------------------------------------------------------------
     def onGetTimestamp(self, data, reqid):
         """查询时间回调"""
-        print reqid, data    
+        print (reqid, data)    
         
     #----------------------------------------------------------------------
     def onGetMarketDepth(self, data, reqid):
         """查询时间回调"""
-        print reqid, data  
+        print (reqid, data)  
     #----------------------------------------------------------------------
     def onGetAccount(self, data, reqid):
         """查询账户回调"""
-        print data
+        print (data)
         # print u'commission and balance query successfully, taker:%s, maker:"%s' % (data['takerCommission'], data['takerCommission'])
         # self.onGetAccountBalance(data, reqid) 
     
     #----------------------------------------------------------------------
     def onGetAccountBalance(self, data, reqid):
         """查询余额回调"""
-        print data
+        print (data)
         
     #----------------------------------------------------------------------
     def onGetOrders(self, data, reqid):
         """查询委托回调"""
-        print reqid, data    
+        print (reqid, data)    
         
     #----------------------------------------------------------------------
     def onGetCurrentOpenOrders(self, data, reqid):
         """查询委托回调"""
-        print reqid, data
+        print (reqid, data)
     #----------------------------------------------------------------------
     def onGetMyTrades(self, data, reqid):
         """查询成交回调"""
-        print reqid, data      
+        print (reqid, data)     
         
     #----------------------------------------------------------------------
     def onGetOrder(self, data, reqid):
         """查询单一委托回调"""
-        print reqid, data    
+        print (reqid, data)    
         
     #----------------------------------------------------------------------
     def onGetMatchResult(self, data, reqid):
         """查询单一成交回调"""
-        print reqid, data    
+        print (reqid, data)    
         
     #----------------------------------------------------------------------
     def onPlaceOrder(self, data, reqid):
         """委托回调"""
-        print reqid, data
+        print (reqid, data)
     
     #----------------------------------------------------------------------
     def onCancelOrder(self, data, reqid):
         """撤单回调"""
-        print reqid, data          
+        print (reqid, data)          
         
     #----------------------------------------------------------------------
     def onBatchCancel(self, data, reqid):
         """批量撤单回调"""
-        print reqid, data      
+        print (reqid, data)      
 
 
 ########################################################################
@@ -721,7 +720,7 @@ class DataApi(object):
             url = self.endpoint + '/stream?streams=%s/%s@ticker' % (self.listenKey, symbol.lower())
         else:
             url = self.endpoint + '/ws/%s@ticker' % symbol.lower()
-        print 'subscribeSymbolTicker:%s' % url
+        print ('subscribeSymbolTicker:%s' % url)
         self.connectUrl(url)
     #----------------------------------------------------------------------
     def subscribeMarketDepth(self, symbol):
@@ -744,7 +743,7 @@ class DataApi(object):
     #----------------------------------------------------------------------
     def onError(self, msg):
         """错误推送"""
-        print msg
+        print (msg)
         
     #----------------------------------------------------------------------
     def onData(self, data):
@@ -781,10 +780,10 @@ class DataApi(object):
 
                 elif data['data']['e'] == 'outboundAccountInfo':
                     # 持仓推送
-                    print 'outboundAccountInfo!!!!!!!!!!!'
+                    print ('outboundAccountInfo!!!!!!!!!!!')
                     self.onAccountBalance(data['data'])
                 else:
-                    print 'listenKey new stream:%s' % data
+                    print ('listenKey new stream:%s' % data)
             # 深度行情
             elif 'depth' in data['stream']:
                 data1 = data['data']
@@ -805,46 +804,46 @@ class DataApi(object):
                 self.onMarketDetail(data1)
             # 其他频道
             else:
-                print 'ondata new stream:%s' % data
+                print ('ondata new stream:%s' % data)
         except Exception as e:
-            print 'onData error:%s, data:%s' % (e, data)
-            print traceback.format_exc()
+            print ('onData error:%s, data:%s' % (e, data))
+            print (traceback.format_exc())
 
     #----------------------------------------------------------------------
     def onMyOrder(self, data):
         """symbol tick推送 """
-        print 'onMyOrder'
-        print data
+        print ('onMyOrder')
+        print (data)
     #----------------------------------------------------------------------
     def onSymbolTicker(self, data):
         """symbol tick推送 """
-        print 'onSymbolTicker'
-        print data
+        print ('onSymbolTicker')
+        print (data)
     #----------------------------------------------------------------------
     def onMarketTrade(self, data):
         """onMarketTrade """
-        print 'on MarketTrade'
-        print data
+        print ('on MarketTrade')
+        print (data)
     #----------------------------------------------------------------------
     def onMarketDepth(self, data):
         """行情深度推送 """
-        print 'onMarketDepth'
-        print data
+        print ('onMarketDepth')
+        print (data)
     
     #----------------------------------------------------------------------
     def onMyTrade(self, data):
         """成交细节推送"""
-        print data
+        print (data)
     
     #----------------------------------------------------------------------
     def onAccountBalance(self, data):
-        print data
+        print (data)
     #----------------------------------------------------------------------
     def onMarketDetail(self, data):
         """市场细节推送"""
         if data['t'] > self.tradeID:
-            print data['t']
+            print (data['t'])
         else:
-            print 'tradeID:%s, dataID:%s' % (self.tradeID, data['t'])
+            print ('tradeID:%s, dataID:%s' % (self.tradeID, data['t']))
 
         self.tradeID = data['t']

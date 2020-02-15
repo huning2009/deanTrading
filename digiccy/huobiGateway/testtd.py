@@ -5,8 +5,8 @@ from huobiApi import TradeApi
 #----------------------------------------------------------------------
 def testTrade():
     """测试交易"""
-    accessKey = ''
-    secretKey = ''
+    accessKey = '9581213e-161bd613-c0838f6c-ed2htwf5tf'
+    secretKey = '21d2861d-20a27138-a892cb01-ad8c0'
     
     # 创建API对象并初始化
     api = TradeApi()
