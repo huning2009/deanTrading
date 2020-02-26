@@ -21,6 +21,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         offset: Offset,
         price: float,
         volume: float,
+        lot_size: float,
         payup: int,
         interval: int,
         lock: bool
@@ -28,7 +29,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         """"""
         super().__init__(
             algo_engine, algoid, spread,
-            direction, offset, price, volume,
+            direction, offset, price, volume, lot_size,
             payup, interval, lock
         )
 
@@ -87,11 +88,9 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         spread_volume_left = self.target - self.traded
 
         if self.direction == Direction.LONG:
-            spread_order_volume = self.spread.ask_volume
-            spread_order_volume = min(spread_order_volume, spread_volume_left)
+            spread_order_volume = min(self.lot_size, spread_volume_left)
         else:
-            spread_order_volume = -self.spread.bid_volume
-            spread_order_volume = max(spread_order_volume, spread_volume_left)
+            spread_order_volume = max(-self.lot_size, spread_volume_left)
 
         # Calculate active leg order volume
         leg_order_volume = self.spread.calculate_leg_volume(
@@ -141,13 +140,13 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
 
         if leg_volume > 0:
             if vt_symbol == self.spread.active_leg.vt_symbol:
-                price = leg_tick.bid_price_1 + leg_contract.pricetick * self.payup
+                price = leg_tick.bid_price_1
             else:
                 price = leg_tick.ask_price_1 + leg_contract.pricetick * self.payup
             self.send_long_order(leg.vt_symbol, price, abs(leg_volume))
         elif leg_volume < 0:
             if vt_symbol == self.spread.active_leg.vt_symbol:
-                price = leg_tick.ask_price_1 - leg_contract.pricetick * self.payup
+                price = leg_tick.ask_price_1
             else:
                 price = leg_tick.bid_price_1 - leg_contract.pricetick * self.payup
             self.send_short_order(leg.vt_symbol, price, abs(leg_volume))

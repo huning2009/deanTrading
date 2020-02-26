@@ -1,8 +1,6 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-
-df = pd.DataFrame([[1,2,2],[5,6,7]])
-df.index = [1,2]
-df.columns = ['a', 'b', 'c']
-df['c'].plot()
-plt.show()
+a = 'asd'
+d = dict()
+d['hu'] = 999
+import datetime as dtt
+msg = "%s %s : %s" % (dtt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),a,d)
+print(msg)

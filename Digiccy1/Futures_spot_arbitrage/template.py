@@ -27,6 +27,7 @@ class SpreadAlgoTemplate:
         offset: Offset,
         price: float,
         volume: float,
+        lot_size: float,
         payup: int,
         interval: int,
         lock: bool,
@@ -42,6 +43,7 @@ class SpreadAlgoTemplate:
         self.direction: Direction = direction
         self.price: float = price
         self.volume: float = volume
+        self.lot_size: float = lot_size
         self.payup: int = payup
         self.interval = interval
         self.lock = lock
@@ -486,6 +488,7 @@ class SpreadStrategyTemplate:
         direction: Direction,
         price: float,
         volume: float,
+        lot_size: float,
         payup: int,
         interval: int,
         lock: bool,
@@ -502,6 +505,7 @@ class SpreadStrategyTemplate:
             offset,
             price,
             volume,
+            lot_size,
             payup,
             interval,
             lock
@@ -515,6 +519,7 @@ class SpreadStrategyTemplate:
         self,
         price: float,
         volume: float,
+        lot_size: float,
         payup: int,
         interval: int,
         lock: bool = False,
@@ -522,7 +527,7 @@ class SpreadStrategyTemplate:
     ) -> str:
         """"""
         return self.start_algo(
-            Direction.LONG, price, volume,
+            Direction.LONG, price, volume, lot_size,
             payup, interval, lock, offset
         )
 
@@ -530,6 +535,7 @@ class SpreadStrategyTemplate:
         self,
         price: float,
         volume: float,
+        lot_size: float,
         payup: int,
         interval: int,
         lock: bool = False,
@@ -537,7 +543,7 @@ class SpreadStrategyTemplate:
     ) -> str:
         """"""
         return self.start_algo(
-            Direction.SHORT, price, volume,
+            Direction.SHORT, price, volume, lot_size,
             payup, interval, lock, offset
         )
 

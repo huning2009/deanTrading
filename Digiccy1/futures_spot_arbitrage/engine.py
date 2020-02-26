@@ -102,6 +102,7 @@ class SpreadDataEngine:
         self.legs: Dict[str, LegData] = {}          # vt_symbol: leg
         self.spreads: Dict[str, SpreadData] = {}    # name: spread
         self.symbol_spread_map: Dict[str, List[SpreadData]] = defaultdict(list)
+        self.timer_count = 0
 
     def start(self):
         """"""
@@ -162,7 +163,19 @@ class SpreadDataEngine:
         self.event_engine.register(EVENT_TRADE, self.process_trade_event)
         self.event_engine.register(EVENT_POSITION, self.process_position_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
+        self.event_engine.register(EVENT_TIMER, self.process_timer_event)
 
+    def process_timer_event(self, event: Event):
+        self.timer_count += 1
+        if self.timer_count > 1800:
+            self.timer_count = 0
+            for spread in self.spreads.values():
+                d = dict()
+                for leg in spread.legs.values():
+                    d[leg.vt_symbol] = leg.last_price
+
+                timer_msg = "TIMER CHECK %s %s: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), spread.name, d)
+                self.write_log(timer_msg)
     def process_tick_event(self, event: Event) -> None:
         """"""
         tick = event.data
@@ -445,6 +458,7 @@ class SpreadAlgoEngine:
         offset: Offset,
         price: float,
         volume: float,
+        lot_size: float,
         payup: int,
         interval: int,
         lock: bool
@@ -469,6 +483,7 @@ class SpreadAlgoEngine:
             offset,
             price,
             volume,
+            lot_size,
             payup,
             interval,
             lock
@@ -927,6 +942,7 @@ class SpreadStrategyEngine:
         offset: Offset,
         price: float,
         volume: float,
+        lot_size: float,
         payup: int,
         interval: int,
         lock: bool
@@ -938,6 +954,7 @@ class SpreadStrategyEngine:
             offset,
             price,
             volume,
+            lot_size,
             payup,
             interval,
             lock

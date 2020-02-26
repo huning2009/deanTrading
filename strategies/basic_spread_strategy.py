@@ -17,6 +17,7 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
     cover_price = 0.0
     short_price = 0.0
     max_pos = 0.0
+    lot_size = 0.0
     payup = 10
     interval = 5
 
@@ -32,6 +33,7 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
         "cover_price",
         "short_price",
         "max_pos",
+        "lot_size",
         "payup",
         "interval"
     ]
@@ -92,12 +94,12 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
             # Start open algos
             if not self.buy_algoid:
                 self.buy_algoid = self.start_long_algo(
-                    self.buy_price, self.max_pos, self.payup, self.interval
+                    self.buy_price, self.max_pos, self.lot_size, self.payup, self.interval
                 )
 
             if not self.short_algoid:
                 self.short_algoid = self.start_short_algo(
-                    self.short_price, self.max_pos, self.payup, self.interval
+                    self.short_price, self.max_pos, self.lot_size, self.payup, self.interval
                 )
 
         # Long position
@@ -107,7 +109,7 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
             # Start sell close algo
             if not self.sell_algoid:
                 self.sell_algoid = self.start_short_algo(
-                    self.sell_price, self.spread_pos, self.payup, self.interval
+                    self.sell_price, self.spread_pos, self.lot_size, self.payup, self.interval
                 )
 
         # Short position
@@ -118,7 +120,7 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
             if not self.cover_algoid:
                 self.cover_algoid = self.start_long_algo(
                     self.cover_price, abs(
-                        self.spread_pos), self.payup, self.interval
+                        self.spread_pos), self.lot_size, self.payup, self.interval
                 )
 
         self.put_event()
