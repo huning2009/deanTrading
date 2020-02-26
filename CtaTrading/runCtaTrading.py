@@ -1,4 +1,5 @@
-# import os, sys, pathlib
+import sys
+print(sys.path)
 # deanTrading_path = pathlib.Path(__file__).resolve().parent.parent
 # sys.path.append(str(deanTrading_path))
 

@@ -48,40 +48,35 @@ def process_event(event:Event):
         print(event.data.__dict__)
 
 event_engine = EventEngine()
-event_engine.register(EVENT_TICK, process_event)
-# event_engine.register(EVENT_CONTRACT, process_event)
-event_engine.register(EVENT_ACCOUNT, process_event)
-event_engine.register(EVENT_ACCOUNT_MARGIN, process_event)
 event_engine.register(EVENT_LOG, process_event)
-event_engine.register(EVENT_BORROW_MONEY, process_event)
-event_engine.register(EVENT_REPAY_MONEY, process_event)
 event_engine.start()
 
 gateway = BinanceGateway(event_engine)
 gateway.connect(setting)
 
-# gateway_futures = BinanceFuturesGateway(event_engine)
-# gateway_futures.connect(setting)
+gateway_futures = BinanceFuturesGateway(event_engine)
+gateway_futures.connect(setting)
 sleep(5)
-# gateway.repay_money("LINK", 1)
 
-# req = SubscribeRequest("ETHUSDT", Exchange.BINANCE)
-# gateway.subscribe(req)
-# endtime = datetime.now()
-# starttime = endtime - timedelta(days=150)
+endtime = datetime.now()
+starttime = endtime - timedelta(days=180)
 
-# for symbol in ['ETHUSDT', 'BTCUSDT']:
+symbol_l = ['EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT']
+
+# for symbol in ['LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT']:
 #     historyReq = HistoryRequest(symbol, Exchange.BINANCE, starttime, endtime, Interval.MINUTE)
 #     data_spot = gateway.query_history(historyReq)
 #     db_data_spot = [DbBarData.from_bar(bar) for bar in data_spot]
 #     DbBarData.save_all(db_data_spot)
-# print('db_data_spot saved')
-# for symbol in ['ETHUSDT', 'BTCUSDT']:
-#     historyReq_futures = HistoryRequest(symbol, Exchange.BINANCEFUTURES, starttime, endtime, Interval.MINUTE)
-#     data_futures = gateway_futures.query_history(historyReq_futures)
-#     db_data_futures = [DbBarData.from_bar(bar) for bar in data_futures]
-#     DbBarData.save_all(db_data_futures)
-# print('db_data_futures saved')
+    
+#     print('%s_spot saved:%s' % (symbol, datetime.now()))
+
+for symbol in symbol_l:
+    historyReq_futures = HistoryRequest(symbol, Exchange.BINANCEFUTURES, starttime, endtime, Interval.MINUTE)
+    data_futures = gateway_futures.query_history(historyReq_futures)
+    db_data_futures = [DbBarData.from_bar(bar) for bar in data_futures]
+    DbBarData.save_all(db_data_futures)
+    print('%s_futures saved:%s' % (symbol, datetime.now()))
 # print('*'*50)
 # print(len(data))
 

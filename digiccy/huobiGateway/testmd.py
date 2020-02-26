@@ -1,21 +1,22 @@
 # encoding: UTF-8
 
-#from websocket import create_connection
-#import gzip
-#import zlib
-#import time
+from websocket import create_connection
+import gzip
+import zlib
+import time
 
 from huobiApi import DataApi
 
-#if __name__ == '__main__':
-    #while(1):
-        #try:
-            #ws = create_connection("wss://api.huobipro.com/ws", "127.0.0.1", "1080")
-            #break
-        #except:
-            #print('connect ws error,retry...')
-            #time.sleep(5)
-
+if __name__ == '__main__':
+    # while(1):
+    #     try:
+    #         ws = create_connection("wss://api.huobi.pro/ws", "127.0.0.1", "1081")
+    #         break
+    #     except:
+    #         print('connect ws error,retry...')
+    #         time.sleep(5)
+    ws = create_connection("wss://api.huobi.pro/ws", "127.0.0.1", 1081)
+    time.sleep(5)
     ## 订阅 KLine 数据
     ##tradeStr="""{"sub": "market.ethusdt.kline.1min","id": "id10"}"""
 
@@ -51,9 +52,9 @@ from huobiApi import DataApi
             #print(result)
 
 
-api = DataApi()
-api.connect("wss://api.huobipro.com/ws", "127.0.0.1", "1081")
-#api.subscribeMarketDepth('ethusdt')
+# api = DataApi()
+# api.connect("wss://api.huobipro.com/ws", "127.0.0.1", "1081")
+# api.subscribeMarketDepth('ethusdt')
 #api.subscribeTradeDetail('ethusdt')
-api.subscribeMarketDetail('ethusdt')
-input()
+# api.subscribeMarketDetail('ethusdt')
+# input()

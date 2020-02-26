@@ -536,7 +536,8 @@ class DataApi(object):
                 self.ws = create_connection(self.url, 
                                             http_proxy_host=proxyHost, 
                                             http_proxy_port=proxyPort)
-            
+            print("*"*50)
+            print(self.ws)
             self.active = True
             self.thread.start()
             
