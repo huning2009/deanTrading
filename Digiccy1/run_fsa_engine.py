@@ -16,8 +16,9 @@ from vnpy.trader.utility import load_json
 from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
 from Digiccy1.futures_spot_arbitrage import FSASpreadTradingApp, EVENT_SPREAD_LOG
 
+
 def process_event(event:Event):
-    print(event.type+ "*"*30)
+    print("* "*30 + event.type)
     if isinstance(event.data, dict):
         print(event.data)
     else:
@@ -27,28 +28,31 @@ binance_setting = load_json("connect_binance.json")
 
 event_engine = EventEngine()
 event_engine.register(EVENT_LOG, process_event)
+event_engine.register(EVENT_SPREAD_LOG, process_event)
 event_engine.register(EVENT_ORDER, process_event)
 main_engine = MainEngine(event_engine)
 
 main_engine.add_gateway(BinanceGateway)
 main_engine.add_gateway(BinanceFuturesGateway)
 print('add gateway finished')
-main_engine.connect(binance_setting, 'BINANCE')
-main_engine.connect(binance_setting, 'BINANCEFUTURES')
 
-sleep(10)
+
 
 fsa_engine = main_engine.add_app(FSASpreadTradingApp)
 fsa_engine.start()
-print('fsa_engine started')
+print('add fsa_engine and start it')
 
+main_engine.connect(binance_setting, 'BINANCE')
+main_engine.connect(binance_setting, 'BINANCEFUTURES')
+print('gateways is connecting')
+sleep(20)
 fsa_engine.strategy_engine.init_all_strategies()
 fsa_engine.strategy_engine.start_all_strategies()
-
+print('everythins is OK!')
 
 while True:
-    sleep(30)
-    print('sleep')
-    cmd = input()
-    if cmd == "exit":
-        break
+    sleep(10)
+    # print('sleep')
+    # cmd = input()
+    # if cmd == "exit":
+    #     break

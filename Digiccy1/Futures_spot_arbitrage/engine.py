@@ -207,9 +207,6 @@ class SpreadDataEngine:
         leg = self.legs.get(contract.vt_symbol, None)
 
         if leg:
-            print('>'*50)
-            print('>'*50)
-            print(leg.vt_symbol)
             # Update contract data
             leg.update_contract(contract)
 
@@ -217,7 +214,7 @@ class SpreadDataEngine:
                 contract.symbol, contract.exchange
             )
             self.main_engine.subscribe(req, contract.gateway_name)
-
+            self.write_log('subscribe>>>>>>>>>>>>>>>>>>>:%s' % leg.vt_symbol)
     def put_data_event(self, spread: SpreadData) -> None:
         """"""
         event = Event(EVENT_SPREAD_DATA, spread)

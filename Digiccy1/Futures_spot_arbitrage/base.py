@@ -247,7 +247,7 @@ class SpreadData:
 
             # Update calculate time
             self.datetime = datetime.now()
-        print(str(self.bid_price)+":"+str(self.ask_price))
+        # print(str(self.bid_price)+":"+str(self.ask_price))
     def calculate_pos(self):
         """"""
         long_pos = 0
