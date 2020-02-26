@@ -24,12 +24,17 @@ def process_event(event:Event):
     else:
         print(event.data.__dict__)
 
+def process_log_event(event:Event):
+    log = event.data
+    print("%s %s" % (log.time.strftime("%Y-%m-%d %H:%M:%S"),log.msg))
+
 binance_setting = load_json("connect_binance.json")
 
 event_engine = EventEngine()
-event_engine.register(EVENT_LOG, process_event)
-event_engine.register(EVENT_SPREAD_LOG, process_event)
+event_engine.register(EVENT_LOG, process_log_event)
+event_engine.register(EVENT_SPREAD_LOG, process_log_event)
 event_engine.register(EVENT_ORDER, process_event)
+event_engine.register(EVENT_TRADE, process_event)
 main_engine = MainEngine(event_engine)
 
 main_engine.add_gateway(BinanceGateway)
