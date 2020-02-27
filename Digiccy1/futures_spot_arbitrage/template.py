@@ -76,7 +76,6 @@ class SpreadAlgoTemplate:
 
         for leg in self.spread.legs.values():
             vt_orderids = self.leg_orders[leg.vt_symbol]
-
             if vt_orderids:
                 finished = False
                 break
@@ -156,6 +155,7 @@ class SpreadAlgoTemplate:
 
     def update_order(self, order: OrderData):
         """"""
+        print('algo template update_order, order.is_active:%s' % order.is_active())
         if not order.is_active():
             vt_orderids = self.leg_orders[order.vt_symbol]
             if order.vt_orderid in vt_orderids:
@@ -243,7 +243,7 @@ class SpreadAlgoTemplate:
     def calculate_traded(self):
         """"""
         self.traded = 0
-
+        print('algo template calculate_traded>>>>')
         for n, leg in enumerate(self.spread.legs.values()):
             leg_traded = self.leg_traded[leg.vt_symbol]
             trading_multiplier = self.spread.trading_multipliers[
@@ -274,10 +274,13 @@ class SpreadAlgoTemplate:
 
         if self.traded == self.target:
             self.status = Status.ALLTRADED
+            print("algo calculate_traded: status is ALLTRADE")
         elif not self.traded:
             self.status = Status.NOTTRADED
+            print("algo calculate_traded: status is NOTTRADED")
         else:
             self.status = Status.PARTTRADED
+            print("algo calculate_traded: status is PARTTRADED")
 
     def get_tick(self, vt_symbol: str) -> TickData:
         """"""

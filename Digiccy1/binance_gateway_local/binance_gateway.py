@@ -146,7 +146,7 @@ class BinanceGateway(BaseGateway):
 
     def cancel_order(self, req: CancelRequest):
         """"""
-        self.rest_api.cancel_order(req)
+        self.rest_api.cancel_order_margin(req)
 
     def query_account(self):
         """"""
@@ -456,6 +456,26 @@ class BinanceRestApi(RestClient):
         self.add_request(
             method="DELETE",
             path="/api/v3/order",
+            callback=self.on_cancel_order,
+            params=params,
+            data=data,
+            extra=req
+        )
+
+    def cancel_order_margin(self, req: CancelRequest):
+        """"""
+        data = {
+            "security": Security.SIGNED
+        }
+
+        params = {
+            "symbol": req.symbol,
+            "origClientOrderId": req.orderid
+        }
+
+        self.add_request(
+            method="DELETE",
+            path="/sapi/v1/margin/order",
             callback=self.on_cancel_order,
             params=params,
             data=data,
@@ -858,8 +878,9 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         """"""
         dt = datetime.fromtimestamp(packet["O"] / 1000)
         time = dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        if packet["C"] == "null":
+        print('*'*50)
+        print(packet)
+        if packet["C"] == "null" or packet["C"] == "":
             orderid = packet["c"]
         else:
             orderid = packet["C"]
@@ -892,7 +913,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
             symbol=order.symbol,
             exchange=order.exchange,
             orderid=order.orderid,
-            tradeid=packet["t"],
+            tradeid=packet["c"],
             direction=order.direction,
             price=float(packet["L"]),
             volume=trade_volume,

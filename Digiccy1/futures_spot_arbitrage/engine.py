@@ -431,8 +431,11 @@ class SpreadAlgoEngine:
 
         self.offset_converter.update_trade(trade)
 
-        algo = self.order_algo_map.get(trade.vt_orderid, None)
+        algo = self.order_algo_map.get(trade.vt_tradeid, None)
+        print("algo engine process_trade_event>>>>vt_tradeid: %s" % trade.vt_tradeid)
+        print('algo.status:%s' % algo.status)
         if algo and algo.is_active():
+            print("algo engine process_trade_event>>>> algo.is_active:%s" % algo.is_active())
             algo.update_trade(trade)
 
     def process_position_event(self, event: Event):
@@ -581,6 +584,7 @@ class SpreadAlgoEngine:
 
             # Save relationship between orderid and algo.
             self.order_algo_map[vt_orderid] = algo
+            print('engine send_order vt_orderid:%s' % vt_orderid)
 
         return vt_orderids
 

@@ -758,7 +758,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
             symbol=order.symbol,
             exchange=order.exchange,
             orderid=order.orderid,
-            tradeid=packet["t"],
+            tradeid=order.orderid,
             direction=order.direction,
             price=float(packet["L"]),
             volume=trade_volume,

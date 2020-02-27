@@ -64,7 +64,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         # Only care active leg order update
         if order.vt_symbol != self.spread.active_leg.vt_symbol:
             return
-
+        print('got active_leg on_order')
         # Do nothing if still any existing orders
         if not self.check_order_finished():
             return
@@ -79,6 +79,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
 
     def on_interval(self):
         """"""
+        print("algo on_interval")
         if not self.check_order_finished():
             self.cancel_all_order()
 
@@ -112,6 +113,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         active_leg = self.spread.active_leg
         active_traded = self.leg_traded[active_leg.vt_symbol]
         active_traded = round_to(active_traded, self.spread.min_volume)
+        print("algo hedge_passive_legs, active_traded=%s" % active_traded)
 
         hedge_volume = self.spread.calculate_spread_volume(
             active_leg.vt_symbol,
@@ -140,13 +142,13 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
 
         if leg_volume > 0:
             if vt_symbol == self.spread.active_leg.vt_symbol:
-                price = leg_tick.bid_price_1
+                price = round_to(leg_tick.ask_price_1,leg_contract.pricetick) + leg_contract.pricetick * self.payup
             else:
-                price = leg_tick.ask_price_1 + leg_contract.pricetick * self.payup
+                price = round_to(leg_tick.ask_price_1,leg_contract.pricetick) + leg_contract.pricetick * self.payup
             self.send_long_order(leg.vt_symbol, price, abs(leg_volume))
         elif leg_volume < 0:
             if vt_symbol == self.spread.active_leg.vt_symbol:
-                price = leg_tick.ask_price_1
+                price = round_to(leg_tick.bid_price_1,leg_contract.pricetick)  - leg_contract.pricetick * self.payup
             else:
-                price = leg_tick.bid_price_1 - leg_contract.pricetick * self.payup
+                price = round_to(leg_tick.bid_price_1,leg_contract.pricetick) - leg_contract.pricetick * self.payup
             self.send_short_order(leg.vt_symbol, price, abs(leg_volume))
