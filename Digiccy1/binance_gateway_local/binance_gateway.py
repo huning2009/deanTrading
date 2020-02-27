@@ -18,6 +18,7 @@ from vnpy.trader.constant import (
     Exchange,
     Product,
     Status,
+    Offset,
     OrderType,
     Interval
 )
@@ -411,7 +412,7 @@ class BinanceRestApi(RestClient):
             "security": Security.SIGNED
         }
 
-        if req.direction == Direction.LONG:
+        if req.offset == Offset.OPEN:
             sideEffectType = "MARGIN_BUY"
         else:
             sideEffectType = "AUTO_REPAY"
