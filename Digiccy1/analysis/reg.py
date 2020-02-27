@@ -19,9 +19,10 @@ DbContractData, DbAccountData, DbBarData = init_models(db)
 symbol='LINKUSDT'
 exchange='BINANCE'
 futures_exchange='BINANCEFUTURES'
+start_time = dtt.datetime.now() - dtt.timedelta(hours=24)
 
 print(dtt.datetime.now())
-data = DbBarData.select().where((DbBarData.symbol==symbol) & (DbBarData.exchange==exchange))
+data = DbBarData.select().where((DbBarData.symbol==symbol) & (DbBarData.exchange==exchange) & (DbBarData.datetime>start_time))
 print(dtt.datetime.now())
 # df = pd.DataFrame([model_to_dict(bar) for bar in data])
 df = pd.DataFrame([bar.to_dict() for bar in data])
@@ -30,7 +31,7 @@ btc_binance_df = df[['datetime', 'close_price']]
 btc_binance_df.set_index(['datetime'],inplace=True)
 
 print(dtt.datetime.now())
-data = DbBarData.select().where((DbBarData.symbol==symbol) & (DbBarData.exchange==futures_exchange))
+data = DbBarData.select().where((DbBarData.symbol==symbol) & (DbBarData.exchange==futures_exchange) & (DbBarData.datetime>start_time))
 print(dtt.datetime.now())
 df = pd.DataFrame([bar.to_dict() for bar in data])
 # df = pd.DataFrame([model_to_dict(bar) for bar in data])

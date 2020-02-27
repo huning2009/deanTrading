@@ -67,6 +67,7 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
         """
         Callback when strategy is started.
         """
+        print(self.get_parameters())
         self.write_log("策略启动")
 
     def on_stop(self):

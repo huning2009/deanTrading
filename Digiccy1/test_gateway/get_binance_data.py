@@ -59,17 +59,17 @@ gateway_futures.connect(setting)
 sleep(5)
 
 endtime = datetime.now()
-starttime = endtime - timedelta(days=180)
+starttime = endtime - timedelta(hours=36)
 
 symbol_l = ['EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT']
 
-# for symbol in ['LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT']:
-#     historyReq = HistoryRequest(symbol, Exchange.BINANCE, starttime, endtime, Interval.MINUTE)
-#     data_spot = gateway.query_history(historyReq)
-#     db_data_spot = [DbBarData.from_bar(bar) for bar in data_spot]
-#     DbBarData.save_all(db_data_spot)
+for symbol in symbol_l:
+    historyReq = HistoryRequest(symbol, Exchange.BINANCE, starttime, endtime, Interval.MINUTE)
+    data_spot = gateway.query_history(historyReq)
+    db_data_spot = [DbBarData.from_bar(bar) for bar in data_spot]
+    DbBarData.save_all(db_data_spot)
     
-#     print('%s_spot saved:%s' % (symbol, datetime.now()))
+    print('%s_spot saved:%s' % (symbol, datetime.now()))
 
 for symbol in symbol_l:
     historyReq_futures = HistoryRequest(symbol, Exchange.BINANCEFUTURES, starttime, endtime, Interval.MINUTE)
