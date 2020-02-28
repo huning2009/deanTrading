@@ -209,7 +209,6 @@ class SpreadDataEngine:
         """"""
         trade = event.data
 
-        self.offset_converter.update_trade(trade)
 
         leg = self.legs.get(trade.vt_symbol, None)
         if not leg:
