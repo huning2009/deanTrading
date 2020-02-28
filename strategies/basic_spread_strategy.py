@@ -105,24 +105,26 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
 
         # Long position
         elif self.spread_pos > 0:
-            self.stop_open_algos()
+            if self.spread_pos >= self.max_pos:
+                self.stop_open_algos()
 
-            # Start sell close algo
-            if not self.sell_algoid:
-                self.sell_algoid = self.start_short_algo(
-                    self.sell_price, self.spread_pos, self.lot_size, self.payup, self.interval
-                )
+                # Start sell close algo
+                if not self.sell_algoid:
+                    self.sell_algoid = self.start_short_algo(
+                        self.sell_price, self.spread_pos, self.lot_size, self.payup, self.interval
+                    )
 
         # Short position
         elif self.spread_pos < 0:
-            self.stop_open_algos()
+            if self.spread_pos <= -self.max_pos:
+                self.stop_open_algos()
 
-            # Start cover close algo
-            if not self.cover_algoid:
-                self.cover_algoid = self.start_long_algo(
-                    self.cover_price, abs(
-                        self.spread_pos), self.lot_size, self.payup, self.interval
-                )
+                # Start cover close algo
+                if not self.cover_algoid:
+                    self.cover_algoid = self.start_long_algo(
+                        self.cover_price, abs(
+                            self.spread_pos), self.lot_size, self.payup, self.interval
+                    )
 
         self.put_event()
 
