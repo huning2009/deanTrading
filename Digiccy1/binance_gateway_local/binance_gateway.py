@@ -677,7 +677,7 @@ class BinanceRestApi(RestClient):
                 min_volume=min_volume,
                 product=Product.SPOT,
                 history_data=True,
-                net_position=True,
+                # net_position=True,
                 gateway_name=self.gateway_name,
             )
             self.gateway.on_contract(contract)

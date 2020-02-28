@@ -104,6 +104,10 @@ class SpreadDataEngine:
         self.symbol_spread_map: Dict[str, List[SpreadData]] = defaultdict(list)
         self.timer_count = 0
 
+        self.offset_converter: OffsetConverter = OffsetConverter(
+            self.main_engine
+        )
+
     def start(self):
         """"""
         self.load_setting()
@@ -204,6 +208,8 @@ class SpreadDataEngine:
     def process_trade_event(self, event: Event) -> None:
         """"""
         trade = event.data
+
+        self.offset_converter.update_trade(trade)
 
         leg = self.legs.get(trade.vt_symbol, None)
         if not leg:
@@ -584,7 +590,7 @@ class SpreadAlgoEngine:
 
             # Save relationship between orderid and algo.
             self.order_algo_map[vt_orderid] = algo
-            print('algo engine send_order vt_orderid:%s,price: %s' % (vt_orderi, req.price))
+            print('algo engine send_order vt_orderid:%s,price: %s' % (vt_orderid, req.price))
 
         return vt_orderids
 
