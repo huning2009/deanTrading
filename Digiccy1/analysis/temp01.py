@@ -1,6 +1,3 @@
-a = 'asd'
-d = dict()
-d['hu'] = 999
-import datetime as dtt
-msg = "%s %s : %s" % (dtt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),a,d)
-print(msg)
+from vnpy.trader.utility import round_to
+
+print(str(round_to(9.30332133330003333333333,0.01)))

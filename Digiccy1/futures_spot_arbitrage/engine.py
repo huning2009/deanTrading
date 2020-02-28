@@ -584,7 +584,7 @@ class SpreadAlgoEngine:
 
             # Save relationship between orderid and algo.
             self.order_algo_map[vt_orderid] = algo
-            print('engine send_order vt_orderid:%s' % vt_orderid)
+            print('algo engine send_order vt_orderid:%s,price: %s' % (vt_orderi, req.price))
 
         return vt_orderids
 
