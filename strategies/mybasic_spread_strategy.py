@@ -7,10 +7,10 @@ from vnpy.app.spread_trading import (
 
 from Digiccy1.futures_spot_arbitrage.template import SpreadStrategyTemplate
 
-class BasicSpreadStrategy(SpreadStrategyTemplate):
+class MyBasicSpreadStrategy(SpreadStrategyTemplate):
     """"""
 
-    author = "用Python的交易员"
+    author = "Dean"
 
     buy_price = 0.0
     sell_price = 0.0
@@ -22,10 +22,12 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
     interval = 5
 
     spread_pos = 0.0
-    buy_algoid = ""
-    sell_algoid = ""
-    short_algoid = ""
-    cover_algoid = ""
+    buy_algoids = []
+    sell_algoids = []
+    short_algoids = []
+    cover_algoids = []
+    sell_algo_aggpos = 0.0
+    cover_algo_aggpos = 0.0
 
     parameters = [
         "buy_price",
@@ -39,10 +41,10 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
     ]
     variables = [
         "spread_pos",
-        "buy_algoid",
-        "sell_algoid",
-        "short_algoid",
-        "cover_algoid",
+        "buy_algoids",
+        "sell_algoids",
+        "short_algoids",
+        "cover_algoids",
     ]
 
     def __init__(
@@ -76,10 +78,10 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
         """
         self.write_log("策略停止")
 
-        self.buy_algoid = ""
-        self.sell_algoid = ""
-        self.short_algoid = ""
-        self.cover_algoid = ""
+        self.buy_algoids = []
+        self.sell_algoids = []
+        self.short_algoids = []
+        self.cover_algoids = []
         self.put_event()
 
     def on_spread_data(self):
@@ -93,15 +95,17 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
             self.stop_close_algos()
 
             # Start open algos
-            if not self.buy_algoid:
-                self.buy_algoid = self.start_long_algo(
+            if len(self.buy_algoids)==0:
+                buy_algoid = self.start_long_algo(
                     self.buy_price, self.max_pos, self.lot_size, self.payup, self.interval
                 )
+                self.buy_algoids.append(buy_algoid)
 
-            if not self.short_algoid:
-                self.short_algoid = self.start_short_algo(
+            if len(self.short_algoids)==0:
+                short_algoid = self.start_short_algo(
                     self.short_price, self.max_pos, self.lot_size, self.payup, self.interval
                 )
+                self.short_algoids.append(short_algoid)
 
         # Long position
         elif self.spread_pos > 0:
@@ -109,10 +113,20 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
                 self.stop_open_algos()
 
                 # Start sell close algo
-                if not self.sell_algoid:
-                    self.sell_algoid = self.start_short_algo(
+                if len(self.sell_algoids)==0:
+                    sell_algoid = self.start_short_algo(
                         self.sell_price, self.spread_pos, self.lot_size, self.payup, self.interval
                     )
+                    self.sell_algoids.append(sell_algoid)
+                    self.sell_algo_aggpos += self.spread_pos
+            else:
+                start_short_vol = self.spread_pos - self.sell_algo_aggpos
+                if start_short_vol:
+                    sell_algoid = self.start_short_algo(
+                            self.sell_price, start_short_vol, self.lot_size, self.payup, self.interval
+                        )
+                    self.sell_algo_aggpos += start_short_vol
+                    self.sell_algoids.append(sell_algoid)
 
         # Short position
         elif self.spread_pos < 0:
@@ -120,11 +134,16 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
                 self.stop_open_algos()
 
                 # Start cover close algo
-                if not self.cover_algoid:
-                    self.cover_algoid = self.start_long_algo(
-                        self.cover_price, abs(
-                            self.spread_pos), self.lot_size, self.payup, self.interval
-                    )
+                if len(self.cover_algoids)==0:
+                    cover_algoid = self.start_long_algo(self.cover_price, abs(self.spread_pos), self.lot_size, self.payup, self.interval)
+                    self.cover_algoids.append(cover_algoid)
+                    self.cover_algo_aggpos -= abs(self.spread_pos)
+            else:
+                start_cover_vol = abs(self.spread_pos - self.cover_algo_aggpos)
+                if start_cover_vol:
+                    cover_algoid = self.start_long_algo(self.cover_price, start_cover_vol, self.lot_size, self.payup, self.interval)
+                    self.cover_algo_aggpos -= start_cover_vol
+                    self.cover_algoids.append(cover_algoid)
 
         self.put_event()
 
@@ -140,14 +159,18 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
         Callback when algo status is updated.
         """
         if not algo.is_active():
-            if self.buy_algoid == algo.algoid:
-                self.buy_algoid = ""
-            elif self.sell_algoid == algo.algoid:
-                self.sell_algoid = ""
-            elif self.short_algoid == algo.algoid:
-                self.short_algoid = ""
+            if algo.algoid in self.buy_algoids:
+                self.buy_algoids.remove(algo.algoid)
+            elif algo.algoid in self.sell_algoids:
+                self.sell_algoids.remove(algo.algoid)
+                self.sell_algo_aggpos -= algo.volume
+            elif algo.algoid in self.short_algoids:
+                self.short_algoids.remove(algo.algoid)
+            elif algo.algoid in self.cover_algoids:
+                self.cover_algoids.remove(algo.algoid)
+                self.cover_algo_aggpos += algo.volume
             else:
-                self.cover_algoid = ""
+                print('on_spread_algo has no algo:%s' % algo.algoid)
 
         self.put_event()
 
@@ -165,16 +188,16 @@ class BasicSpreadStrategy(SpreadStrategyTemplate):
 
     def stop_open_algos(self):
         """"""
-        if self.buy_algoid:
-            self.stop_algo(self.buy_algoid)
+        for buy_algoid in self.buy_algoids:
+            self.stop_algo(buy_algoid)
 
-        if self.short_algoid:
-            self.stop_algo(self.short_algoid)
+        for short_algoid in self.short_algoids:
+            self.stop_algo(short_algoid)
 
     def stop_close_algos(self):
         """"""
-        if self.sell_algoid:
-            self.stop_algo(self.sell_algoid)
+        for sell_algoid in self.sell_algoids:
+            self.stop_algo(sell_algoid)
 
-        if self.cover_algoid:
-            self.stop_algo(self.cover_algoid)
+        for cover_algoid in self.cover_algoids:
+            self.stop_algo(cover_algoid)

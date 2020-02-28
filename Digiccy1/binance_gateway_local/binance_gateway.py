@@ -881,9 +881,9 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         """"""
         dt = datetime.fromtimestamp(packet["O"] / 1000)
         time = dt.strftime("%Y-%m-%d %H:%M:%S")
-        print('*'*50)
-        print(packet)
-        print('^'*50)
+        # print('*'*50)
+        # print(packet)
+        # print('^'*50)
         if packet["C"] == "null" or packet["C"] == "":
             orderid = packet["c"]
         else:
