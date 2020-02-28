@@ -863,6 +863,8 @@ class BinanceTradeWebsocketApi(WebsocketClient):
 
     def on_account(self, packet):
         """"""
+        # print('margin trader websocket on_account*'*10)
+        # print(packet)
         for d in packet["B"]:
             account = AccountData(
                 accountid=d["a"],
@@ -880,6 +882,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         time = dt.strftime("%Y-%m-%d %H:%M:%S")
         print('*'*50)
         print(packet)
+        print('^'*50)
         if packet["C"] == "null" or packet["C"] == "":
             orderid = packet["c"]
         else:

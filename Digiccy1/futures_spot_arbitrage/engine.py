@@ -75,7 +75,7 @@ class SpreadEngine(BaseEngine):
         """"""
         self.data_engine.stop()
         self.algo_engine.stop()
-        self.strategy_engine.stop()
+        self.strategy_engine.close()
 
     def write_log(self, msg: str):
         """"""
@@ -629,6 +629,10 @@ class SpreadStrategyEngine:
         self.algo_strategy_map: dict[str: SpreadStrategyTemplate] = {}
         self.spread_strategy_map: dict[str: SpreadStrategyTemplate] = defaultdict(
             list)
+
+        self.offset_converter: OffsetConverter = OffsetConverter(
+            self.main_engine
+        )
 
         self.vt_tradeids: Set = set()
 
