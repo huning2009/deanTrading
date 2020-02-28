@@ -76,7 +76,7 @@ class LegData:
     def update_trade(self, trade: TradeData):
         """"""
         # Only update net pos for contract with net position mode
-        print('leg update_trade, trade.offset=%s' % trade.offset)
+        print('leg update_trade, trade.offset=%s, net_position:%s' % (trade.offset, self.net_position))
         if self.net_position:
             trade_cost = trade.volume * trade.price
             old_cost = self.net_pos * self.net_pos_price
