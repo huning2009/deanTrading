@@ -152,3 +152,6 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             else:
                 price = round_to(leg_tick.bid_price_1 - leg_contract.pricetick * self.payup,leg_contract.pricetick)
             self.send_short_order(leg.vt_symbol, price, abs(leg_volume))
+        
+        # every algo there must be owning only one order at a time, so init the timer to 0
+        self.count = 0
