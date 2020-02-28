@@ -288,7 +288,7 @@ class SpreadData:
         else:
             self.net_pos = -short_pos
 
-        print('%s calculate_pos,net_pos:%s' % (self.name,self.net_pos))
+        print('%s spread calculate_pos,net_pos:%s' % (self.name,self.net_pos))
 
     def clear_price(self):
         """"""
