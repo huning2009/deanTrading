@@ -428,7 +428,7 @@ class SpreadAlgoEngine:
     def process_trade_event(self, event: Event):
         """"""
         trade = event.data
-
+        print('process_trade_event(algo engine) vt_tradeids: %s<<<<<<<<<<<<<<' % self.vt_tradeids)
         # Filter duplicate trade push
         if trade.vt_tradeid in self.vt_tradeids:
             return
@@ -436,11 +436,12 @@ class SpreadAlgoEngine:
 
         self.offset_converter.update_trade(trade)
 
-        algo = self.order_algo_map.get(trade.vt_tradeid, None)
-        print("algo engine process_trade_event>>>>vt_tradeid: %s" % trade.vt_tradeid)
-        print('algo %s status: %s' % (algo.algo_name, algo.status))
+        algo = self.order_algo_map.get(trade.orderid, None)
+        print("process_trade_event(algo engine)>>>>orderid: %s" % trade.orderid)
+        if algo:
+            print('process_trade_event(algo engine) %s status: %s' % (algo.algoid, algo.status))
         if algo and algo.is_active():
-            print("algo engine process_trade_event>>>> algo.is_active:%s" % algo.is_active())
+            print("process_trade_event(algo engine)>>>> algo.is_active:%s" % algo.is_active())
             algo.update_trade(trade)
 
     def process_position_event(self, event: Event):
@@ -591,7 +592,7 @@ class SpreadAlgoEngine:
 
             # Save relationship between orderid and algo.
             self.order_algo_map[vt_orderid] = algo
-            print('algo engine send_order vt_orderid:%s,price: %s' % (vt_orderid, req.price))
+            print('%s algo engine send_order vt_orderid:%s,price: %s' % (algo.algoid, vt_orderid, req.price))
 
         return vt_orderids
 

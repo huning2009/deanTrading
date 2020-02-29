@@ -155,13 +155,13 @@ class BinanceFuturesGateway(BaseGateway):
 
     def process_timer_event(self, event: Event):
         """"""
-        self.count += 1
+        # self.count += 1
         self.rest_api.keep_user_stream()
 
-        if self.count < 3:
-            return
-        else:
-            self.count = 0
+        # if self.count < 3:
+        #     return
+        # else:
+        #     self.count = 0
             # self.query_account()
             # self.query_position()
 
@@ -270,9 +270,9 @@ class BinanceRestApi(RestClient):
         self.gateway.write_log("FUTURES REST API启动成功")
 
         self.query_time()
-        self.query_account()
+        # self.query_account()
         # self.query_position()
-        self.query_order()
+        # self.query_order()
         self.query_contract()
         self.start_user_stream()
 
@@ -759,7 +759,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
             symbol=order.symbol,
             exchange=order.exchange,
             orderid=order.orderid,
-            tradeid=order.orderid,
+            tradeid=packet["t"],
             direction=order.direction,
             price=float(packet["L"]),
             volume=trade_volume,

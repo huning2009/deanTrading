@@ -290,9 +290,9 @@ class BinanceRestApi(RestClient):
         self.gateway.write_log("REST API启动成功")
 
         self.query_time()
-        self.query_account()
-        self.query_account_margin()
-        self.query_order()
+        # self.query_account()
+        # self.query_account_margin()
+        # self.query_order()
         self.query_contract()
         # self.start_user_stream()
         self.start_user_stream_margin()
@@ -917,7 +917,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
             symbol=order.symbol,
             exchange=order.exchange,
             orderid=order.orderid,
-            tradeid=packet["c"],
+            tradeid=packet["t"],
             direction=order.direction,
             price=float(packet["L"]),
             volume=trade_volume,
