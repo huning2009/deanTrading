@@ -30,6 +30,7 @@ class SpreadAlgoTemplate:
         lot_size: float,
         payup: int,
         interval: int,
+        cancel_active_short_interval: int,
         lock: bool,
     ):
         """"""
@@ -46,6 +47,7 @@ class SpreadAlgoTemplate:
         self.lot_size: float = lot_size
         self.payup: int = payup
         self.interval = interval
+        self.cancel_active_short_interval = cancel_active_short_interval
         self.lock = lock
 
         if direction == Direction.LONG:
@@ -54,7 +56,9 @@ class SpreadAlgoTemplate:
             self.target = -volume
 
         self.status: Status = Status.NOTTRADED  # Algo status
-        self.count: int = 0                     # Timer count
+        self.count: int = 0                     # Timer count for passive(futures) order and active buy/sell/cover order
+        self.count_active_short: int = 0        # Timer count for active short order to cancel
+        self.active_short_orderids = []
         self.traded: float = 0                  # Volume traded
         self.traded_volume: float = 0           # Volume traded (Abs value)
 
@@ -160,15 +164,22 @@ class SpreadAlgoTemplate:
             vt_orderids = self.leg_orders[order.vt_symbol]
             if order.vt_orderid in vt_orderids:
                 vt_orderids.remove(order.vt_orderid)
-
+                
+            if order.vt_orderid in self.active_short_orderids:
+                self.active_short_orderids.remove(order.vt_orderid)
         self.on_order(order)
 
     def update_timer(self):
         """"""
         self.count += 1
+        self.count_active_short += 1
         if self.count > self.interval:
             self.count = 0
-            self.on_interval()
+            self.cancel_all_order_but_active_short()
+
+        if self.count_active_short > self.cancel_active_short_interval:
+            self.count_active_short = 0
+            self.cancel_active_short_order()
 
         self.put_event()
 
@@ -219,6 +230,8 @@ class SpreadAlgoTemplate:
             direction,
             self.lock
         )
+        if vt_symbol== self.spread.active_leg.vt_symbol and direction==Direction.SHORT:
+            self.active_short_orderids.extend(vt_orderids)
 
         self.leg_orders[vt_symbol].extend(vt_orderids)
 
@@ -239,6 +252,18 @@ class SpreadAlgoTemplate:
         """"""
         for vt_symbol in self.leg_orders.keys():
             self.cancel_leg_order(vt_symbol)
+
+    def cancel_all_order_but_active_short(self):
+        """"""
+        for vt_symbol in self.leg_orders.keys():
+            for vt_orderid in self.leg_orders[vt_symbol]:
+                if vt_orderid not in self.active_short_orderids:
+                    self.algo_engine.cancel_order(self, vt_orderid)
+
+    def cancel_active_short_order(self):
+        for vt_orderid in self.leg_orders[self.spread.active_leg.vt_symbol]:
+            if vt_orderid in self.active_short_orderids:
+                self.algo_engine.cancel_order(self, vt_orderid)
 
     def calculate_traded(self):
         """"""
@@ -274,13 +299,13 @@ class SpreadAlgoTemplate:
 
         if self.traded == self.target:
             self.status = Status.ALLTRADED
-            print("algo calculate_traded: status is ALLTRADE")
+            print("algo calculate_traded: %s status is ALLTRADE" % self.algo_name)
         elif not self.traded:
             self.status = Status.NOTTRADED
-            print("algo calculate_traded: status is NOTTRADED")
+            print("algo calculate_traded: %s status is NOTTRADED" % self.algo_name)
         else:
             self.status = Status.PARTTRADED
-            print("algo calculate_traded: status is PARTTRADED")
+            print("algo calculate_traded: %s status is PARTTRADED" % self.algo_name)
 
     def get_tick(self, vt_symbol: str) -> TickData:
         """"""
@@ -494,6 +519,7 @@ class SpreadStrategyTemplate:
         lot_size: float,
         payup: int,
         interval: int,
+        cancel_active_short_interval: int,
         lock: bool,
         offset: Offset
     ) -> str:
@@ -511,6 +537,7 @@ class SpreadStrategyTemplate:
             lot_size,
             payup,
             interval,
+            cancel_active_short_interval,
             lock
         )
 
@@ -525,13 +552,14 @@ class SpreadStrategyTemplate:
         lot_size: float,
         payup: int,
         interval: int,
+        cancel_active_short_interval: int,
         lock: bool = False,
         offset: Offset = Offset.NONE
     ) -> str:
         """"""
         return self.start_algo(
             Direction.LONG, price, volume, lot_size,
-            payup, interval, lock, offset
+            payup, interval, cancel_active_short_interval, lock, offset
         )
 
     def start_short_algo(
@@ -541,13 +569,14 @@ class SpreadStrategyTemplate:
         lot_size: float,
         payup: int,
         interval: int,
+        cancel_active_short_interval: int,
         lock: bool = False,
         offset: Offset = Offset.NONE
     ) -> str:
         """"""
         return self.start_algo(
             Direction.SHORT, price, volume, lot_size,
-            payup, interval, lock, offset
+            payup, interval, cancel_active_short_interval, lock, offset
         )
 
     def stop_algo(self, algoid: str):

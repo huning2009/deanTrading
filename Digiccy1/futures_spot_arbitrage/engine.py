@@ -438,7 +438,7 @@ class SpreadAlgoEngine:
 
         algo = self.order_algo_map.get(trade.vt_tradeid, None)
         print("algo engine process_trade_event>>>>vt_tradeid: %s" % trade.vt_tradeid)
-        print('algo.status:%s' % algo.status)
+        print('algo %s status: %s' % (algo.algo_name, algo.status))
         if algo and algo.is_active():
             print("algo engine process_trade_event>>>> algo.is_active:%s" % algo.is_active())
             algo.update_trade(trade)
@@ -469,6 +469,7 @@ class SpreadAlgoEngine:
         lot_size: float,
         payup: int,
         interval: int,
+        cancel_active_short_interval: int,
         lock: bool
     ) -> str:
         # Find spread object
@@ -494,6 +495,7 @@ class SpreadAlgoEngine:
             lot_size,
             payup,
             interval,
+            cancel_active_short_interval,
             lock
         )
         self.algos[algoid] = algo
@@ -958,6 +960,7 @@ class SpreadStrategyEngine:
         lot_size: float,
         payup: int,
         interval: int,
+        cancel_active_short_interval: int,
         lock: bool
     ) -> str:
         """"""
@@ -970,6 +973,7 @@ class SpreadStrategyEngine:
             lot_size,
             payup,
             interval,
+            cancel_active_short_interval,
             lock
         )
 

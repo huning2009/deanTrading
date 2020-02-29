@@ -20,6 +20,7 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
     lot_size = 0.0
     payup = 10
     interval = 5
+    cancel_active_short_interval = 600
 
     spread_pos = 0.0
     buy_algoids = []
@@ -37,7 +38,8 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         "max_pos",
         "lot_size",
         "payup",
-        "interval"
+        "interval",
+        "cancel_active_short_interval"
     ]
     variables = [
         "spread_pos",
@@ -97,13 +99,13 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
             # Start open algos
             if len(self.buy_algoids)==0:
                 buy_algoid = self.start_long_algo(
-                    self.buy_price, self.max_pos, self.lot_size, self.payup, self.interval
+                    self.buy_price, self.max_pos, self.lot_size, self.payup, self.interval, self.cancel_active_short_interval
                 )
                 self.buy_algoids.append(buy_algoid)
 
             if len(self.short_algoids)==0:
                 short_algoid = self.start_short_algo(
-                    self.short_price, self.max_pos, self.lot_size, self.payup, self.interval
+                    self.short_price, self.max_pos, self.lot_size, self.payup, self.interval, self.cancel_active_short_interval
                 )
                 self.short_algoids.append(short_algoid)
 
@@ -115,7 +117,7 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
                 # Start sell close algo
                 if len(self.sell_algoids)==0:
                     sell_algoid = self.start_short_algo(
-                        self.sell_price, self.spread_pos, self.lot_size, self.payup, self.interval
+                        self.sell_price, self.spread_pos, self.lot_size, self.payup, self.interval, self.cancel_active_short_interval
                     )
                     self.sell_algoids.append(sell_algoid)
                     self.sell_algo_aggpos += self.spread_pos
@@ -123,7 +125,7 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
                 start_short_vol = self.spread_pos - self.sell_algo_aggpos
                 if start_short_vol:
                     sell_algoid = self.start_short_algo(
-                            self.sell_price, start_short_vol, self.lot_size, self.payup, self.interval
+                            self.sell_price, start_short_vol, self.lot_size, self.payup, self.interval, self.cancel_active_short_interval
                         )
                     self.sell_algo_aggpos += start_short_vol
                     self.sell_algoids.append(sell_algoid)
@@ -135,13 +137,13 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
 
                 # Start cover close algo
                 if len(self.cover_algoids)==0:
-                    cover_algoid = self.start_long_algo(self.cover_price, abs(self.spread_pos), self.lot_size, self.payup, self.interval)
+                    cover_algoid = self.start_long_algo(self.cover_price, abs(self.spread_pos), self.lot_size, self.payup, self.interval, self.cancel_active_short_interval)
                     self.cover_algoids.append(cover_algoid)
                     self.cover_algo_aggpos -= abs(self.spread_pos)
             else:
                 start_cover_vol = abs(self.spread_pos - self.cover_algo_aggpos)
                 if start_cover_vol:
-                    cover_algoid = self.start_long_algo(self.cover_price, start_cover_vol, self.lot_size, self.payup, self.interval)
+                    cover_algoid = self.start_long_algo(self.cover_price, start_cover_vol, self.lot_size, self.payup, self.interval, self.cancel_active_short_interval)
                     self.cover_algo_aggpos -= start_cover_vol
                     self.cover_algoids.append(cover_algoid)
 

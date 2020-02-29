@@ -24,13 +24,14 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         lot_size: float,
         payup: int,
         interval: int,
+        cancel_active_short_interval: int,
         lock: bool
     ):
         """"""
         super().__init__(
             algo_engine, algoid, spread,
             direction, offset, price, volume, lot_size,
-            payup, interval, lock
+            payup, interval, cancel_active_short_interval, lock
         )
 
         self.cancel_interval: int = 2
@@ -77,11 +78,11 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         """"""
         pass
 
-    def on_interval(self):
-        """"""
-        if not self.check_order_finished():
-            self.cancel_all_order()
-            print("algo on_interval cancel_all_order!!!")
+    # def on_interval(self):
+    #     """"""
+    #     if not self.check_order_finished():
+    #         self.cancel_all_order()
+    #         print("algo on_interval cancel_all_order!!!")
 
     def take_active_leg(self):
         """"""
