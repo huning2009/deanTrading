@@ -164,7 +164,7 @@ class SpreadAlgoTemplate:
             vt_orderids = self.leg_orders[order.vt_symbol]
             if order.vt_orderid in vt_orderids:
                 vt_orderids.remove(order.vt_orderid)
-                
+
             if order.vt_orderid in self.active_short_orderids:
                 self.active_short_orderids.remove(order.vt_orderid)
         self.on_order(order)
@@ -232,7 +232,7 @@ class SpreadAlgoTemplate:
         )
         if vt_symbol== self.spread.active_leg.vt_symbol and direction==Direction.SHORT:
             self.active_short_orderids.extend(vt_orderids)
-
+            self.count_active_short = 0
         self.leg_orders[vt_symbol].extend(vt_orderids)
 
         msg = "发出委托，{}，{}，{}@{}".format(
