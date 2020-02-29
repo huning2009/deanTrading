@@ -60,7 +60,8 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         super().__init__(
             strategy_engine, strategy_name, spread, setting
         )
-
+        # print('%s interval: %s' % (self.spread_name, self.interval))
+        # print('%s cancel_active_short_interval: %s' % (self.spread_name, self.cancel_active_short_interval))
     def on_init(self):
         """
         Callback when strategy is inited.

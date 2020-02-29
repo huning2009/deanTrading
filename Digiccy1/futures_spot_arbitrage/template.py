@@ -259,11 +259,12 @@ class SpreadAlgoTemplate:
             for vt_orderid in self.leg_orders[vt_symbol]:
                 if vt_orderid not in self.active_short_orderids:
                     self.algo_engine.cancel_order(self, vt_orderid)
-
+                    self.write_log("cancel_all_order_but_active_short: %s" % vt_orderid)
     def cancel_active_short_order(self):
         for vt_orderid in self.leg_orders[self.spread.active_leg.vt_symbol]:
             if vt_orderid in self.active_short_orderids:
                 self.algo_engine.cancel_order(self, vt_orderid)
+                self.write_log("cancel_active_short_order: %s" % vt_orderid)
 
     def calculate_traded(self):
         """"""

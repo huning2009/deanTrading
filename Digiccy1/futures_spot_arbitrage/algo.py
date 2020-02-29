@@ -36,7 +36,8 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
 
         self.cancel_interval: int = 2
         self.timer_count: int = 0
-
+        print('%s interval:%s' % (self.algoid, self.interval))
+        print('%s cancel_active_short_interval:%s' % (self.algoid, self.cancel_active_short_interval))
     def on_tick(self, tick: TickData):
         """"""
         # Return if tick not inited
