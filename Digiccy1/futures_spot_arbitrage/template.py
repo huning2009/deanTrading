@@ -83,7 +83,7 @@ class SpreadAlgoTemplate:
             if vt_orderids:
                 finished = False
                 break
-        print('algo template check_order_finished:%s : %s' % (leg.vt_symbol, finished))
+        # print('algo template check_order_finished:%s : %s' % (leg.vt_symbol, finished))
         return finished
 
     def check_hedge_finished(self):
@@ -108,7 +108,7 @@ class SpreadAlgoTemplate:
             if leg_traded < leg_target:
                 finished = False
                 break
-        print("check_hedge_finished: %s, passive leg_traded %s" % (finished, leg_traded))
+        # print("check_hedge_finished: %s, passive leg_traded %s" % (finished, leg_traded))
         return finished
 
     def stop(self):
