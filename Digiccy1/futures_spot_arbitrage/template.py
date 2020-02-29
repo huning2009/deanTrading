@@ -105,7 +105,7 @@ class SpreadAlgoTemplate:
             )
             leg_traded = self.leg_traded[passive_symbol]
 
-            if leg_traded < leg_target:
+            if leg_traded != leg_target:
                 finished = False
                 break
         # print("check_hedge_finished: %s, passive leg_traded %s" % (finished, leg_traded))
