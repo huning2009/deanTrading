@@ -436,8 +436,8 @@ class SpreadAlgoEngine:
 
         self.offset_converter.update_trade(trade)
 
-        algo = self.order_algo_map.get(trade.orderid, None)
-        print("process_trade_event(algo engine)>>>>orderid: %s" % trade.orderid)
+        algo = self.order_algo_map.get(trade.vt_orderid, None)
+        print("process_trade_event(algo engine)>>>>vt_orderid: %s" % trade.vt_orderid)
         if algo:
             print('process_trade_event(algo engine) %s status: %s' % (algo.algoid, algo.status))
         if algo and algo.is_active():

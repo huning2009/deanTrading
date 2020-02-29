@@ -69,7 +69,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         # Do nothing if still any existing orders
         if not self.check_order_finished():
             return
-
+        print("check_order_finished pass")
         # Hedge passive legs if necessary
         if not self.check_hedge_finished():
             self.hedge_passive_legs()
