@@ -698,30 +698,30 @@ class BinanceTradeWebsocketApi(WebsocketClient):
             if account.balance:
                 self.gateway.on_account(account)
 
-        for d in packet['P']:
-            # if float(d["pa"]) > 1.0e-8:
-            #     direction = Direction.LONG
-            #     volume = float(d["pa"])
-            # elif float(d["pa"]) < -1.0e-8:
-            #     direction = Direction.SHORT
-            #     volume = abs(float(d["pa"]))
-            # else:
-            #     break
+        # for d in packet['P']:
+        #     # if float(d["pa"]) > 1.0e-8:
+        #     #     direction = Direction.LONG
+        #     #     volume = float(d["pa"])
+        #     # elif float(d["pa"]) < -1.0e-8:
+        #     #     direction = Direction.SHORT
+        #     #     volume = abs(float(d["pa"]))
+        #     # else:
+        #     #     break
 
-            position = PositionData(
-                symbol=d["s"],
-                exchange=Exchange.BINANCEFUTURES,
-                direction=Direction.NET,
-                volume=float(d["pa"]),
-                # frozen=float(position_data["positionAmt"]),
-                price=float(d["ep"]),
-                pnl=float(d["up"]),
+        #     position = PositionData(
+        #         symbol=d["s"],
+        #         exchange=Exchange.BINANCEFUTURES,
+        #         direction=Direction.NET,
+        #         volume=float(d["pa"]),
+        #         # frozen=float(position_data["positionAmt"]),
+        #         price=float(d["ep"]),
+        #         pnl=float(d["up"]),
 
-                gateway_name=self.gateway_name
-            )
+        #         gateway_name=self.gateway_name
+        #     )
 
-            if position.volume:
-                self.gateway.on_position(position)
+        #     if position.volume:
+        #         self.gateway.on_position(position)
 
     def on_order(self, packet: dict):
         """"""
