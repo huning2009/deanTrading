@@ -16,10 +16,10 @@ from DatabaseManage.init_sqlite import get_sqlite, init_models
 db = get_sqlite('info.db')
 DbContractData, DbAccountData, DbBarData = init_models(db)
 
-symbol='LINKUSDT'
+symbol='XTZUSDT'
 exchange='BINANCE'
 futures_exchange='BINANCEFUTURES'
-start_time = dtt.datetime.now() - dtt.timedelta(hours=24)
+start_time = dtt.datetime.now() - dtt.timedelta(days=30)
 
 print(dtt.datetime.now())
 data = DbBarData.select().where((DbBarData.symbol==symbol) & (DbBarData.exchange==exchange) & (DbBarData.datetime>start_time))

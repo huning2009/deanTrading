@@ -65,7 +65,7 @@ class SpreadAlgoTemplate:
         self.leg_traded: Dict[str, float] = defaultdict(int)
         self.leg_orders: Dict[str, List[str]] = defaultdict(list)
 
-        self.write_log("算法已启动")
+        self.write_log("算法已启动,direction:%s, target: %s, spread.name:%s" % (self.direction, self.target, self.spread_name))
 
     def is_active(self):
         """"""
@@ -116,7 +116,7 @@ class SpreadAlgoTemplate:
         if self.is_active():
             self.cancel_all_order()
             self.status = Status.CANCELLED
-            self.write_log("算法已停止")
+            self.write_log("算法已停止,direction:%s, target: %s, spread.name:%s, keg_traded:%s" % (self.direction, self.target, self.spread_name, self.leg_traded))
             self.put_event()
 
     def update_tick(self, tick: TickData):
@@ -269,7 +269,7 @@ class SpreadAlgoTemplate:
     def calculate_traded(self):
         """"""
         self.traded = 0
-        print('algo template calculate_traded>>>>')
+        # print('algo template calculate_traded>>>>')
         for n, leg in enumerate(self.spread.legs.values()):
             leg_traded = self.leg_traded[leg.vt_symbol]
             trading_multiplier = self.spread.trading_multipliers[

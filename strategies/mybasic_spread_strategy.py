@@ -23,12 +23,6 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
     cancel_active_short_interval = 600
 
     spread_pos = 0.0
-    buy_algoids = []
-    sell_algoids = []
-    short_algoids = []
-    cover_algoids = []
-    sell_algo_aggpos = 0.0
-    cover_algo_aggpos = 0.0
 
     parameters = [
         "buy_price",
@@ -60,6 +54,13 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         super().__init__(
             strategy_engine, strategy_name, spread, setting
         )
+
+        self.buy_algoids = []
+        self.sell_algoids = []
+        self.short_algoids = []
+        self.cover_algoids = []
+        self.sell_algo_aggpos = 0.0
+        self.cover_algo_aggpos = 0.0
         # print('%s interval: %s' % (self.spread_name, self.interval))
         # print('%s cancel_active_short_interval: %s' % (self.spread_name, self.cancel_active_short_interval))
     def on_init(self):
@@ -92,7 +93,7 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         Callback when spread price is updated.
         """
         self.spread_pos = self.get_spread_pos()
-
+        # print(f'{self.strategy_name}on_spread_data,spread_pos:{self.spread_pos}')
         # No position
         if not self.spread_pos:
             self.stop_close_algos()
