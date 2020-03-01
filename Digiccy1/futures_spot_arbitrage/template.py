@@ -65,7 +65,7 @@ class SpreadAlgoTemplate:
         self.leg_traded: Dict[str, float] = defaultdict(int)
         self.leg_orders: Dict[str, List[str]] = defaultdict(list)
 
-        self.write_log("算法已启动,direction:%s, target: %s, spread.name:%s" % (self.direction, self.target, self.spread_name))
+        self.write_log("算法已启动,direction:%s, price:%s, target: %s, spread.name:%s" % (self.direction, self.price, self.target, self.spread_name))
 
     def is_active(self):
         """"""

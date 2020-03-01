@@ -57,9 +57,11 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         if self.direction == Direction.LONG:
             if self.spread.ask_price <= self.price:
                 self.take_active_leg()
+                print(f'spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_legs[0].bid_price}')
         else:
             if self.spread.bid_price >= self.price:
                 self.take_active_leg()
+                print(f'spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_legs[0].ask_price}')
 
     def on_order(self, order: OrderData):
         """"""
