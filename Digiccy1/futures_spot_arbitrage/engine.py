@@ -428,7 +428,7 @@ class SpreadAlgoEngine:
     def process_trade_event(self, event: Event):
         """"""
         trade = event.data
-        print('process_trade_event(algo engine) vt_tradeids: %s<<<<<<<<<<<<<<' % self.vt_tradeids)
+        # print('process_trade_event(algo engine) vt_tradeids: %s<<<<<<<<<<<<<<' % self.vt_tradeids)
         # Filter duplicate trade push
         if trade.vt_tradeid in self.vt_tradeids:
             return
@@ -592,7 +592,7 @@ class SpreadAlgoEngine:
 
             # Save relationship between orderid and algo.
             self.order_algo_map[vt_orderid] = algo
-            print('%s algo engine send_order vt_orderid:%s,price: %s' % (algo.algoid, vt_orderid, req.price))
+            # print('%s algo engine send_order vt_orderid:%s,price: %s' % (algo.algoid, vt_orderid, req.price))
 
         return vt_orderids
 

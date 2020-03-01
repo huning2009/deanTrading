@@ -66,7 +66,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         # Only care active leg order update
         if order.vt_symbol != self.spread.active_leg.vt_symbol:
             return
-        print('got active_leg on_order')
+        # print('got active_leg on_order')
         # Do nothing if still any existing orders
         if not self.check_order_finished():
             return
@@ -91,9 +91,11 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         spread_volume_left = self.target - self.traded
 
         if self.direction == Direction.LONG:
-            spread_order_volume = min(self.lot_size, spread_volume_left)
+            spread_order_volume = max(self.spread.ask_volume, self.lot_size)
+            spread_order_volume = min(spread_order_volume, spread_volume_left)
         else:
-            spread_order_volume = max(-self.lot_size, spread_volume_left)
+            spread_order_volume = min(-self.spread.bid_volume, -self.lot_size)
+            spread_order_volume = max(spread_order_volume, spread_volume_left)
 
         # Calculate active leg order volume
         leg_order_volume = self.spread.calculate_leg_volume(
@@ -155,5 +157,3 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
                 price = round_to(leg_tick.bid_price_1 - leg_contract.pricetick * self.payup,leg_contract.pricetick)
             self.send_short_order(leg.vt_symbol, price, abs(leg_volume))
         
-        # every algo there must be owning only one order at a time, so init the timer to 0
-        self.count = 0

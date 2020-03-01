@@ -116,7 +116,7 @@ class SpreadAlgoTemplate:
         if self.is_active():
             self.cancel_all_order()
             self.status = Status.CANCELLED
-            self.write_log("算法已停止,direction:%s, target: %s, spread.name:%s, keg_traded:%s" % (self.direction, self.target, self.spread_name, self.leg_traded))
+            self.write_log("算法已停止,direction:%s, target: %s, spread.name:%s, leg_traded:%s" % (self.direction, self.target, self.spread_name, self.leg_traded))
             self.put_event()
 
     def update_tick(self, tick: TickData):
@@ -159,7 +159,7 @@ class SpreadAlgoTemplate:
 
     def update_order(self, order: OrderData):
         """"""
-        print('algo template update_order, order.is_active:%s' % order.is_active())
+        # print('algo template update_order, order.is_active:%s' % order.is_active())
         if not order.is_active():
             vt_orderids = self.leg_orders[order.vt_symbol]
             if order.vt_orderid in vt_orderids:
@@ -230,9 +230,11 @@ class SpreadAlgoTemplate:
             direction,
             self.lock
         )
-        if vt_symbol== self.spread.active_leg.vt_symbol and direction==Direction.SHORT:
+        if vt_symbol == self.spread.active_leg.vt_symbol and direction==Direction.SHORT and self.spread.active_leg.net_pos < volume:
             self.active_short_orderids.extend(vt_orderids)
             self.count_active_short = 0
+        else:
+            self.count = 0
         self.leg_orders[vt_symbol].extend(vt_orderids)
 
         msg = "发出委托，{}，{}，{}@{}".format(
