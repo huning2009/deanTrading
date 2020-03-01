@@ -795,7 +795,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
         if req.symbol not in symbol_name_map:
             self.gateway.write_log(f"FUTURES找不到该合约代码{req.symbol}")
             return
-
+        time.sleep(3)
         # Create tick buf data
         tick = TickData(
             symbol=req.symbol,
