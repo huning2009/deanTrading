@@ -426,6 +426,7 @@ class BinanceRestApi(RestClient):
             "quantity": str(req.volume),
             "newClientOrderId": orderid,
             "sideEffectType": sideEffectType,
+            "timeInForce": 'IOC',
             "newOrderRespType": "ACK"
         }
 
