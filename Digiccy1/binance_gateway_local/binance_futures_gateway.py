@@ -356,7 +356,7 @@ class BinanceRestApi(RestClient):
 
         params = {
             "symbol": req.symbol,
-            "timeInForce": "GTC",
+            "timeInForce": "IOC",
             "side": DIRECTION_VT2BINANCE[req.direction],
             "type": ORDERTYPE_VT2BINANCE[req.type],
             "price": str(req.price),

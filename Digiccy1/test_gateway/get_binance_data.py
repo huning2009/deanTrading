@@ -59,7 +59,7 @@ gateway_futures.connect(setting)
 sleep(5)
 
 endtime = datetime.now()
-starttime = endtime - timedelta(days=4)
+starttime = endtime - timedelta(days=2)
 
 symbol_l = ['EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT']
 

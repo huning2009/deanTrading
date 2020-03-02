@@ -19,7 +19,7 @@ DbContractData, DbAccountData, DbBarData = init_models(db)
 symbol='XTZUSDT'
 exchange='BINANCE'
 futures_exchange='BINANCEFUTURES'
-start_time = dtt.datetime.now() - dtt.timedelta(days=30)
+start_time = dtt.datetime.now() - dtt.timedelta(days=14)
 
 print(dtt.datetime.now())
 data = DbBarData.select().where((DbBarData.symbol==symbol) & (DbBarData.exchange==exchange) & (DbBarData.datetime>start_time))
