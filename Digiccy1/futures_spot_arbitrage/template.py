@@ -171,17 +171,18 @@ class SpreadAlgoTemplate:
 
     def update_timer(self):
         """"""
-        self.count += 1
-        self.count_active_short += 1
-        if self.count > self.interval:
-            self.count = 0
-            self.cancel_all_order_but_active_short()
+        # self.count += 1
+        # self.count_active_short += 1
+        # if self.count > self.interval:
+        #     self.count = 0
+        #     self.cancel_all_order_but_active_short()
 
-        if self.count_active_short > self.cancel_active_short_interval:
-            self.count_active_short = 0
-            self.cancel_active_short_order()
+        # if self.count_active_short > self.cancel_active_short_interval:
+        #     self.count_active_short = 0
+        #     self.cancel_active_short_order()
 
-        self.put_event()
+        # self.put_event()
+        pass
 
     def put_event(self):
         """"""
