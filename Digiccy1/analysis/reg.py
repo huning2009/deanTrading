@@ -16,7 +16,7 @@ from DatabaseManage.init_sqlite import get_sqlite, init_models
 db = get_sqlite('info.db')
 DbContractData, DbAccountData, DbBarData = init_models(db)
 
-symbol='XTZUSDT'
+symbol='BCHUSDT'
 exchange='BINANCE'
 futures_exchange='BINANCEFUTURES'
 start_time = dtt.datetime.now() - dtt.timedelta(days=14)

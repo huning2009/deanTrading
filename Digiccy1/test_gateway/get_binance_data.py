@@ -59,9 +59,10 @@ gateway_futures.connect(setting)
 sleep(5)
 
 endtime = datetime.now()
-starttime = endtime - timedelta(days=2)
+starttime = endtime - timedelta(days=60)
 
-symbol_l = ['EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT']
+symbol_l1 = ['EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT']
+symbol_l = ['ETHUSDT', 'ETCUSDT', 'TRXUSDT', 'ADAUSDT', 'ATOMUSDT', 'XMRUSDT', 'DASHUSDT']
 
 for symbol in symbol_l:
     historyReq = HistoryRequest(symbol, Exchange.BINANCE, starttime, endtime, Interval.MINUTE)
