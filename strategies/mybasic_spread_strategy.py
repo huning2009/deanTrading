@@ -73,7 +73,8 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         """
         Callback when strategy is started.
         """
-        print(self.get_parameters())
+        self.write_log(self.get_parameters())
+        self.on_spread_data()
         self.write_log("策略启动")
 
     def on_stop(self):
@@ -86,7 +87,6 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         self.sell_algoids = []
         self.short_algoids = []
         self.cover_algoids = []
-        self.put_event()
 
     def on_spread_data(self):
         """
@@ -149,14 +149,12 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
                     self.cover_algo_aggpos -= start_cover_vol
                     self.cover_algoids.append(cover_algoid)
 
-        self.put_event()
 
     def on_spread_pos(self):
         """
         Callback when spread position is updated.
         """
         self.spread_pos = self.get_spread_pos()
-        self.put_event()
 
     def on_spread_algo(self, algo: SpreadAlgoTemplate):
         """
@@ -174,9 +172,7 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
                 self.cover_algoids.remove(algo.algoid)
                 self.cover_algo_aggpos += algo.volume
             else:
-                print('on_spread_algo has no algo:%s' % algo.algoid)
-
-        self.put_event()
+                self.write_log('on_spread_algo has no algo:%s' % algo.algoid)
 
     def on_order(self, order: OrderData):
         """

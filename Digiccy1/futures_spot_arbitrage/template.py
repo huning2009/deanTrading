@@ -117,7 +117,7 @@ class SpreadAlgoTemplate:
             self.cancel_all_order()
             self.status = Status.CANCELLED
             self.write_log("算法已停止,direction:%s, target: %s, spread.name:%s, leg_traded:%s" % (self.direction, self.target, self.spread_name, self.leg_traded))
-            self.put_event()
+            self.put_algo_event()
 
     def update_tick(self, tick: TickData):
         """"""
@@ -153,7 +153,7 @@ class SpreadAlgoTemplate:
         self.write_log(msg)
 
         self.calculate_traded()
-        self.put_event()
+        self.put_algo_event()
 
         self.on_trade(trade)
 
@@ -181,10 +181,10 @@ class SpreadAlgoTemplate:
         #     self.count_active_short = 0
         #     self.cancel_active_short_order()
 
-        # self.put_event()
+        # self.put_algo_event()
         pass
 
-    def put_event(self):
+    def put_algo_event(self):
         """"""
         self.algo_engine.put_algo_event(self)
 
@@ -650,10 +650,6 @@ class SpreadStrategyTemplate:
         """"""
         for vt_orderid in self.vt_orderids:
             self.cancel_order(vt_orderid)
-
-    def put_event(self):
-        """"""
-        self.strategy_engine.put_strategy_event(self)
 
     def write_log(self, msg: str):
         """"""
