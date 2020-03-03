@@ -303,13 +303,13 @@ class SpreadAlgoTemplate:
 
         if self.traded == self.target:
             self.status = Status.ALLTRADED
-            print("algo calculate_traded: %s status is ALLTRADE" % self.algoid)
+            # print("algo calculate_traded: %s status is ALLTRADE" % self.algoid)
         elif not self.traded:
             self.status = Status.NOTTRADED
-            print("algo calculate_traded: %s status is NOTTRADED" % self.algoid)
+            # print("algo calculate_traded: %s status is NOTTRADED" % self.algoid)
         else:
             self.status = Status.PARTTRADED
-            print("algo calculate_traded: %s status is PARTTRADED" % self.algoid)
+            # print("algo calculate_traded: %s status is PARTTRADED" % self.algoid)
 
     def get_tick(self, vt_symbol: str) -> TickData:
         """"""

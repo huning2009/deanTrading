@@ -57,11 +57,11 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         if self.direction == Direction.LONG:
             if self.spread.ask_price <= self.price:
                 self.take_active_leg()
-                print(f'spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_legs[0].bid_price}')
+                # print(f'spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_legs[0].bid_price}')
         else:
             if self.spread.bid_price >= self.price:
                 self.take_active_leg()
-                print(f'spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_legs[0].ask_price}')
+                # print(f'spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_legs[0].ask_price}')
 
     def on_order(self, order: OrderData):
         """"""
@@ -72,7 +72,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         # Do nothing if still any existing orders
         if not self.check_order_finished():
             return
-        print("check_order_finished pass")
+        # print("check_order_finished pass")
         # Hedge passive legs if necessary
         if not self.check_hedge_finished():
             self.hedge_passive_legs()
@@ -119,7 +119,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         active_leg = self.spread.active_leg
         active_traded = self.leg_traded[active_leg.vt_symbol]
         active_traded = round_to(active_traded, self.spread.min_volume)
-        print("algo hedge_passive_legs, active_traded=%s" % active_traded)
+        # print("algo hedge_passive_legs, active_traded=%s" % active_traded)
 
         hedge_volume = self.spread.calculate_spread_volume(
             active_leg.vt_symbol,
