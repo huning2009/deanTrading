@@ -74,6 +74,7 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         Callback when strategy is started.
         """
         self.write_log(self.get_parameters())
+        self.trading = True
         self.on_spread_data()
         self.write_log("策略启动")
 
@@ -92,19 +93,18 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         """
         Callback when spread price is updated.
         """
+        # print("strategy on_spread_data")
         self.spread_pos = self.get_spread_pos()
         # print(f'{self.strategy_name}on_spread_data,spread_pos:{self.spread_pos}')
         # No position
         if not self.spread_pos:
             self.stop_close_algos()
-
             # Start open algos
             if len(self.buy_algoids)==0:
                 buy_algoid = self.start_long_algo(
                     self.buy_price, self.max_pos, self.lot_size, self.payup, self.interval, self.cancel_active_short_interval
                 )
                 self.buy_algoids.append(buy_algoid)
-
             if len(self.short_algoids)==0:
                 short_algoid = self.start_short_algo(
                     self.short_price, self.max_pos, self.lot_size, self.payup, self.interval, self.cancel_active_short_interval
@@ -155,6 +155,7 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         Callback when spread position is updated.
         """
         self.spread_pos = self.get_spread_pos()
+        self.on_spread_data()
 
     def on_spread_algo(self, algo: SpreadAlgoTemplate):
         """

@@ -97,17 +97,15 @@ class SpreadAlgoTemplate:
 
         finished = True
 
-        for leg in self.spread.passive_legs:
-            passive_symbol = leg.vt_symbol
+        passive_symbol = self.spread.passive_leg.vt_symbol
 
-            leg_target = self.spread.calculate_leg_volume(
-                passive_symbol, spread_volume
-            )
-            leg_traded = self.leg_traded[passive_symbol]
+        leg_target = self.spread.calculate_leg_volume(
+            passive_symbol, spread_volume
+        )
+        leg_traded = self.leg_traded[passive_symbol]
 
-            if leg_traded != leg_target:
-                finished = False
-                break
+        if leg_traded != leg_target:
+            finished = False
         # print("check_hedge_finished: %s, passive leg_traded %s" % (finished, leg_traded))
         return finished
 
@@ -530,7 +528,6 @@ class SpreadStrategyTemplate:
         """"""
         if not self.trading:
             return ""
-
         algoid: str = self.strategy_engine.start_algo(
             self,
             self.spread_name,

@@ -142,7 +142,7 @@ class SpreadData:
 
         self.legs: Dict[str, LegData] = {}
         self.active_leg: LegData = None
-        self.passive_legs: List[LegData] = []
+        self.passive_leg: LegData = None
 
         self.min_volume: float = min_volume
 
@@ -155,27 +155,13 @@ class SpreadData:
         # For inverse derivative contracts of crypto market
         self.inverse_contracts: Dict[str, bool] = inverse_contracts
 
-        self.price_formula: str = ""
-        self.trading_formula: str = ""
 
         for leg in legs:
             self.legs[leg.vt_symbol] = leg
             if leg.vt_symbol == active_symbol:
                 self.active_leg = leg
             else:
-                self.passive_legs.append(leg)
-
-            price_multiplier = self.price_multipliers[leg.vt_symbol]
-            if price_multiplier > 0:
-                self.price_formula += f"+{price_multiplier}*{leg.vt_symbol}"
-            else:
-                self.price_formula += f"{price_multiplier}*{leg.vt_symbol}"
-
-            trading_multiplier = self.trading_multipliers[leg.vt_symbol]
-            if trading_multiplier > 0:
-                self.trading_formula += f"+{trading_multiplier}*{leg.vt_symbol}"
-            else:
-                self.trading_formula += f"{trading_multiplier}*{leg.vt_symbol}"
+                self.passive_leg=leg
 
         # Spread data
         self.bid_price: float = 0
@@ -189,99 +175,129 @@ class SpreadData:
     def calculate_price(self):
         """"""
         self.clear_price()
-        # Go through all legs to calculate price
-        for n, leg in enumerate(self.legs.values()):
-            # Filter not all leg price data has been received
-            if not leg.bid_volume or not leg.ask_volume:
-                self.clear_price()
-                return
+        ############ calculte active leg
+        leg = self.active_leg
+        # Filter not all leg price data has been received
+        if not leg.bid_volume or not leg.ask_volume:
+            self.clear_price()
+            return
 
-            # Calculate price
-            price_multiplier = self.price_multipliers[leg.vt_symbol]
-            if price_multiplier > 0:
-                self.bid_price += leg.bid_price * price_multiplier
-                self.ask_price += leg.ask_price * price_multiplier
-            else:
-                self.bid_price += leg.ask_price * price_multiplier
-                self.ask_price += leg.bid_price * price_multiplier
+        # Calculate price
+        price_multiplier = self.price_multipliers[leg.vt_symbol]
+        self.bid_price += leg.bid_price * price_multiplier
+        self.ask_price += leg.ask_price * price_multiplier
 
-            # Calculate volume
-            trading_multiplier = self.trading_multipliers[leg.vt_symbol]
-            inverse_contract = self.inverse_contracts[leg.vt_symbol]
+        # Calculate volume
+        trading_multiplier = self.trading_multipliers[leg.vt_symbol]
+        inverse_contract = self.inverse_contracts[leg.vt_symbol]
 
-            if not inverse_contract:
-                leg_bid_volume = leg.bid_volume
-                leg_ask_volume = leg.ask_volume
-            else:
-                leg_bid_volume = calculate_inverse_volume(
-                    leg.bid_volume, leg.bid_price, leg.size)
-                leg_ask_volume = calculate_inverse_volume(
-                    leg.ask_volume, leg.ask_price, leg.size)
+        if not inverse_contract:
+            leg_bid_volume = leg.bid_volume
+            leg_ask_volume = leg.ask_volume
+        else:
+            leg_bid_volume = calculate_inverse_volume(
+                leg.bid_volume, leg.bid_price, leg.size)
+            leg_ask_volume = calculate_inverse_volume(
+                leg.ask_volume, leg.ask_price, leg.size)
 
-            if trading_multiplier > 0:
-                adjusted_bid_volume = floor_to(
-                    leg_bid_volume / trading_multiplier,
-                    self.min_volume
-                )
-                adjusted_ask_volume = floor_to(
-                    leg_ask_volume / trading_multiplier,
-                    self.min_volume
-                )
-            else:
-                adjusted_bid_volume = floor_to(
-                    leg_bid_volume / abs(trading_multiplier),
-                    self.min_volume
-                )
-                adjusted_ask_volume = floor_to(
-                    leg_ask_volume / abs(trading_multiplier),
-                    self.min_volume
-                )
+        adjusted_bid_volume = floor_to(leg_bid_volume / trading_multiplier,self.min_volume)
+        adjusted_ask_volume = floor_to(leg_ask_volume / trading_multiplier,self.min_volume)
 
-            # For the first leg, just initialize
-            if not n:
-                self.bid_volume = adjusted_bid_volume
-                self.ask_volume = adjusted_ask_volume
-            # For following legs, use min value of each leg quoting volume
-            else:
-                self.bid_volume = min(self.bid_volume, adjusted_bid_volume)
-                self.ask_volume = min(self.ask_volume, adjusted_ask_volume)
+        # For the first leg, just initialize
+        self.bid_volume = adjusted_bid_volume
+        self.ask_volume = adjusted_ask_volume
 
-            # Update calculate time
-            self.datetime = datetime.now()
-        # print(str(self.bid_price)+":"+str(self.ask_price))
+        ##########calculate passive leg
+        leg = self.passive_leg
+        # Filter not all leg price data has been received
+        if not leg.bid_volume or not leg.ask_volume:
+            self.clear_price()
+            return
+
+        # Calculate price
+        price_multiplier = self.price_multipliers[leg.vt_symbol]
+
+        self.bid_price += leg.ask_price * price_multiplier
+        self.ask_price += leg.bid_price * price_multiplier
+
+        # Calculate volume
+        trading_multiplier = self.trading_multipliers[leg.vt_symbol]
+        inverse_contract = self.inverse_contracts[leg.vt_symbol]
+
+        if not inverse_contract:
+            leg_bid_volume = leg.bid_volume
+            leg_ask_volume = leg.ask_volume
+        else:
+            leg_bid_volume = calculate_inverse_volume(
+                leg.bid_volume, leg.bid_price, leg.size)
+            leg_ask_volume = calculate_inverse_volume(
+                leg.ask_volume, leg.ask_price, leg.size)
+
+        adjusted_bid_volume = floor_to(leg_bid_volume / abs(trading_multiplier),self.min_volume)
+        adjusted_ask_volume = floor_to(leg_ask_volume / abs(trading_multiplier),self.min_volume)
+
+        # For the first leg, just initialize
+        self.bid_volume = min(self.bid_volume, adjusted_bid_volume)
+        self.ask_volume = min(self.ask_volume, adjusted_ask_volume)
+
+        # Update calculate time
+        self.datetime = datetime.now()
+        # print(self.name + str(self.bid_price)+":"+str(self.ask_price))
     def calculate_pos(self):
         """"""
         long_pos = 0
         short_pos = 0
+        # calculate avtive leg
+        leg = self.active_leg
+        leg_long_pos = 0
+        leg_short_pos = 0
 
-        for n, leg in enumerate(self.legs.values()):
-            leg_long_pos = 0
-            leg_short_pos = 0
+        trading_multiplier = self.trading_multipliers[leg.vt_symbol]
+        inverse_contract = self.inverse_contracts[leg.vt_symbol]
 
-            trading_multiplier = self.trading_multipliers[leg.vt_symbol]
-            inverse_contract = self.inverse_contracts[leg.vt_symbol]
+        if not inverse_contract:
+            net_pos = leg.net_pos
+        else:
+            net_pos = calculate_inverse_volume(
+                leg.net_pos, leg.net_pos_price, leg.size)
 
-            if not inverse_contract:
-                net_pos = leg.net_pos
-            else:
-                net_pos = calculate_inverse_volume(
-                    leg.net_pos, leg.net_pos_price, leg.size)
+        adjusted_net_pos = net_pos / trading_multiplier
 
-            adjusted_net_pos = net_pos / trading_multiplier
+        if adjusted_net_pos > 0:
+            adjusted_net_pos = floor_to(adjusted_net_pos, self.min_volume)
+            leg_long_pos = adjusted_net_pos
+        else:
+            adjusted_net_pos = ceil_to(adjusted_net_pos, self.min_volume)
+            leg_short_pos = abs(adjusted_net_pos)
 
-            if adjusted_net_pos > 0:
-                adjusted_net_pos = floor_to(adjusted_net_pos, self.min_volume)
-                leg_long_pos = adjusted_net_pos
-            else:
-                adjusted_net_pos = ceil_to(adjusted_net_pos, self.min_volume)
-                leg_short_pos = abs(adjusted_net_pos)
+        long_pos = leg_long_pos
+        short_pos = leg_short_pos
 
-            if not n:
-                long_pos = leg_long_pos
-                short_pos = leg_short_pos
-            else:
-                long_pos = min(long_pos, leg_long_pos)
-                short_pos = min(short_pos, leg_short_pos)
+        #calculate passive leg 
+        leg = self.passive_leg
+        leg_long_pos = 0
+        leg_short_pos = 0
+
+        trading_multiplier = self.trading_multipliers[leg.vt_symbol]
+        inverse_contract = self.inverse_contracts[leg.vt_symbol]
+
+        if not inverse_contract:
+            net_pos = leg.net_pos
+        else:
+            net_pos = calculate_inverse_volume(
+                leg.net_pos, leg.net_pos_price, leg.size)
+
+        adjusted_net_pos = net_pos / trading_multiplier
+
+        if adjusted_net_pos > 0:
+            adjusted_net_pos = floor_to(adjusted_net_pos, self.min_volume)
+            leg_long_pos = adjusted_net_pos
+        else:
+            adjusted_net_pos = ceil_to(adjusted_net_pos, self.min_volume)
+            leg_short_pos = abs(adjusted_net_pos)
+
+        long_pos = min(long_pos, leg_long_pos)
+        short_pos = min(short_pos, leg_short_pos)
 
         if long_pos > 0:
             self.net_pos = long_pos

@@ -368,6 +368,7 @@ class SpreadDataEngine:
             min_volume
         )
         self.spreads[name] = spread
+        self.spread_engine.algo_engine.process_spread(spread)
 
         for leg in spread.legs.values():
             self.symbol_spread_map[leg.vt_symbol].append(spread)
@@ -466,14 +467,14 @@ class SpreadAlgoEngine:
         account_margin = event.data
         self.margin_accounts[account_margin.vt_accountid] = account_margin
 
-    # def process_spread_event(self, event: Event):
-    #     """"""
-    #     spread: SpreadData = event.data
-    #     self.spreads[spread.name] = spread
+    def process_spread(self, spread):
+        """"""
+        self.spreads[spread.name] = spread
 
     def process_tick(self, tick: TickData):
         """"""
         algos = self.symbol_algo_map[tick.vt_symbol]
+        # print(algos)
         if not algos:
             return
 
@@ -572,7 +573,7 @@ class SpreadAlgoEngine:
         # Generate map between vt_symbol and algo
         for leg in spread.legs.values():
             self.symbol_algo_map[leg.vt_symbol].append(algo)
-
+        # print(self.symbol_algo_map)
         # Put event to update GUI
         # self.spread_engine.strategy_engine.process_spread_algo(algo)
 
@@ -935,7 +936,6 @@ class SpreadStrategyEngine:
             return
 
         self.call_strategy_func(strategy, strategy.on_start)
-        strategy.trading = True
 
     def stop_strategy(self, strategy_name: str):
         """"""
