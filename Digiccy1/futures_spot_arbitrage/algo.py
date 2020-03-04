@@ -1,8 +1,8 @@
 from typing import Any
 
-from vnpy.trader.constant import Direction, Offset
-from vnpy.trader.object import (TickData, OrderData, TradeData)
-from vnpy.trader.utility import round_to
+from myConstant import Direction, Offset
+from myObject import (TickData, OrderData, TradeData)
+from myUtility import round_to
 
 from .template import SpreadAlgoTemplate
 from .base import SpreadData

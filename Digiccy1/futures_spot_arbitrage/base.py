@@ -3,11 +3,9 @@ from datetime import datetime
 from enum import Enum
 from functools import lru_cache
 
-from vnpy.trader.object import (
-    TickData, PositionData, TradeData, ContractData, BarData
-)
-from vnpy.trader.constant import Direction, Offset, Exchange, Interval
-from vnpy.trader.utility import floor_to, ceil_to, round_to, extract_vt_symbol
+from myObject import TickData, PositionData, TradeData, ContractData, BarData
+from myConstant import Direction, Offset, Exchange, Interval
+from myUtility import floor_to, ceil_to, round_to, extract_vt_symbol
 
 
 EVENT_SPREAD_DATA = "eSpreadData"

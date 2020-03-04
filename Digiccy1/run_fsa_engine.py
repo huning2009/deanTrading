@@ -1,8 +1,12 @@
 from time import sleep
+import sys
+from pathlib import Path
+sys.path.append(str(Path.cwd()))
 
-from vnpy.event import Event, EventEngine
-from vnpy.trader.engine import MainEngine
-from vnpy.trader.event import (
+from myUtility import load_json
+from myEvent import (
+    Event, 
+    EventEngine,
     EVENT_ORDER,
     EVENT_TRADE,
     EVENT_POSITION,
@@ -10,8 +14,6 @@ from vnpy.trader.event import (
 	EVENT_CONTRACT,
 	EVENT_LOG,
 )
-from vnpy.trader.utility import load_json
-
 from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
 from Digiccy1.futures_spot_arbitrage import SpreadEngine
 

@@ -3,11 +3,9 @@ from collections import defaultdict
 from typing import Dict, List, Set, Callable
 from copy import copy
 
-from vnpy.trader.object import (
-    TickData, TradeData, OrderData, ContractData, BarData
-)
-from vnpy.trader.constant import Direction, Status, Offset, Interval
-from vnpy.trader.utility import virtual, floor_to, ceil_to, round_to
+from myObject import TickData, TradeData, OrderData, ContractData, BarData
+from myConstant import Direction, Status, Offset, Interval
+from myUtility import virtual, floor_to, ceil_to, round_to
 
 from .base import SpreadData, calculate_inverse_volume
 

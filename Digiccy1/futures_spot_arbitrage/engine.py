@@ -7,30 +7,25 @@ from copy import copy
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from vnpy.event import EventEngine, Event
-from vnpy.trader.event import (
-    EVENT_TICK, EVENT_POSITION, EVENT_CONTRACT, EVENT_ACCOUNT, EVENT_LOG,
-    EVENT_ORDER, EVENT_TRADE, EVENT_TIMER
-)
-from vnpy.trader.utility import load_json, save_json
-from vnpy.trader.object import (
-    TickData, ContractData, LogData, CancelRequest,
-    SubscribeRequest, OrderRequest
-)
-from vnpy.trader.constant import (
-    Direction, Offset, OrderType, Interval
-)
 from vnpy.trader.converter import OffsetConverter
-from vnpy.trader.gateway import BaseGateway
+
+from myEvent import EventEngine, Event, EVENT_TICK, EVENT_POSITION, EVENT_CONTRACT, EVENT_ACCOUNT, EVENT_LOG, EVENT_ORDER, EVENT_TRADE, EVENT_TIMER
+
+from myUtility import load_json, save_json
+from myObject import (
+    TickData, ContractData, LogData, CancelRequest,
+    SubscribeRequest, OrderRequest, MarginAccountData, FuturesAccountData
+)
+from myConstant import (
+    Direction, Offset, OrderType, Interval, EVENT_ACCOUNT_MARGIN, EVENT_ACCOUNT_FUTURES
+)
+from myGateway import BaseGateway
 
 from .base import (
     LegData, SpreadData
 )
 from .template import SpreadAlgoTemplate, SpreadStrategyTemplate
 from .algo import SpreadTakerAlgo
-
-from myConstant import EVENT_ACCOUNT_MARGIN, EVENT_ACCOUNT_FUTURES
-from myObject import MarginAccountData, FuturesAccountData
 
 class SpreadEngine(object):
     """"""
@@ -437,7 +432,7 @@ class SpreadAlgoEngine:
 
         self.algo_count: int = 0
         self.vt_tradeids: Set = set()
-        self.margin_accounts: Dict[str: MarginAccountData] = {}
+        self.margin_accounts: Dict = {}
 
         self.offset_converter: OffsetConverter = OffsetConverter(
             self.spread_engine

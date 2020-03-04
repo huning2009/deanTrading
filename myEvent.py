@@ -9,7 +9,13 @@ from time import sleep
 from typing import Any, Callable, List
 
 EVENT_TIMER = "eTimer"
-
+EVENT_TICK = "eTick."
+EVENT_TRADE = "eTrade."
+EVENT_ORDER = "eOrder."
+EVENT_POSITION = "ePosition."
+EVENT_ACCOUNT = "eAccount."
+EVENT_CONTRACT = "eContract."
+EVENT_LOG = "eLog"
 
 class Event:
     """
@@ -56,7 +62,6 @@ class EventEngine:
         """
         while self._active:
             try:
-                print('quese size is %s' % self._queue.qsize)
                 event = self._queue.get(block=True, timeout=1)
                 self._process(event)
             except Empty:
