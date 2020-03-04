@@ -24,7 +24,7 @@ from vnpy.trader.converter import OffsetConverter
 from vnpy.trader.gateway import BaseGateway
 
 from .base import (
-    LegData, SpreadData,load_bar_data, load_tick_data
+    LegData, SpreadData
 )
 from .template import SpreadAlgoTemplate, SpreadStrategyTemplate
 from .algo import SpreadTakerAlgo
@@ -1094,25 +1094,3 @@ class SpreadStrategyEngine:
             subject = "价差策略引擎"
 
         self.spread_engine.send_email(subject, msg)
-
-    def load_bar(
-        self, spread: SpreadData, days: int, interval: Interval, callback: Callable
-    ):
-        """"""
-        end = datetime.now()
-        start = end - timedelta(days)
-
-        bars = load_bar_data(spread, interval, start, end)
-
-        for bar in bars:
-            callback(bar)
-
-    def load_tick(self, spread: SpreadData, days: int, callback: Callable):
-        """"""
-        end = datetime.now()
-        start = end - timedelta(days)
-
-        ticks = load_tick_data(spread, start, end)
-
-        for tick in ticks:
-            callback(tick)
