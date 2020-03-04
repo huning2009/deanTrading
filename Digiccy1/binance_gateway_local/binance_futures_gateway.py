@@ -13,15 +13,16 @@ from threading import Lock
 
 from vnpy.api.rest import RestClient, Request
 from vnpy.api.websocket import WebsocketClient
-from vnpy.trader.constant import (
+from myConstant import (
     Direction,
     Product,
     Status,
     OrderType,
-    Interval
+    Interval,
+    Exchange
 )
-from vnpy.trader.gateway import BaseGateway
-from vnpy.trader.object import (
+from myGateway import BaseGateway
+from myObject import (
     TickData,
     OrderData,
     TradeData,
@@ -34,11 +35,7 @@ from vnpy.trader.object import (
     SubscribeRequest,
     HistoryRequest
 )
-from vnpy.trader.event import EVENT_TIMER
-from vnpy.event import Event
-
-from myConstant import Exchange
-
+from myEvent import Event, EVENT_TIMER
 
 REST_HOST = "https://fapi.binance.com"
 WEBSOCKET_TRADE_HOST = "wss://fstream.binance.com/ws/"
