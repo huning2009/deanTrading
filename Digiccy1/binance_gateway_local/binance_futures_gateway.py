@@ -11,8 +11,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from threading import Lock
 
-from vnpy.api.rest import RestClient, Request
-from vnpy.api.websocket import WebsocketClient
+from myApi.rest import RestClient, Request
+from myApi.websocket import WebsocketClient
 from myConstant import (
     Direction,
     Product,
