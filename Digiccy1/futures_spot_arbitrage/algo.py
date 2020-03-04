@@ -141,19 +141,18 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
     def send_leg_order(self, vt_symbol: str, leg_volume: float):
         """"""
         leg = self.spread.legs[vt_symbol]
-        leg_tick = self.get_tick(vt_symbol)
         leg_contract = self.get_contract(vt_symbol)
 
         if leg_volume > 0:
             if vt_symbol == self.spread.active_leg.vt_symbol:
-                price = round_to(leg_tick.ask_price_1 + leg_contract.pricetick * self.payup * 10,leg_contract.pricetick)
+                price = round_to(self.spread.active_leg.ask_price + leg_contract.pricetick * self.payup * 10,leg_contract.pricetick)
             else:
-                price = round_to(leg_tick.ask_price_1 + leg_contract.pricetick * self.payup,leg_contract.pricetick)
+                price = round_to(self.spread.passive_leg.ask_price + leg_contract.pricetick * self.payup,leg_contract.pricetick)
             self.send_long_order(leg.vt_symbol, price, abs(leg_volume))
         elif leg_volume < 0:
             if vt_symbol == self.spread.active_leg.vt_symbol:
-                price = round_to(leg_tick.bid_price_1 - leg_contract.pricetick * self.payup * 10,leg_contract.pricetick) 
+                price = round_to(self.spread.active_leg.bid_price - leg_contract.pricetick * self.payup * 10,leg_contract.pricetick) 
             else:
-                price = round_to(leg_tick.bid_price_1 - leg_contract.pricetick * self.payup,leg_contract.pricetick)
+                price = round_to(self.spread.passive_leg.bid_price_1 - leg_contract.pricetick * self.payup,leg_contract.pricetick)
             self.send_short_order(leg.vt_symbol, price, abs(leg_volume))
         

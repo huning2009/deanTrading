@@ -674,10 +674,6 @@ class SpreadAlgoEngine:
         req = order.create_cancel_request()
         self.spread_engine.cancel_order(req, order.gateway_name)
 
-    def get_tick(self, vt_symbol: str) -> TickData:
-        """"""
-        return self.spread_engine.get_tick(vt_symbol)
-
     def get_contract(self, vt_symbol: str) -> ContractData:
         """"""
         return self.spread_engine.get_contract(vt_symbol)

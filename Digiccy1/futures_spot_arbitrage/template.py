@@ -309,10 +309,6 @@ class SpreadAlgoTemplate:
             self.status = Status.PARTTRADED
             print("algo calculate_traded: %s status is PARTTRADED" % self.algoid)
 
-    def get_tick(self, vt_symbol: str) -> TickData:
-        """"""
-        return self.algo_engine.get_tick(vt_symbol)
-
     def get_contract(self, vt_symbol: str) -> ContractData:
         """"""
         return self.algo_engine.get_contract(vt_symbol)
