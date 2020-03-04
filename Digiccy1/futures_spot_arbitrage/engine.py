@@ -266,12 +266,14 @@ class SpreadDataEngine:
         if not leg:
             return
         leg.update_trade(trade)
+        
+        self.spread_engine.algo_engine.process_trade(trade)
 
         for spread in self.symbol_spread_map[trade.vt_symbol]:
             spread.calculate_pos()
             self.spread_engine.strategy_engine.process_spread_pos(spread)
 
-        self.spread_engine.algo_engine.process_trade(trade)
+        # self.spread_engine.strategy_engine.process_trade(trade)
 
     def process_contract_event(self, event: Event) -> None:
         """"""
@@ -588,7 +590,7 @@ class SpreadAlgoEngine:
         volume: float,
         direction: Direction,
         lock: bool
-    ) -> List[str]:
+    ):
         """"""
         contract = self.spread_engine.get_contract(vt_symbol)
 
@@ -973,7 +975,7 @@ class SpreadStrategyEngine:
         direction: Direction,
         offset: Offset,
         lock: bool
-    ) -> List[str]:
+    ):
         contract = self.spread_engine.get_contract(vt_symbol)
 
         original_req = OrderRequest(

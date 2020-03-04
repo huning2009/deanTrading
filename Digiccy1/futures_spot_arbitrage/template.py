@@ -219,7 +219,7 @@ class SpreadAlgoTemplate:
         leg = self.spread.legs[vt_symbol]
         volume = round_to(volume, leg.min_volume)
 
-        vt_orderids = self.algo_engine.send_order(
+        vt_orderid = self.algo_engine.send_order(
             self,
             vt_symbol,
             price,
@@ -228,11 +228,11 @@ class SpreadAlgoTemplate:
             self.lock
         )
         if vt_symbol == self.spread.active_leg.vt_symbol and direction==Direction.SHORT and self.spread.active_leg.net_pos < volume:
-            self.active_short_orderids.extend(vt_orderids)
+            self.active_short_orderids.append(vt_orderid)
             self.count_active_short = 0
         else:
             self.count = 0
-        self.leg_orders[vt_symbol].extend(vt_orderids)
+        self.leg_orders[vt_symbol].append(vt_orderid)
 
         msg = "发出委托，{}，{}，{}@{}".format(
             vt_symbol,
@@ -615,7 +615,7 @@ class SpreadStrategyTemplate:
         if not self.trading:
             return []
 
-        vt_orderids: List[str] = self.strategy_engine.send_order(
+        vt_orderid: List[str] = self.strategy_engine.send_order(
             self,
             vt_symbol,
             price,
@@ -625,10 +625,9 @@ class SpreadStrategyTemplate:
             lock
         )
 
-        for vt_orderid in vt_orderids:
-            self.vt_orderids.add(vt_orderid)
+        self.vt_orderids.add(vt_orderid)
 
-        return vt_orderids
+        return vt_orderid
 
     def cancel_order(self, vt_orderid: str):
         """"""
