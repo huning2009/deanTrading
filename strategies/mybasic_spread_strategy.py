@@ -1,9 +1,8 @@
 from myObject import (
-    SpreadData,
     OrderData,
     TradeData
 )
-from Digiccy1.futures_spot_arbitrage.template import SpreadAlgoTemplate, SpreadStrategyTemplate
+from Digiccy1.futures_spot_arbitrage.template import SpreadAlgoTemplate, SpreadStrategyTemplate, SpreadData
 
 class MyBasicSpreadStrategy(SpreadStrategyTemplate):
     """"""

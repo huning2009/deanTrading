@@ -7,8 +7,6 @@ from copy import copy
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from vnpy.trader.converter import OffsetConverter
-
 from myEvent import EventEngine, Event, EVENT_TICK, EVENT_POSITION, EVENT_CONTRACT, EVENT_ACCOUNT, EVENT_LOG, EVENT_ORDER, EVENT_TRADE, EVENT_TIMER
 
 from myUtility import load_json, save_json
@@ -158,10 +156,6 @@ class SpreadDataEngine:
         self.spreads: Dict[str, SpreadData] = {}    # name: spread
         self.symbol_spread_map: Dict[str, List[SpreadData]] = defaultdict(list)
         self.timer_count = 0
-
-        self.offset_converter: OffsetConverter = OffsetConverter(
-            self.spread_engine
-        )
 
         self.write_log = spread_engine.write_log
 
@@ -434,10 +428,6 @@ class SpreadAlgoEngine:
         self.vt_tradeids: Set = set()
         self.margin_accounts: Dict = {}
 
-        self.offset_converter: OffsetConverter = OffsetConverter(
-            self.spread_engine
-        )
-
     def start(self):
         """"""
         self.register_event()
@@ -483,9 +473,6 @@ class SpreadAlgoEngine:
     def process_order_event(self, event: Event):
         """"""
         order = event.data
-
-        self.offset_converter.update_order(order)
-
         algo = self.order_algo_map.get(order.vt_orderid, None)
         if algo and algo.is_active():
             algo.update_order(order)
@@ -499,8 +486,6 @@ class SpreadAlgoEngine:
         if trade.vt_tradeid in self.vt_tradeids:
             return
         self.vt_tradeids.add(trade.vt_tradeid)
-
-        self.offset_converter.update_trade(trade)
 
         algo = self.order_algo_map.get(trade.vt_orderid, None)
         # print("process_trade_event(algo engine)>>>>vt_orderid: %s" % trade.vt_orderid)
@@ -605,59 +590,28 @@ class SpreadAlgoEngine:
         lock: bool
     ) -> List[str]:
         """"""
-        holding = self.offset_converter.get_position_holding(vt_symbol)
         contract = self.spread_engine.get_contract(vt_symbol)
-
-        if direction == Direction.LONG:
-            available = holding.short_pos - holding.short_pos_frozen
-        else:
-            available = holding.long_pos - holding.long_pos_frozen
-
-        # If no position to close, just open new
-        if not available:
-            offset = Offset.OPEN
-        # If enougth position to close, just close old
-        elif volume < available:
-            offset = Offset.CLOSE
-        # Otherwise, just close existing position
-        else:
-            volume = available
-            offset = Offset.CLOSE
 
         original_req = OrderRequest(
             symbol=contract.symbol,
             exchange=contract.exchange,
             direction=direction,
-            offset=offset,
             type=OrderType.LIMIT,
             price=price,
             volume=volume
         )
 
-        # Convert with offset converter
-        req_list = self.offset_converter.convert_order_request(
-            original_req, lock)
+        vt_orderid = self.spread_engine.send_order(
+            original_req, contract.gateway_name)
 
-        # Send Orders
-        vt_orderids = []
+        # Check if sending order successful
+        if not vt_orderid:
+            return ''
+        # Save relationship between orderid and algo.
+        self.order_algo_map[vt_orderid] = algo
+        # print('%s algo engine send_order vt_orderid:%s,price: %s' % (algo.algoid, vt_orderid, req.price))
 
-        for req in req_list:
-            vt_orderid = self.spread_engine.send_order(
-                req, contract.gateway_name)
-
-            # Check if sending order successful
-            if not vt_orderid:
-                continue
-
-            vt_orderids.append(vt_orderid)
-
-            self.offset_converter.update_order_request(req, vt_orderid)
-
-            # Save relationship between orderid and algo.
-            self.order_algo_map[vt_orderid] = algo
-            # print('%s algo engine send_order vt_orderid:%s,price: %s' % (algo.algoid, vt_orderid, req.price))
-
-        return vt_orderids
+        return vt_orderid
 
     def cancel_order(self, algo: SpreadAlgoTemplate, vt_orderid: str) -> None:
         """"""
@@ -694,11 +648,6 @@ class SpreadStrategyEngine:
         self.algo_strategy_map: Dict[str: SpreadStrategyTemplate] = {}
         self.spread_strategy_map: Dict[str: SpreadStrategyTemplate] = defaultdict(
             list)
-
-        self.offset_converter: OffsetConverter = OffsetConverter(
-            self.spread_engine
-        )
-
         self.vt_tradeids: Set = set()
 
         self.load_strategy_class()
@@ -1037,29 +986,14 @@ class SpreadStrategyEngine:
             volume=volume
         )
 
-        # Convert with offset converter
-        req_list = self.offset_converter.convert_order_request(
-            original_req, lock)
+        vt_orderid = self.spread_engine.send_order(
+            original_req, contract.gateway_name)
+        if not vt_orderid:
+            return ''
+        # Save relationship between orderid and strategy.
+        self.order_strategy_map[vt_orderid] = strategy
 
-        # Send Orders
-        vt_orderids = []
-
-        for req in req_list:
-            vt_orderid = self.spread_engine.send_order(
-                req, contract.gateway_name)
-
-            # Check if sending order successful
-            if not vt_orderid:
-                continue
-
-            vt_orderids.append(vt_orderid)
-
-            self.offset_converter.update_order_request(req, vt_orderid)
-
-            # Save relationship between orderid and strategy.
-            self.order_strategy_map[vt_orderid] = strategy
-
-        return vt_orderids
+        return vt_orderid
 
     def cancel_order(self, strategy: SpreadStrategyTemplate, vt_orderid: str):
         """"""
