@@ -119,7 +119,7 @@ class LegData:
                     self.long_pos -= trade.volume
 
             self.net_pos = self.long_pos - self.short_pos
-        print('%s leg update trade,net:%s,short:%s,long:%s'%(self.vt_symbol,self.net_pos,self.short_pos,self.long_pos))
+        # print('%s leg update trade,net:%s,short:%s,long:%s'%(self.vt_symbol,self.net_pos,self.short_pos,self.long_pos))
 
 class SpreadData:
     """"""
@@ -301,7 +301,7 @@ class SpreadData:
         else:
             self.net_pos = -short_pos
 
-        print('%s spread calculate_pos,net_pos:%s' % (self.name,self.net_pos))
+        # print('%s spread calculate_pos,net_pos:%s' % (self.name,self.net_pos))
 
     def clear_price(self):
         """"""

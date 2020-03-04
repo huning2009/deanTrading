@@ -113,8 +113,7 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
 
             if self.spread_pos < self.max_pos:
                 start_short_vol = self.spread_pos - self.sell_algo_aggpos
-                if start_short_vol > 0:
-                # if start_short_vol > 0 and start_short_vol*self.spread.active_leg.last_price > 12:
+                if start_short_vol > 0 and start_short_vol*self.spread.active_leg.last_price > 12:
                     sell_algoid = self.start_short_algo(
                             self.sell_price, start_short_vol, self.lot_size, self.payup, self.interval, self.cancel_active_short_interval
                         )
@@ -134,8 +133,7 @@ class MyBasicSpreadStrategy(SpreadStrategyTemplate):
         elif self.spread_pos < 0:
             if self.spread_pos > -self.max_pos:
                 start_cover_vol = -(self.spread_pos - self.cover_algo_aggpos)
-                if start_cover_vol > 0:
-                # if start_cover_vol > 0 and start_cover_vol*self.spread.active_leg.last_price > 12:
+                if start_cover_vol > 0 and start_cover_vol*self.spread.active_leg.last_price > 12:
                     cover_algoid = self.start_long_algo(self.cover_price, start_cover_vol, self.lot_size, self.payup, self.interval, self.cancel_active_short_interval)
                     self.cover_algo_aggpos -= start_cover_vol
                     self.cover_algoids.append(cover_algoid)
