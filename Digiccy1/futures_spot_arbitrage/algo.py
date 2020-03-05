@@ -46,7 +46,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         # Return if there are any existing orders
         if not self.check_order_finished():
             return
-
+        print('algo ontick check_order_finished passed!')
         # Hedge if active leg is not fully hedged
         if not self.check_hedge_finished():
             self.hedge_passive_leg()

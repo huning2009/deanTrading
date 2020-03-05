@@ -4,12 +4,15 @@ d = dict()
 d['a'] = 1
 d['b'] = 2
 
-print(dtt.datetime.now())
-for i in range(10000000):
+dt1 = dtt.datetime.now()
+for i in range(100000):
     s = d['a']
     s = d['b']
-print(dtt.datetime.now())
-for i in range(10000000):
+dt2 = dtt.datetime.now()
+for i in range(100000):
     for k,v in d.items():
         s = v
-print(dtt.datetime.now())
+dt3 = dtt.datetime.now()
+
+print(dt2-dt1)
+print(dt3-dt2)

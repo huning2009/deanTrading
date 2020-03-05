@@ -78,6 +78,7 @@ class SpreadAlgoTemplate:
 
         for leg in self.spread.legs.values():
             vt_orderids = self.leg_orders[leg.vt_symbol]
+            print(f'algo check_order_finished,{leg.vt_symbol}: {vt_orderids}')
             if vt_orderids:
                 finished = False
                 break
@@ -113,7 +114,7 @@ class SpreadAlgoTemplate:
             self.cancel_all_order()
             self.status = Status.CANCELLED
             self.write_log("算法已停止,direction:%s, target: %s, spread.name:%s, leg_traded:%s" % (self.direction, self.target, self.spread_name, self.leg_traded))
-            self.put_algo_event()
+            self.put_algo_to_strategy_engine()
 
     def update_tick(self, tick: TickData):
         """"""
@@ -149,7 +150,7 @@ class SpreadAlgoTemplate:
         self.write_log(msg)
 
         self.calculate_traded()
-        self.put_algo_event()
+        self.put_algo_to_strategy_engine()
 
         self.on_trade(trade)
 
@@ -180,9 +181,9 @@ class SpreadAlgoTemplate:
         # self.put_algo_event()
         pass
 
-    def put_algo_event(self):
+    def put_algo_to_strategy_engine(self):
         """"""
-        self.algo_engine.put_algo_event(self)
+        self.algo_engine.put_algo_to_strategy_engine(self)
 
     def write_log(self, msg: str):
         """"""

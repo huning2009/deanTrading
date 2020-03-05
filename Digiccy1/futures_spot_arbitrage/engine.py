@@ -497,7 +497,7 @@ class SpreadAlgoEngine:
             # print("process_trade_event(algo engine)>>>> algo.is_active:%s" % algo.is_active())
             algo.update_trade(trade)
 
-        self.spread_engine.strategy_engine.process_spread_algo(algo)
+        # self.spread_engine.strategy_engine.process_spread_algo(algo)
     def process_position(self, position):
         """"""
         pass
@@ -574,7 +574,7 @@ class SpreadAlgoEngine:
 
         algo.stop()
 
-    def put_algo_event(self, algo: SpreadAlgoTemplate) -> None:
+    def put_algo_to_strategy_engine(self, algo: SpreadAlgoTemplate) -> None:
         """"""
         self.spread_engine.strategy_engine.process_spread_algo(algo)
 

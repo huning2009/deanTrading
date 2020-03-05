@@ -7,6 +7,7 @@ from queue import Empty, Queue
 from threading import Thread
 from time import sleep
 from typing import Any, Callable, List
+from datetime import datetime
 
 EVENT_TIMER = "eTimer"
 EVENT_TICK = "eTick."
@@ -62,8 +63,12 @@ class EventEngine:
         """
         while self._active:
             try:
+                print(f'event engine queue size: {self._queue.qsize()}')
                 event = self._queue.get(block=True, timeout=1)
+                # dt1 = datetime.now()
                 self._process(event)
+                # dt2 = datetime.now()
+                # print(f'{event.type} cost:{dt2-dt1},qsize:{self._queue.qsize()}')
             except Empty:
                 pass
 
