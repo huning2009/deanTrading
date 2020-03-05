@@ -40,6 +40,31 @@ TRADER_DIR, TEMP_DIR = _get_trader_dir(".vntrader")
 sys.path.append(str(TRADER_DIR))
 
 #--------------------------------------------------------------------
+def get_settings(prefix: str = "") -> Dict[str, Any]:
+    prefix_length = len(prefix)
+    return {k[prefix_length:]: v for k, v in SETTINGS.items() if k.startswith(prefix)}
+#--------------------------------------------------------------------
+# def get_database_manager():
+# 	# print(SETTINGS)
+# 	settings = get_settings("database.")
+# 	# print(settings)
+# 	database_manager: "BaseDatabaseManager" = init(settings=settings)
+# 	# print(database_manager.class_bar.__dict__)
+# 	return database_manager
+#--------------------------------------------------------------------
+def save_json(filename: str, data: dict) -> None:
+    """
+    Save data into json file in temp path.
+    """
+    filepath = get_file_path(filename)
+    with open(filepath, mode="w+", encoding="UTF-8") as f:
+        json.dump(
+            data,
+            f,
+            indent=4,
+            ensure_ascii=False
+        )
+#--------------------------------------------------------------------
 def get_file_path(filename: str) -> Path:
     """
     Get path for temp file with filename.
@@ -91,31 +116,7 @@ SETTINGS: Dict[str, Any] = {
 # Load global setting from json file.
 SETTING_FILENAME: str = "vt_setting.json"
 SETTINGS.update(load_json(SETTING_FILENAME))
-#--------------------------------------------------------------------
-def get_settings(prefix: str = "") -> Dict[str, Any]:
-    prefix_length = len(prefix)
-    return {k[prefix_length:]: v for k, v in SETTINGS.items() if k.startswith(prefix)}
-#--------------------------------------------------------------------
-# def get_database_manager():
-# 	# print(SETTINGS)
-# 	settings = get_settings("database.")
-# 	# print(settings)
-# 	database_manager: "BaseDatabaseManager" = init(settings=settings)
-# 	# print(database_manager.class_bar.__dict__)
-# 	return database_manager
-#--------------------------------------------------------------------
-def save_json(filename: str, data: dict) -> None:
-    """
-    Save data into json file in temp path.
-    """
-    filepath = get_file_path(filename)
-    with open(filepath, mode="w+", encoding="UTF-8") as f:
-        json.dump(
-            data,
-            f,
-            indent=4,
-            ensure_ascii=False
-        )
+
 #--------------------------------------------------------------------
 def round_to(value: float, target: float) -> float:
     """

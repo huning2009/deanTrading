@@ -1,4 +1,5 @@
 from typing import Any
+from datetime import datetime
 
 from myConstant import Direction, Offset
 from myObject import (TickData, OrderData, TradeData)
@@ -55,11 +56,11 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         if self.direction == Direction.LONG:
             if self.spread.ask_price <= self.price:
                 self.take_active_leg()
-                self.write_log(f'spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}')
+                self.write_log(f'spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, send order:{datetime.now()}, tick datetime: {self.spread.active_leg.tick.datetime}')
         else:
             if self.spread.bid_price >= self.price:
                 self.take_active_leg()
-                self.write_log(f'spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}')
+                self.write_log(f'spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, send order:{datetime.now()}, tick datetime: {self.spread.active_leg.tick.datetime}')
 
     def on_order(self, order: OrderData):
         """"""
