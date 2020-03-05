@@ -63,6 +63,9 @@ class EventEngine:
         """
         while self._active:
             try:
+                qz = self._queue.qsize()
+                if qz > 50:
+                    print(f"self._queue.qsize:{qz}")
                 event = self._queue.get(block=True, timeout=1)
                 self._process(event)
             except Empty:
