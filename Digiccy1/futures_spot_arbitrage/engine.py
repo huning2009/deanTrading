@@ -570,7 +570,9 @@ class SpreadAlgoEngine:
         if not algo:
             self.write_log("停止价差算法失败，找不到算法：{}".format(algoid))
             return
-
+        if algo.is_active():
+            self.write_log("停止价差算法失败，单腿未成交")
+            return
         algo.stop()
 
     def put_algo_event(self, algo: SpreadAlgoTemplate) -> None:
