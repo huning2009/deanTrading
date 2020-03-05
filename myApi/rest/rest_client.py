@@ -11,7 +11,7 @@ from multiprocessing.dummy import Pool
 from threading import Lock, Thread
 from types import TracebackType
 from typing import Any, Callable, List, Optional, Type, Union
-from vnpy.trader.utility import get_file_logger
+from myUtility import get_file_logger
 
 import requests
 

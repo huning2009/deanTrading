@@ -11,7 +11,7 @@ from typing import Optional
 
 import websocket
 
-from vnpy.trader.utility import get_file_logger
+from myUtility import get_file_logger
 
 
 class WebsocketClient:
