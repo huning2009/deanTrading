@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from vnpy.trader.object import (
+from myObject import (
     OrderData,
     TradeData,
     TickData,
