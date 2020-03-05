@@ -497,6 +497,7 @@ class SpreadAlgoEngine:
             # print("process_trade_event(algo engine)>>>> algo.is_active:%s" % algo.is_active())
             algo.update_trade(trade)
 
+        self.spread_engine.strategy_engine.process_spread_algo(algo)
     def process_position(self, position):
         """"""
         pass
@@ -570,9 +571,7 @@ class SpreadAlgoEngine:
         if not algo:
             self.write_log("停止价差算法失败，找不到算法：{}".format(algoid))
             return
-        if algo.is_active():
-            self.write_log("停止价差算法失败，单腿未成交")
-            return
+
         algo.stop()
 
     def put_algo_event(self, algo: SpreadAlgoTemplate) -> None:
