@@ -478,7 +478,8 @@ class SpreadAlgoEngine:
         algo = self.order_algo_map.get(order.vt_orderid, None)
         if algo and algo.is_active():
             algo.update_order(order)
-
+        # else:
+        #     return
         self.spread_engine.strategy_engine.process_order(order)
 
     def process_trade(self, trade):
