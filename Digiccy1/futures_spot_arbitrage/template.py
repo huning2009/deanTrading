@@ -78,7 +78,6 @@ class SpreadAlgoTemplate:
 
         for leg in self.spread.legs.values():
             vt_orderids = self.leg_orders[leg.vt_symbol]
-            print(f'algo check_order_finished,{leg.vt_symbol}: {vt_orderids}')
             if vt_orderids:
                 finished = False
                 break
