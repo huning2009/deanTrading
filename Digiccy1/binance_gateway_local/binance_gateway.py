@@ -1016,4 +1016,4 @@ class BinanceDataWebsocketApi(WebsocketClient):
             tick.datetime = datetime.now()
         if tick.last_price:
             self.gateway.on_tick(copy(tick))
-            print(f'binance gateway tick.datetime: {tick.datetime}')
+            # print(f'binance gateway tick.datetime: {tick.datetime}')
