@@ -56,7 +56,7 @@ class SpreadAlgoTemplate:
         self.status: Status = Status.NOTTRADED  # Algo status
         self.count: int = 0                     # Timer count for passive(futures) order and active buy/sell/cover order
         self.count_active_short: int = 0        # Timer count for active short order to cancel
-        self.active_short_orderids = []
+        # self.active_short_orderids = []
         self.traded: float = 0                  # Volume traded
         self.traded_volume: float = 0           # Volume traded (Abs value)
 
@@ -110,7 +110,7 @@ class SpreadAlgoTemplate:
     def stop(self):
         """"""
         if self.is_active():
-            self.cancel_all_order()
+            # self.cancel_all_order()
             self.status = Status.CANCELLED
             self.write_log("算法已停止,direction:%s, target: %s, spread.name:%s, leg_traded:%s" % (self.direction, self.target, self.spread_name, self.leg_traded))
             self.put_algo_to_strategy_engine()
@@ -161,8 +161,8 @@ class SpreadAlgoTemplate:
             if order.vt_orderid in vt_orderids:
                 vt_orderids.remove(order.vt_orderid)
 
-            if order.vt_orderid in self.active_short_orderids:
-                self.active_short_orderids.remove(order.vt_orderid)
+            # if order.vt_orderid in self.active_short_orderids:
+            #     self.active_short_orderids.remove(order.vt_orderid)
         self.on_order(order)
 
     def update_timer(self):
@@ -227,11 +227,11 @@ class SpreadAlgoTemplate:
             direction,
             self.lock
         )
-        if vt_symbol == self.spread.active_leg.vt_symbol and direction==Direction.SHORT and self.spread.active_leg.net_pos < volume:
-            self.active_short_orderids.append(vt_orderid)
-            self.count_active_short = 0
-        else:
-            self.count = 0
+        # if vt_symbol == self.spread.active_leg.vt_symbol and direction==Direction.SHORT and self.spread.active_leg.net_pos < volume:
+        #     self.active_short_orderids.append(vt_orderid)
+        #     self.count_active_short = 0
+        # else:
+        #     self.count = 0
         self.leg_orders[vt_symbol].append(vt_orderid)
 
         msg = "发出委托，{}，{}，{}@{}".format(
@@ -242,28 +242,28 @@ class SpreadAlgoTemplate:
         )
         self.write_log(msg)
 
-    def cancel_leg_order(self, vt_symbol: str):
-        """"""
-        for vt_orderid in self.leg_orders[vt_symbol]:
-            self.algo_engine.cancel_order(self, vt_orderid)
+    # def cancel_leg_order(self, vt_symbol: str):
+    #     """"""
+    #     for vt_orderid in self.leg_orders[vt_symbol]:
+    #         self.algo_engine.cancel_order(self, vt_orderid)
 
-    def cancel_all_order(self):
-        """"""
-        for vt_symbol in self.leg_orders.keys():
-            self.cancel_leg_order(vt_symbol)
+    # def cancel_all_order(self):
+    #     """"""
+    #     for vt_symbol in self.leg_orders.keys():
+    #         self.cancel_leg_order(vt_symbol)
 
-    def cancel_all_order_but_active_short(self):
-        """"""
-        for vt_symbol in self.leg_orders.keys():
-            for vt_orderid in self.leg_orders[vt_symbol]:
-                if vt_orderid not in self.active_short_orderids:
-                    self.algo_engine.cancel_order(self, vt_orderid)
-                    self.write_log("cancel_all_order_but_active_short: %s" % vt_orderid)
-    def cancel_active_short_order(self):
-        for vt_orderid in self.leg_orders[self.spread.active_leg.vt_symbol]:
-            if vt_orderid in self.active_short_orderids:
-                self.algo_engine.cancel_order(self, vt_orderid)
-                self.write_log("cancel_active_short_order: %s" % vt_orderid)
+    # def cancel_all_order_but_active_short(self):
+    #     """"""
+    #     for vt_symbol in self.leg_orders.keys():
+    #         for vt_orderid in self.leg_orders[vt_symbol]:
+    #             if vt_orderid not in self.active_short_orderids:
+    #                 self.algo_engine.cancel_order(self, vt_orderid)
+    #                 self.write_log("cancel_all_order_but_active_short: %s" % vt_orderid)
+    # def cancel_active_short_order(self):
+    #     for vt_orderid in self.leg_orders[self.spread.active_leg.vt_symbol]:
+    #         if vt_orderid in self.active_short_orderids:
+    #             self.algo_engine.cancel_order(self, vt_orderid)
+    #             self.write_log("cancel_active_short_order: %s" % vt_orderid)
 
     def calculate_traded(self):
         """"""
