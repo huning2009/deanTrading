@@ -1000,6 +1000,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
             tick.ask_price_1 = float(data['a'])
             tick.bid_volume_1 = float(data['B'])
             tick.ask_volume_1 = float(data['A'])
+            tick.datetime = datetime.now()
         else:
             bids = data["bids"]
             for n in range(5):
@@ -1012,6 +1013,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
                 price, volume = asks[n]
                 tick.__setattr__("ask_price_" + str(n + 1), float(price))
                 tick.__setattr__("ask_volume_" + str(n + 1), float(volume))
-
+            tick.datetime = datetime.now()
         if tick.last_price:
             self.gateway.on_tick(copy(tick))
+            print(f'binance gateway tick.datetime: {tick.datetime}')
