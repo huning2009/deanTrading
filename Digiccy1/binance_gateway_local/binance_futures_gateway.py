@@ -813,7 +813,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
         channels = []
         for ws_symbol in self.ticks.keys():
             channels.append(ws_symbol + "@ticker")
-            # channels.append(ws_symbol + "@depth5@100ms")
+            channels.append(ws_symbol + "@depth5@100ms")
             channels.append(ws_symbol + "@bookTicker")
 
         url = WEBSOCKET_DATA_HOST + "/".join(channels)
@@ -841,18 +841,17 @@ class BinanceDataWebsocketApi(WebsocketClient):
             tick.bid_volume_1 = float(data['B'])
             tick.ask_volume_1 = float(data['A'])
         else:
-            pass
-            # bids = data["b"]
-            # for n in range(5):
-            #     price, volume = bids[n]
-            #     tick.__setattr__("bid_price_" + str(n + 1), float(price))
-            #     tick.__setattr__("bid_volume_" + str(n + 1), float(volume))
+            bids = data["b"]
+            for n in range(5):
+                price, volume = bids[n]
+                tick.__setattr__("bid_price_" + str(n + 1), float(price))
+                tick.__setattr__("bid_volume_" + str(n + 1), float(volume))
 
-            # asks = data["a"]
-            # for n in range(5):
-            #     price, volume = asks[n]
-            #     tick.__setattr__("ask_price_" + str(n + 1), float(price))
-            #     tick.__setattr__("ask_volume_" + str(n + 1), float(volume))
+            asks = data["a"]
+            for n in range(5):
+                price, volume = asks[n]
+                tick.__setattr__("ask_price_" + str(n + 1), float(price))
+                tick.__setattr__("ask_volume_" + str(n + 1), float(volume))
 
         if tick.last_price:
             self.gateway.on_tick(copy(tick))

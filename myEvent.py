@@ -151,3 +151,6 @@ class EventEngine:
         """
         if handler in self._general_handlers:
             self._general_handlers.remove(handler)
+
+    def get_qsize(self):
+        return self._queue.qsize()
