@@ -813,7 +813,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
         channels = []
         for ws_symbol in self.ticks.keys():
             channels.append(ws_symbol + "@ticker")
-            channels.append(ws_symbol + "@depth5@100ms")
+            # channels.append(ws_symbol + "@depth5@100ms")
             channels.append(ws_symbol + "@bookTicker")
 
         url = WEBSOCKET_DATA_HOST + "/".join(channels)
