@@ -672,10 +672,10 @@ class SpreadStrategyEngine:
         """
         path1 = Path(__file__).parent.joinpath("strategies")
         self.load_strategy_class_from_folder(
-            path1, "vnpy.app.spread_trading.strategies")
+            path1, "Digiccy1.futures_spot_arbitrage.strategies")
 
-        path2 = Path.cwd().joinpath("strategies")
-        self.load_strategy_class_from_folder(path2, "strategies")
+        # path2 = Path.cwd().joinpath("strategies")
+        # self.load_strategy_class_from_folder(path2, "strategies")
 
     def load_strategy_class_from_folder(self, path: Path, module_name: str = ""):
         """
