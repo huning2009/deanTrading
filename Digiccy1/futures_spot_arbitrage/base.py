@@ -12,7 +12,6 @@ EVENT_SPREAD_DATA = "eSpreadData"
 EVENT_SPREAD_POS = "eSpreadPos"
 EVENT_SPREAD_LOG = "eSpreadLog"
 EVENT_SPREAD_ALGO = "eSpreadAlgo"
-EVENT_SPREAD_STRATEGY = "eSpreadStrategy"
 
 
 class LegData:
@@ -132,7 +131,14 @@ class SpreadData:
         trading_multipliers: Dict[str, int],
         active_symbol: str,
         inverse_contracts: Dict[str, bool],
-        min_volume: float
+        min_volume: float,
+        buy_price: float,
+        sell_price: float,
+        cover_price: float,
+        short_price: float,
+        max_pos: float,
+        lot_size: float,
+        payup: float
     ):
         """"""
         self.name: str = name
@@ -142,6 +148,13 @@ class SpreadData:
         self.passive_leg: LegData = None
 
         self.min_volume: float = min_volume
+        self.buy_price: float = buy_price
+        self.sell_price: float = sell_price
+        self.cover_price: float = cover_price
+        self.short_price: float = short_price
+        self.max_pos: float = max_pos
+        self.lot_size: float = lot_size
+        self.payup: float = payup
 
         # For calculating spread price
         self.price_multipliers: Dict[str, int] = price_multipliers
