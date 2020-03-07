@@ -104,7 +104,7 @@ class SpreadAlgoTemplate:
 
         if leg_traded != leg_target:
             finished = False
-        # print("check_hedge_finished: %s, passive leg_traded %s" % (finished, leg_traded))
+            print(f"check_hedge_finished Flase,leg_traded: {leg_traded}, leg_target: {leg_target}" )
         return finished
 
     def stop(self):
