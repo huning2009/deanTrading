@@ -439,7 +439,7 @@ class BinanceRestApi(RestClient):
             on_error=self.on_send_order_error,
             on_failed=self.on_send_order_failed
         )
-
+        print(f'Gateway send order:{order.vt_orderid}, datetime: {datetime.now()}')
         return order.vt_orderid
 
     def cancel_order(self, req: CancelRequest):
@@ -904,7 +904,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         )
 
         self.gateway.on_order(order)
-
+        print(f"Gateway get order response: {order.vt_orderid}, datetime: {datetime.now()}")
         # Push trade event
         trade_volume = float(packet["l"])
         if not trade_volume:
