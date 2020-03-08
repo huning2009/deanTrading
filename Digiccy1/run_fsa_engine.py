@@ -49,10 +49,6 @@ fsa_engine.connect(binance_setting, 'BINANCEFUTURES')
 fsa_engine.write_log('Gateways is connecting, and sleep 20 seconds!')
 sleep(15)
 
-fsa_engine.strategy_engine.init_all_strategies()
-fsa_engine.strategy_engine.start_all_strategies()
-fsa_engine.write_log('Everythins is OK!')
-
 while True:
     # print('sleep')
     sleep(10)

@@ -11,6 +11,5 @@ from .engine import (
     SpreadEngine,
     SpreadData,
     LegData,
-    SpreadStrategyTemplate,
     SpreadAlgoTemplate
 )
