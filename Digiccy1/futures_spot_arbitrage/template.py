@@ -49,6 +49,17 @@ class SpreadAlgoTemplate:
         # print('algo template check_order_finished:%s : %s' % (leg.vt_symbol, finished))
         return finished
 
+    def check_passive_order_finished(self):
+        """"""
+        finished = True
+
+        vt_orderids = self.leg_orders[self.spread.passive_leg.vt_symbol]
+        if vt_orderids:
+            finished = False
+            return finished
+        # print('algo template check_order_finished:%s : %s' % (leg.vt_symbol, finished))
+        return finished
+
     # def check_hedge_finished(self):
     #     """"""
     #     active_symbol = self.spread.active_leg.vt_symbol
