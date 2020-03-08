@@ -71,6 +71,8 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
          # Only care active leg order update
         if trade.vt_symbol != self.spread.active_leg.vt_symbol:
             return
+        if not self.check_order_finished():
+            return
         # Hedge passive legs if necessary
         self.hedge_passive_leg()
 
