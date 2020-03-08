@@ -58,6 +58,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             self.write_log(f'ACTIVE SHORT>>>spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
         elif (self.spread.net_pos < 0 and
             self.spread.ask_price < self.spread.cover_price):
+            """买入平仓"""
             self.take_active_leg(self.SPREAD_LONG)
             self.write_log(f'ACTIVE COVER>>>spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
 
@@ -86,7 +87,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             if self.spread.net_pos < 0:
                 spread_volume_left = self.spread.net_pos
                 spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
-                spread_order_volume = -min(-spread_volume_left, spread_order_volume)
+                spread_order_volume = min(-spread_volume_left, spread_order_volume)
             else:
                 spread_volume_left = self.spread.max_pos - self.spread.net_pos
                 spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
@@ -95,7 +96,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             if self.spread.net_pos > 0:
                 spread_volume_left = self.spread.net_pos
                 spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
-                spread_order_volume = min(spread_volume_left, spread_order_volume)
+                spread_order_volume = -min(spread_volume_left, spread_order_volume)
             else:
                 spread_volume_left = self.spread.max_pos + self.spread.net_pos
                 spread_order_volume = max(self.spread.bid_volume, self.spread.lot_size)
