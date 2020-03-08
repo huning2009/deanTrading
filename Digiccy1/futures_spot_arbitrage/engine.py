@@ -125,7 +125,7 @@ class SpreadEngine(object):
 
 class SpreadDataEngine:
     """"""
-    setting_filename = "spread_trading_setting_test.json"
+    setting_filename = "spread_trading_setting.json"
 
     def __init__(self, spread_engine: SpreadEngine):
         """"""
@@ -193,7 +193,7 @@ class SpreadDataEngine:
                 for leg in spread.legs.values():
                     d[leg.vt_symbol] = leg.last_price
 
-                timer_msg = "TIMER CHECK %s %s: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), spread.name, d)
+                timer_msg = "TIMER CHECK %s %s: %s, spead_pos: %s, active_leg_net_pos: %s, passive_leg_net_pos: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), spread.name, d, spread.net_pos, spread.active_leg.net_pos, spread.passive_leg.net_pos)
                 self.write_log(timer_msg)
     def process_tick_event(self, event: Event) -> None:
         """"""
