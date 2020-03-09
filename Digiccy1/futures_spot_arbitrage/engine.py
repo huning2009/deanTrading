@@ -11,11 +11,11 @@ from myEvent import EventEngine, Event, EVENT_TICK, EVENT_POSITION, EVENT_CONTRA
 
 from myUtility import load_json, save_json
 from myObject import (
-    TickData, ContractData, LogData, CancelRequest,
+    TickData, ContractData, LogData, CancelRequest, PositionData,
     SubscribeRequest, OrderRequest, MarginAccountData, FuturesAccountData
 )
 from myConstant import (
-    Direction, Offset, OrderType, Interval, EVENT_ACCOUNT_MARGIN, EVENT_ACCOUNT_FUTURES
+    Direction, Offset, OrderType, Interval, EVENT_ACCOUNT_MARGIN, EVENT_ACCOUNT_FUTURES, Exchange
 )
 from myGateway import BaseGateway
 
@@ -125,7 +125,7 @@ class SpreadEngine(object):
 
 class SpreadDataEngine:
     """"""
-    setting_filename = "spread_trading_setting.json"
+    setting_filename = "spread_trading_setting_test.json"
 
     def __init__(self, spread_engine: SpreadEngine):
         """"""
@@ -308,6 +308,16 @@ class SpreadDataEngine:
         for leg_setting in leg_settings:
             vt_symbol = leg_setting["vt_symbol"]
             leg = self.get_leg(vt_symbol)
+            # update_position
+            pos = PositionData(
+                gateway_name='',
+                symbol='',
+                exchange=Exchange.LOCAL,
+                direction=Direction.NET,
+                volume=leg_setting.get("update_pos", 0),
+                price = 0
+            )
+            leg.update_position(pos)
 
             legs.append(leg)
             price_multipliers[vt_symbol] = leg_setting["price_multiplier"]
@@ -331,8 +341,9 @@ class SpreadDataEngine:
             lot_size,
             payup
         )
+        spread.calculate_pos()
         self.spreads[name] = spread
-
+        print(f'{spread.name} net_pos: {spread.net_pos}')
         for leg in spread.legs.values():
             self.symbol_spread_map[leg.vt_symbol].append(spread)
 
