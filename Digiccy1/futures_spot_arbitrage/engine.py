@@ -125,7 +125,7 @@ class SpreadEngine(object):
 
 class SpreadDataEngine:
     """"""
-    setting_filename = "spread_trading_setting_test.json"
+    setting_filename = "spread_trading_setting.json"
 
     def __init__(self, spread_engine: SpreadEngine):
         """"""
