@@ -537,10 +537,11 @@ class BinanceRestApi(RestClient):
 
     def on_send_order(self, data, request):
         """"""
-        try:
-            print(f'rest api callback on_send_order:{data}, datetime: {datetime.now()}')
-        except:
-            print('rest api on_send_order failed')
+        # try:
+        #     print(f'rest api callback on_send_order:{data}, datetime: {datetime.now()}')
+        # except:
+        #     print('rest api on_send_order failed')
+        pass
 
     def on_send_order_failed(self, status_code: str, request: Request):
         """
