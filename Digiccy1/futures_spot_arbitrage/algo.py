@@ -102,7 +102,6 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             else:
                 spread_volume_left = self.spread.max_pos*4 + self.spread.net_pos
                 spread_order_volume = max(self.spread.bid_volume, self.spread.lot_size)
-                spread_order_volume = min(spread_order_volume, self.spread.lot_size*4)
                 spread_order_volume = -min(spread_order_volume, spread_volume_left)
 
         # Calculate active leg order volume

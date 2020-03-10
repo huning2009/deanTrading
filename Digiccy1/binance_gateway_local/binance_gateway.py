@@ -173,6 +173,7 @@ class BinanceGateway(BaseGateway):
         """"""
         # self.rest_api.keep_user_stream()
         self.rest_api.keep_user_stream_margin()
+        self.rest_api.query_account_margin()
 
     def on_account_margin(self, account: MarginAccountData):
         """
@@ -573,6 +574,8 @@ class BinanceRestApi(RestClient):
         self.keep_alive_count_margin += 1
         if self.keep_alive_count_margin < 600:
             return
+        else:
+            self.keep_alive_count_margin = 0
 
         data = {
             "security": Security.API_KEY
@@ -694,6 +697,7 @@ class BinanceRestApi(RestClient):
         if 'marginBuyBorrowAsset' in data:
             print(">>>>>>>there is a loan")
             print(data)
+            self.gateway.on_borrow_money(data)
 
     def on_send_order_failed(self, status_code: str, request: Request):
         """
