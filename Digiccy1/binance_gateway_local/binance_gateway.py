@@ -631,7 +631,7 @@ class BinanceRestApi(RestClient):
                 gateway_name=self.gateway_name
             )
 
-            if account.netAsset:
+            if account.netAsset or account.borrowed:
                 self.gateway.on_account_margin(account)
 
         self.gateway.write_log("<杠杆>账户资金查询成功")
