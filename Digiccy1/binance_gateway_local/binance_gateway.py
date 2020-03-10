@@ -416,11 +416,6 @@ class BinanceRestApi(RestClient):
             "security": Security.SIGNED
         }
 
-        if req.borrowmoney == True:
-            sideEffectType = "MARGIN_BUY"
-        else:
-            sideEffectType = "NO_SIDE_EFFECT"
-
         params = {
             "symbol": req.symbol,
             "side": DIRECTION_VT2BINANCE[req.direction],
@@ -428,10 +423,10 @@ class BinanceRestApi(RestClient):
             "price": str(req.price),
             "quantity": str(req.volume),
             "newClientOrderId": orderid,
-            "sideEffectType": sideEffectType,
-            "timeInForce": 'IOC',
-            "newOrderRespType": "ACK"
+            "timeInForce": 'IOC'
         }
+        if req.borrowmoney == True:
+            params["sideEffectType"] = "MARGIN_BUY"
 
         self.add_request(
             method="POST",
