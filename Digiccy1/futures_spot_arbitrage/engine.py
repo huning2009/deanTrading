@@ -285,7 +285,7 @@ class SpreadDataEngine:
             asset = margin_account_data.accountid
             for l in self.borrowmoneys[margin_account_data.vt_symbol]:
                 if 60 - math.modf((dt_now - l[0]).seconds/3600)[0]*60 < 10:
-                    if l[1] < margin_account_data.free:
+                    if l[1] <= margin_account_data.free:
                         amount += l[1]
                         margin_account_data.free -= l[1]
                         self.borrowmoneys[margin_account_data.vt_symbol].remove(l)
