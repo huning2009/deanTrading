@@ -165,6 +165,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         elif leg_volume < 0:
             borrowmoney = False
             if vt_symbol == self.spread.active_leg.vt_symbol:
+                # print(self.algo_engine.spread_engine.data_engine.margin_accounts)
                 if abs(leg_volume) > self.algo_engine.spread_engine.data_engine.margin_accounts[vt_symbol].free:
                     borrowmoney = True
                 price = round_to(self.spread.active_leg.bid_price - leg_contract.pricetick * self.spread.payup * 10,leg_contract.pricetick) 

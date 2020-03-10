@@ -263,16 +263,19 @@ class SpreadDataEngine:
 
     def process_borrowmoney_event(self, event: Event) ->None:
         borrowmoney_dict = event.data
+        # print(borrowmoney_dict)
         vt_symbol = borrowmoney_dict['borrow_asset'] + "USDT." + borrowmoney_dict['borrow_exchange'].value
         self.borrowmoneys[vt_symbol].append([borrowmoney_dict['datetime'], borrowmoney_dict['borrow_amount']])
 
     def process_account_margin_event(self, event: Event):
-        margin_account_data = event.data
-        dt_now = datetime.now()
+        # print(">>>>>>>>process_account_margin_event")
         # 根据self.borrowmoneys 检查是否需要还款
-        if margin_account_data.borrowed == 0 or margin_account_data.free == 0:
+        margin_account_data = event.data
+        if margin_account_data.vt_symbol not in self.legs:
             return
-        else:
+
+        dt_now = datetime.now()
+        if margin_account_data.borrowed != 0 and margin_account_data.free != 0:
             amount = 0
             gateway_name = margin_account_data.exchange.value
             asset = margin_account_data.accountid

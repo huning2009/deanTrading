@@ -110,7 +110,7 @@ class BinanceGateway(BaseGateway):
         self.trade_ws_api = BinanceTradeWebsocketApi(self)
         self.market_ws_api = BinanceDataWebsocketApi(self)
         self.rest_api = BinanceRestApi(self)
-
+        self.query_account_margin_count = 0
     def connect(self, setting: dict):
         """"""
         key = setting["key"]
@@ -173,7 +173,11 @@ class BinanceGateway(BaseGateway):
         """"""
         # self.rest_api.keep_user_stream()
         self.rest_api.keep_user_stream_margin()
-        self.rest_api.query_account_margin()
+
+        self.query_account_margin_count += 1
+        if self.query_account_margin_count > 300:
+            self.query_account_margin_count = 0
+            self.rest_api.query_account_margin()
 
     def on_account_margin(self, account: MarginAccountData):
         """
@@ -181,7 +185,6 @@ class BinanceGateway(BaseGateway):
         Account event of a specific vt_accountid is also pushed.
         """
         self.on_event(EVENT_ACCOUNT_MARGIN, account)
-        self.on_event(EVENT_ACCOUNT_MARGIN + account.vt_accountid, account)
 
     def on_borrow_money(self, data):
         self.on_event(EVENT_BORROW_MONEY, data)
@@ -210,7 +213,6 @@ class BinanceRestApi(RestClient):
         self.user_stream_key_margin = ""
         self.keep_alive_count = 0
         self.keep_alive_count_margin = 0
-        self.query_margin_count = 0
         self.recv_window = 5000
         self.time_offset = 0
 
@@ -293,7 +295,7 @@ class BinanceRestApi(RestClient):
 
         self.query_time()
         # self.query_account()
-        # self.query_account_margin()
+        self.query_account_margin()
         # self.query_order()
         self.query_contract()
         # self.start_user_stream()
@@ -326,12 +328,6 @@ class BinanceRestApi(RestClient):
 
     def query_account_margin(self):
         """"""
-        self.query_margin_count += 1
-        if self.query_margin_count < 300:
-            return
-        else:
-            self.query_margin_count = 0
-
         data = {"security": Security.SIGNED}
 
         self.add_request(
@@ -340,7 +336,7 @@ class BinanceRestApi(RestClient):
             callback=self.on_query_account_margin,
             data=data
         )
-
+        print("query_account_margin")
     def query_order(self):
         """"""
         data = {"security": Security.SIGNED}
@@ -698,24 +694,24 @@ class BinanceRestApi(RestClient):
 
     def on_send_order(self, data, request):
         """"""
-        try:
-            print(f'rest api callback on_send_order:{data}, datetime: {datetime.now()}')
-        except:
-            print('rest api on_send_order failed')
+        # try:
+        #     print(f'rest api callback on_send_order:{data}, datetime: {datetime.now()}')
+        # except:
+        #     print('rest api on_send_order failed')
         if 'marginBuyBorrowAsset' in data:
-            print(">>>>>>>there is a borrowmoney callback")
-            print(data)
-            datetime = datetime.fromtimestamp(data['transactTime'] / 1000)
+            # print(">>>>>>>there is a borrowmoney callback")
+            # print(data)
+            dt1 = datetime.fromtimestamp(data['transactTime'] / 1000)
             borrow_amount = data['marginBuyBorrowAmount']
             borrow_asset = data['marginBuyBorrowAsset']
             borrow_exchange = Exchange.BINANCE
             borrow_dict = {}
             borrow_dict['borrow_asset'] = borrow_asset
             borrow_dict['borrow_amount'] = borrow_amount
-            borrow_dict['datetime'] = datetime
+            borrow_dict['datetime'] = dt1
             borrow_dict['borrow_exchange'] = borrow_exchange
 
-            self.gateway.on_borrow_money(data)
+            self.gateway.on_borrow_money(borrow_dict)
 
     def on_send_order_failed(self, status_code: str, request: Request):
         """
@@ -932,7 +928,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         )
 
         self.gateway.on_order(order)
-        print(f"Gateway websocket get order response: {order.vt_orderid}, datetime: {datetime.now()}")
+        # print(f"Gateway websocket get order response: {order.vt_orderid}, datetime: {datetime.now()}")
         # Push trade event
         trade_volume = float(packet["l"])
         if not trade_volume:
