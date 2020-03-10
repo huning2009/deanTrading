@@ -275,6 +275,10 @@ class SpreadDataEngine:
             return
 
         dt_now = datetime.now()
+        
+        if margin_account_data.vt_symbol not in self.borrowmoneys and margin_account_data.borrowed:
+            self.borrowmoneys[margin_account_data.vt_symbol].append([dt_now, margin_account_data.borrowed])
+
         if margin_account_data.borrowed != 0 and margin_account_data.free != 0:
             amount = 0
             gateway_name = margin_account_data.exchange.value
@@ -289,9 +293,10 @@ class SpreadDataEngine:
                         amount += margin_account_data.free
                         l[1] -= margin_account_data.free
                         margin_account_data.free = 0
-            self.spread_engine.repay(asset, amount, gateway_name)
+            if amount > 0:
+                self.spread_engine.repay(asset, amount, gateway_name)
         self.margin_accounts[margin_account_data.vt_symbol] = margin_account_data
-        
+        print(self.borrowmoneys)
     def get_leg(self, vt_symbol: str) -> LegData:
         """"""
         leg = self.legs.get(vt_symbol, None)

@@ -336,7 +336,7 @@ class BinanceRestApi(RestClient):
             callback=self.on_query_account_margin,
             data=data
         )
-        print("query_account_margin")
+        # print("query_account_margin")
     def query_order(self):
         """"""
         data = {"security": Security.SIGNED}
