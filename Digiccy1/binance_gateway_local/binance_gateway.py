@@ -687,7 +687,13 @@ class BinanceRestApi(RestClient):
 
     def on_send_order(self, data, request):
         """"""
-        pass
+        try:
+            print(f'rest api callback on_send_order:{data}, datetime: {datetime.now()}')
+        except:
+            print('rest api on_send_order failed')
+        if 'marginBuyBorrowAsset' in data:
+            print(">>>>>>>there is a loan")
+            print(data)
 
     def on_send_order_failed(self, status_code: str, request: Request):
         """
@@ -904,7 +910,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         )
 
         self.gateway.on_order(order)
-        print(f"Gateway get order response: {order.vt_orderid}, datetime: {datetime.now()}")
+        print(f"Gateway websocket get order response: {order.vt_orderid}, datetime: {datetime.now()}")
         # Push trade event
         trade_volume = float(packet["l"])
         if not trade_volume:
