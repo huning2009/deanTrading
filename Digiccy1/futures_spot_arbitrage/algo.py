@@ -163,9 +163,12 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
                 price = round_to(self.spread.passive_leg.ask_price + leg_contract.pricetick * self.spread.payup,leg_contract.pricetick)
             self.send_long_order(leg.vt_symbol, price, abs(leg_volume))
         elif leg_volume < 0:
+            borrowmoney = False
             if vt_symbol == self.spread.active_leg.vt_symbol:
+                if abs(leg_volume) > self.algo_engine.spread_engine.data_engine.margin_accounts[vt_symbol].free:
+                    borrowmoney = True
                 price = round_to(self.spread.active_leg.bid_price - leg_contract.pricetick * self.spread.payup * 10,leg_contract.pricetick) 
             else:
                 price = round_to(self.spread.passive_leg.bid_price - leg_contract.pricetick * self.spread.payup,leg_contract.pricetick)
-            self.send_short_order(leg.vt_symbol, price, abs(leg_volume))
+            self.send_short_order(leg.vt_symbol, price, abs(leg_volume), borrowmoney)
         

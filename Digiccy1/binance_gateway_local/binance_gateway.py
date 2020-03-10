@@ -210,6 +210,7 @@ class BinanceRestApi(RestClient):
         self.user_stream_key_margin = ""
         self.keep_alive_count = 0
         self.keep_alive_count_margin = 0
+        self.query_margin_count = 0
         self.recv_window = 5000
         self.time_offset = 0
 
@@ -325,6 +326,12 @@ class BinanceRestApi(RestClient):
 
     def query_account_margin(self):
         """"""
+        self.query_margin_count += 1
+        if self.query_margin_count < 300:
+            return
+        else:
+            self.query_margin_count = 0
+
         data = {"security": Security.SIGNED}
 
         self.add_request(
@@ -413,10 +420,10 @@ class BinanceRestApi(RestClient):
             "security": Security.SIGNED
         }
 
-        if req.direction == Direction.SHORT:
+        if req.borrowmoney == True:
             sideEffectType = "MARGIN_BUY"
         else:
-            sideEffectType = "AUTO_REPAY"
+            sideEffectType = "NO_SIDE_EFFECT"
 
         params = {
             "symbol": req.symbol,
@@ -619,6 +626,7 @@ class BinanceRestApi(RestClient):
         for account_data in data["userAssets"]:
             account = MarginAccountData(
                 accountid=account_data["asset"],
+                exchange=Exchange.BINANCE,
                 borrowed=float(account_data["borrowed"]),
                 interest=float(account_data["interest"]),
                 free=float(account_data["free"]),
@@ -695,8 +703,18 @@ class BinanceRestApi(RestClient):
         except:
             print('rest api on_send_order failed')
         if 'marginBuyBorrowAsset' in data:
-            print(">>>>>>>there is a loan")
+            print(">>>>>>>there is a borrowmoney callback")
             print(data)
+            datetime = datetime.fromtimestamp(data['transactTime'] / 1000)
+            borrow_amount = data['marginBuyBorrowAmount']
+            borrow_asset = data['marginBuyBorrowAsset']
+            borrow_exchange = Exchange.BINANCE
+            borrow_dict = {}
+            borrow_dict['borrow_asset'] = borrow_asset
+            borrow_dict['borrow_amount'] = borrow_amount
+            borrow_dict['datetime'] = datetime
+            borrow_dict['borrow_exchange'] = borrow_exchange
+
             self.gateway.on_borrow_money(data)
 
     def on_send_order_failed(self, status_code: str, request: Request):

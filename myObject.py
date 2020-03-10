@@ -44,6 +44,7 @@ class MarginAccountData(BaseData):
     """
 
     accountid: str
+    exchange: Exchange
     borrowed: float = 0
     interest: float = 0
     free: float = 0
@@ -52,7 +53,7 @@ class MarginAccountData(BaseData):
 
     def __post_init__(self):
         """"""
-        self.vt_accountid = f"{self.gateway_name}.{self.accountid}"
+        self.vt_symbol = f"{self.accountid}USDT.{self.exchange.value}"
 
 @dataclass
 class FuturesAccountData(BaseData):
@@ -353,6 +354,7 @@ class OrderRequest:
     volume: float
     price: float = 0
     offset: Offset = Offset.NONE
+    borrowmoney: bool = False
 
     def __post_init__(self):
         """"""

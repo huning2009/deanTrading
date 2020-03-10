@@ -161,9 +161,9 @@ class SpreadAlgoTemplate:
         """"""
         self.send_order(vt_symbol, price, volume, Direction.LONG)
 
-    def send_short_order(self, vt_symbol: str, price: float, volume: float):
+    def send_short_order(self, vt_symbol: str, price: float, volume: float, borrowmoney=False):
         """"""
-        self.send_order(vt_symbol, price, volume, Direction.SHORT)
+        self.send_order(vt_symbol, price, volume, Direction.SHORT, borrowmoney)
 
     def send_order(
         self,
@@ -171,6 +171,7 @@ class SpreadAlgoTemplate:
         price: float,
         volume: float,
         direction: Direction,
+        borrowmoney=False
     ):
         """"""
         # For inverse contract:
@@ -188,7 +189,8 @@ class SpreadAlgoTemplate:
             vt_symbol,
             price,
             volume,
-            direction
+            direction,
+            borrowmoney
         )
 
         self.leg_orders[vt_symbol].append(vt_orderid)

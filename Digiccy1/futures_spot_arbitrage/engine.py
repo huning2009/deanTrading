@@ -6,6 +6,7 @@ from collections import defaultdict
 from copy import copy
 from pathlib import Path
 from datetime import datetime, timedelta
+import math
 
 from myEvent import EventEngine, Event, EVENT_TICK, EVENT_POSITION, EVENT_CONTRACT, EVENT_ACCOUNT, EVENT_LOG, EVENT_ORDER, EVENT_TRADE, EVENT_TIMER
 
@@ -15,7 +16,7 @@ from myObject import (
     SubscribeRequest, OrderRequest, MarginAccountData, FuturesAccountData
 )
 from myConstant import (
-    Direction, Offset, OrderType, Interval, EVENT_ACCOUNT_MARGIN, EVENT_ACCOUNT_FUTURES, Exchange
+    Direction, Offset, OrderType, Interval, EVENT_ACCOUNT_MARGIN, EVENT_ACCOUNT_FUTURES, Exchange, EVENT_BORROW_MONEY
 )
 from myGateway import BaseGateway
 
@@ -122,10 +123,14 @@ class SpreadEngine(object):
         if gateway:
             gateway.connect(setting)
 
+    def repay(self, asset, amount, gateway_name):
+        gateway = self.get_gateway(gateway_name)
+        gateway.repay_money(asset, amount)
+
 
 class SpreadDataEngine:
     """"""
-    setting_filename = "spread_trading_setting.json"
+    setting_filename = "spread_trading_setting_test.json"
 
     def __init__(self, spread_engine: SpreadEngine):
         """"""
@@ -136,8 +141,9 @@ class SpreadDataEngine:
         self.orders = {}
         self.trades = {}
         self.positions = {}
-        self.accounts = {}
+        self.margin_accounts: Dict[str, MarginAccountData] = {}
         self.contracts = {}
+        self.borrowmoneys: Dict[str, List] = defaultdict(list)
 
         self.legs: Dict[str, LegData] = {}          # vt_symbol: leg
         self.spreads: Dict[str, SpreadData] = {}    # name: spread
@@ -183,6 +189,8 @@ class SpreadDataEngine:
         self.event_engine.register(EVENT_POSITION, self.process_position_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
+        self.event_engine.register(EVENT_BORROW_MONEY, self.process_borrowmoney_event)
+        self.event_engine.register(EVENT_ACCOUNT_MARGIN, self.process_account_margin_event)
 
     def process_timer_event(self, event: Event):
         self.timer_count += 1
@@ -195,6 +203,7 @@ class SpreadDataEngine:
 
                 timer_msg = "TIMER CHECK %s %s: %s, spead_pos: %s, active_leg_net_pos: %s, passive_leg_net_pos: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), spread.name, d, spread.net_pos, spread.active_leg.net_pos, spread.passive_leg.net_pos)
                 self.write_log(timer_msg)
+
     def process_tick_event(self, event: Event) -> None:
         """"""
         tick = event.data
@@ -252,6 +261,34 @@ class SpreadDataEngine:
             self.spread_engine.subscribe(req, contract.gateway_name)
             self.write_log('subscribe>>>>>>>>>>>>>>>>>>>:%s' % leg.vt_symbol)
 
+    def process_borrowmoney_event(self, event: Event) ->None:
+        borrowmoney_dict = event.data
+        vt_symbol = borrowmoney_dict['borrow_asset'] + "USDT." + borrowmoney_dict['borrow_exchange'].value
+        self.borrowmoneys[vt_symbol].append([borrowmoney_dict['datetime'], borrowmoney_dict['borrow_amount']])
+
+    def process_account_margin_event(self, event: Event):
+        margin_account_data = event.data
+        dt_now = datetime.now()
+        # 根据self.borrowmoneys 检查是否需要还款
+        if margin_account_data.borrowed == 0 or margin_account_data.free == 0:
+            return
+        else:
+            amount = 0
+            gateway_name = margin_account_data.exchange.value
+            asset = margin_account_data.accountid
+            for l in self.borrowmoneys[margin_account_data.vt_symbol]:
+                if 60 - math.modf((dt_now - l[0]).seconds/3600)[0]*60 < 10:
+                    if l[1] < margin_account_data.free:
+                        amount += l[1]
+                        margin_account_data.free -= l[1]
+                        self.borrowmoneys[margin_account_data.vt_symbol].remove(l)
+                    else:
+                        amount += margin_account_data.free
+                        l[1] -= margin_account_data.free
+                        margin_account_data.free = 0
+            self.spread_engine.repay(asset, amount, gateway_name)
+        self.margin_accounts[margin_account_data.vt_symbol] = margin_account_data
+        
     def get_leg(self, vt_symbol: str) -> LegData:
         """"""
         leg = self.legs.get(vt_symbol, None)
@@ -396,7 +433,6 @@ class SpreadAlgoEngine:
 
         self.algo_count: int = 0
         self.vt_tradeids: Set = set()
-        self.margin_accounts: Dict = {}
 
     def start(self):
         """"""
@@ -412,15 +448,10 @@ class SpreadAlgoEngine:
     def register_event(self):
         """"""
         self.event_engine.register(EVENT_ORDER, self.process_order_event)
-        self.event_engine.register(EVENT_ACCOUNT_MARGIN, self.process_account_margin_event)
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
         # self.event_engine.register(
         #     EVENT_SPREAD_DATA, self.process_spread_event
         # )
-
-    def process_account_margin_event(self, event: Event):
-        account_margin = event.data
-        self.margin_accounts[account_margin.vt_accountid] = account_margin
 
     def process_tick(self, tick: TickData):
         """"""
@@ -507,7 +538,8 @@ class SpreadAlgoEngine:
         vt_symbol: str,
         price: float,
         volume: float,
-        direction: Direction
+        direction: Direction,
+        borrowmoney=False
     ):
         """"""
         contract = self.spread_engine.data_engine.get_contract(vt_symbol)
@@ -518,7 +550,8 @@ class SpreadAlgoEngine:
             direction=direction,
             type=OrderType.LIMIT,
             price=price,
-            volume=volume
+            volume=volume,
+            borrowmoney=borrowmoney
         )
 
         vt_orderid = self.spread_engine.send_order(

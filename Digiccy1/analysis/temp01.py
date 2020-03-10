@@ -1,9 +1,20 @@
 from vnpy.trader.utility import round_to
 import datetime as dtt
 import math
+from typing import List, Dict, Set, Callable, Any, Type
+from collections import defaultdict
 
-dtt1 = dtt.datetime.now()
-dtt2 = dtt.datetime(2020,3,9,11,0,0)
-print(dtt1)
-print(dtt2)
-print(math.modf((dtt1-dtt2).seconds/3600)[0]*60)
+# class ABC:
+#     def __init__(self):
+#         self.d1: Dict(str, List) = defaultdict(list)
+
+# abc = ABC()
+# abc.d1['a'].append(1)
+# print(abc.d1)
+
+l1 = []
+l11 = [dtt.datetime.now(),"asd"]
+l1.append(l11)
+print(l1)
+l1.remove(l11)
+print(l1)
