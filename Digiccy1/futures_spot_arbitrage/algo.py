@@ -49,13 +49,13 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             self.spread.bid_price >= self.spread.sell_price):
             """卖出平仓"""
             self.take_active_leg(self.SPREAD_SHORT)
-            self.write_log(f'ACTIVE SELL>>>spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
+            self.write_log(f'ACTIVE SELL>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
         elif (self.spread.net_pos <= 0 and
             self.spread.net_pos > -self.spread.max_pos*4 and
             self.spread.bid_price >= self.spread.short_price):
             """卖出开仓"""
             self.take_active_leg(self.SPREAD_SHORT)
-            self.write_log(f'ACTIVE SHORT>>>spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
+            self.write_log(f'ACTIVE SHORT>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
         elif (self.spread.net_pos < 0 and
             self.spread.ask_price < self.spread.cover_price):
             """买入平仓"""
@@ -103,10 +103,13 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             else:
                 # 裸卖空，自动借款，且借全款
                 spread_volume_left = self.spread.max_pos*4 + self.spread.net_pos
-                if abs(spread_volume_left) > self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free:
+                if spread_volume_left > self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free:
                     borrowmoney = True
-                    spread_order_volume = spread_volume_left
+                    spread_order_volume = min(spread_volume_left, self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].max_borrow * 0.9)
+                    if spread_order_volume < self.spread.lot_size:
+                        return
                     self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free = spread_order_volume
+                    spread_volume_left = -spread_volume_left
                 else:
                     spread_order_volume = max(self.spread.bid_volume, self.spread.lot_size)
                     spread_order_volume = -min(spread_order_volume, spread_volume_left)

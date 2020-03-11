@@ -74,35 +74,35 @@ class LegData:
         # Only update net pos for contract with net position mode
         # print('leg update_trade, trade.offset=%s, net_position:%s' % (trade.offset, self.net_position))
         if self.net_position:
-            trade_cost = trade.volume * trade.price
-            old_cost = self.net_pos * self.net_pos_price
+            # trade_cost = trade.volume * trade.price
+            # old_cost = self.net_pos * self.net_pos_price
 
             if trade.direction == Direction.LONG:
                 new_pos = self.net_pos + trade.volume
 
-                if self.net_pos >= 0:
-                    new_cost = old_cost + trade_cost
-                    self.net_pos_price = new_cost / new_pos
-                else:
-                    # If all previous short position closed
-                    if not new_pos:
-                        self.net_pos_price = 0
-                    # If only part short position closed
-                    elif new_pos > 0:
-                        self.net_pos_price = trade.price
+                # if self.net_pos >= 0:
+                #     new_cost = old_cost + trade_cost
+                #     self.net_pos_price = new_cost / new_pos
+                # else:
+                #     # If all previous short position closed
+                #     if not new_pos:
+                #         self.net_pos_price = 0
+                #     # If only part short position closed
+                #     elif new_pos > 0:
+                #         self.net_pos_price = trade.price
             else:
                 new_pos = self.net_pos - trade.volume
 
-                if self.net_pos <= 0:
-                    new_cost = old_cost - trade_cost
-                    self.net_pos_price = new_cost / new_pos
-                else:
-                    # If all previous long position closed
-                    if not new_pos:
-                        self.net_pos_price = 0
-                    # If only part long position closed
-                    elif new_pos < 0:
-                        self.net_pos_price = trade.price
+                # if self.net_pos <= 0:
+                #     new_cost = old_cost - trade_cost
+                #     self.net_pos_price = new_cost / new_pos
+                # else:
+                #     # If all previous long position closed
+                #     if not new_pos:
+                #         self.net_pos_price = 0
+                #     # If only part long position closed
+                #     elif new_pos < 0:
+                #         self.net_pos_price = trade.price
 
             self.net_pos = new_pos
         else:

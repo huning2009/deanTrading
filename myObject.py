@@ -51,6 +51,8 @@ class MarginAccountData(BaseData):
     locked: float = 0
     netAsset: float = 0
 
+    max_borrow: float = 0
+
     def __post_init__(self):
         """"""
         self.vt_symbol = f"{self.accountid}USDT.{self.exchange.value}"

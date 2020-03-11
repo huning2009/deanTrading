@@ -219,6 +219,7 @@ class BinanceRestApi(RestClient):
         self.order_count = 1_000_000
         self.order_count_lock = Lock()
         self.connect_time = 0
+        self.latest_price = {}
 
     def sign(self, request):
         """
@@ -295,6 +296,7 @@ class BinanceRestApi(RestClient):
 
         self.query_time()
         # self.query_account()
+        self.query_latest_price()
         self.query_account_margin()
         # self.query_order()
         self.query_contract()
@@ -312,6 +314,17 @@ class BinanceRestApi(RestClient):
             "GET",
             path,
             callback=self.on_query_time,
+            data=data
+        )
+
+    def query_latest_price(self):
+        """"""
+        data = {"security": Security.NONE}
+
+        self.add_request(
+            method="GET",
+            path="/api/v3/ticker/price",
+            callback=self.on_query_latest_price,
             data=data
         )
 
@@ -597,6 +610,11 @@ class BinanceRestApi(RestClient):
         server_time = int(data["serverTime"])
         self.time_offset = local_time - server_time
 
+    def on_query_latest_price(self, data, request):
+        """"""
+        for d in data:
+            self.latest_price[d['symbol']] = float(d['price'])
+
     def on_query_account(self, data, request):
         """"""
         for account_data in data["balances"]:
@@ -614,7 +632,10 @@ class BinanceRestApi(RestClient):
 
     def on_query_account_margin(self, data, request):
         """"""
+        max_borrow_btc = max(data['totalNetAssetOfBtc']*2 - data['totalLiabilityOfBtc'], 0)
+
         for account_data in data["userAssets"]:
+            price_based_BTC = self.latest_price.get(account_data["asset"]+"BTC", 1)
             account = MarginAccountData(
                 accountid=account_data["asset"],
                 exchange=Exchange.BINANCE,
@@ -623,6 +644,7 @@ class BinanceRestApi(RestClient):
                 free=float(account_data["free"]),
                 locked=float(account_data["locked"]),
                 netAsset=float(account_data["netAsset"]),
+                max_borrow=max_borrow_btc/price_based_BTC,
                 gateway_name=self.gateway_name
             )
 

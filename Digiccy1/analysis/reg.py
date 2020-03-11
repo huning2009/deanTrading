@@ -2,6 +2,7 @@ import pathlib, sys
 path = pathlib.Path.cwd()
 sys.path.append(str(path))
 
+import talib
 from playhouse.shortcuts import model_to_dict
 import pandas as pd
 import numpy as np
@@ -16,7 +17,7 @@ from DatabaseManage.init_sqlite import get_sqlite, init_models
 db = get_sqlite('info.db')
 DbContractData, DbAccountData, DbBarData = init_models(db)
 
-symbol='BCHUSDT'
+symbol='LINKUSDT'
 exchange='BINANCE'
 futures_exchange='BINANCEFUTURES'
 start_time = dtt.datetime.now() - dtt.timedelta(days=14)
@@ -45,7 +46,15 @@ df.columns = ['spot', 'futures']
 df['diff'] = df['spot'] - df['futures']
 df.dropna(inplace=True)
 df.sort_index(inplace=True)
+# print(df['diff'])
+# print(type(df['diff']))
+df['sma'] = talib.SMA(df['diff'])
+df['u'], df['m'], df['d'] = talib.BBANDS(df['diff'], 20,2,2,0)
 df['diff'].plot()
+df['u'].plot()
+df['m'].plot()
+df['d'].plot()
+df['sma'].plot()
 plt.show()
 
 # res = stats.shapiro(df['diff'])

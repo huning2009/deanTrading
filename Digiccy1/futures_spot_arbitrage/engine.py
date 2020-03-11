@@ -265,13 +265,17 @@ class SpreadDataEngine:
         borrowmoney_dict = event.data
         # print(borrowmoney_dict)
         vt_symbol = borrowmoney_dict['borrow_asset'] + "USDT." + borrowmoney_dict['borrow_exchange'].value
+        leg = self.legs.get(vt_symbol, None)
+        if not leg:
+            return
         self.borrowmoneys[vt_symbol].append([borrowmoney_dict['datetime'], borrowmoney_dict['borrow_amount']])
 
     def process_account_margin_event(self, event: Event):
         # print(">>>>>>>>process_account_margin_event")
         # 根据self.borrowmoneys 检查是否需要还款
         margin_account_data = event.data
-        if margin_account_data.vt_symbol not in self.legs:
+        leg = self.legs.get(margin_account_data.vt_symbol, None)
+        if not leg:
             return
 
         dt_now = datetime.now()
