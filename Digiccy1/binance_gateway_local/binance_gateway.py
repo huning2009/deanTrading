@@ -637,6 +637,7 @@ class BinanceRestApi(RestClient):
 
         for account_data in data["userAssets"]:
             price_based_BTC = self.latest_price.get(account_data["asset"]+"BTC", 1)
+            
             account = MarginAccountData(
                 accountid=account_data["asset"],
                 exchange=Exchange.BINANCE,
@@ -650,6 +651,7 @@ class BinanceRestApi(RestClient):
             )
 
             if account.netAsset or account.borrowed:
+                print(f'{account_data["asset"]} based on BTC price: {price_based_BTC}, max_borrow:{account.max_borrow}')
                 self.gateway.on_account_margin(account)
 
         self.gateway.write_log("<杠杆>账户资金查询成功")
