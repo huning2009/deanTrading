@@ -605,6 +605,7 @@ class BinanceRestApi(RestClient):
             data=data
         )
 
+        self.query_latest_price()
     def on_query_time(self, data, request):
         """"""
         local_time = int(time.time() * 1000)
@@ -636,7 +637,12 @@ class BinanceRestApi(RestClient):
         max_borrow_btc = max(float(data['totalNetAssetOfBtc'])*2 - float(data['totalLiabilityOfBtc']), 0)
 
         for account_data in data["userAssets"]:
-            price_based_BTC = self.latest_price.get(account_data["asset"]+"BTC", 1)
+            if account_data["asset"] == "USDT":
+                price_based_BTC = self.latest_price.get("BTC" + account_data["asset"], 1)
+                max_borrow = max_borrow_btc * price_based_BTC
+            else:
+                price_based_BTC = self.latest_price.get(account_data["asset"]+"BTC", 1)
+                max_borrow = max_borrow_btc/price_based_BTC
             
             account = MarginAccountData(
                 accountid=account_data["asset"],
@@ -646,13 +652,13 @@ class BinanceRestApi(RestClient):
                 free=float(account_data["free"]),
                 locked=float(account_data["locked"]),
                 netAsset=float(account_data["netAsset"]),
-                max_borrow=max_borrow_btc/price_based_BTC,
+                max_borrow=max_borrow,
                 gateway_name=self.gateway_name
             )
 
-            if account.netAsset or account.borrowed:
-                print(f'{account_data["asset"]} based on BTC price: {price_based_BTC}, max_borrow:{account.max_borrow}')
-                self.gateway.on_account_margin(account)
+            # if account.netAsset or account.borrowed:
+            print(f'{account_data["asset"]} based on BTC price: {price_based_BTC}, max_borrow:{account.max_borrow}')
+            self.gateway.on_account_margin(account)
 
         self.gateway.write_log("<杠杆>账户资金查询成功")
 
