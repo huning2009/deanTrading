@@ -657,7 +657,7 @@ class BinanceRestApi(RestClient):
             )
 
             # if account.netAsset or account.borrowed:
-            print(f'{account_data["asset"]} based on BTC price: {price_based_BTC}, max_borrow:{account.max_borrow}')
+            # print(f'{account_data["asset"]} based on BTC price: {price_based_BTC}, max_borrow:{account.max_borrow}')
             self.gateway.on_account_margin(account)
 
         self.gateway.write_log("<杠杆>账户资金查询成功")
