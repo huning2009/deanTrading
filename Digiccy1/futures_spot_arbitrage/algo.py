@@ -85,6 +85,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
     def take_active_leg(self, direction):
         """"""
         # Calculate spread order volume of new round trade
+        borrowmoney = False
         if direction == self.SPREAD_LONG:
             if self.spread.net_pos < 0:
                 spread_volume_left = self.spread.net_pos
@@ -100,9 +101,15 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
                 spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
                 spread_order_volume = -min(spread_volume_left, spread_order_volume)
             else:
+                # 裸卖空，自动借款，且借全款
                 spread_volume_left = self.spread.max_pos*4 + self.spread.net_pos
-                spread_order_volume = max(self.spread.bid_volume, self.spread.lot_size)
-                spread_order_volume = -min(spread_order_volume, spread_volume_left)
+                if abs(spread_volume_left) > self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free:
+                    borrowmoney = True
+                    spread_order_volume = spread_volume_left
+                else:
+                    spread_order_volume = max(self.spread.bid_volume, self.spread.lot_size)
+                    spread_order_volume = -min(spread_order_volume, spread_volume_left)
+
 
         # Calculate active leg order volume
         leg_order_volume = self.spread.calculate_leg_volume(
@@ -113,7 +120,8 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         # Send active leg order
         self.send_leg_order(
             self.spread.active_leg.vt_symbol,
-            leg_order_volume
+            leg_order_volume,
+            borrowmoney
         )
 
     def hedge_passive_leg(self):
@@ -148,7 +156,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         return True
 
 
-    def send_leg_order(self, vt_symbol: str, leg_volume: float):
+    def send_leg_order(self, vt_symbol: str, leg_volume: float, borrowmoney = False):
         """"""
         leg = self.spread.legs[vt_symbol]
         leg_contract = self.get_contract(vt_symbol)
@@ -163,11 +171,8 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
                 price = round_to(self.spread.passive_leg.ask_price + leg_contract.pricetick * self.spread.payup,leg_contract.pricetick)
             self.send_long_order(leg.vt_symbol, price, abs(leg_volume))
         elif leg_volume < 0:
-            borrowmoney = False
             if vt_symbol == self.spread.active_leg.vt_symbol:
                 # print(self.algo_engine.spread_engine.data_engine.margin_accounts)
-                if abs(leg_volume) > self.algo_engine.spread_engine.data_engine.margin_accounts[vt_symbol].free:
-                    borrowmoney = True
                 price = round_to(self.spread.active_leg.bid_price - leg_contract.pricetick * self.spread.payup * 10,leg_contract.pricetick) 
             else:
                 price = round_to(self.spread.passive_leg.bid_price - leg_contract.pricetick * self.spread.payup,leg_contract.pricetick)
