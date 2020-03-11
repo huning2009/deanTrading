@@ -297,6 +297,7 @@ class BinanceRestApi(RestClient):
         self.query_time()
         # self.query_account()
         self.query_latest_price()
+        time.sleep(2)
         self.query_account_margin()
         # self.query_order()
         self.query_contract()
@@ -632,7 +633,7 @@ class BinanceRestApi(RestClient):
 
     def on_query_account_margin(self, data, request):
         """"""
-        max_borrow_btc = max(data['totalNetAssetOfBtc']*2 - data['totalLiabilityOfBtc'], 0)
+        max_borrow_btc = max(float(data['totalNetAssetOfBtc'])*2 - float(data['totalLiabilityOfBtc']), 0)
 
         for account_data in data["userAssets"]:
             price_based_BTC = self.latest_price.get(account_data["asset"]+"BTC", 1)
