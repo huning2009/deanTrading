@@ -159,7 +159,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         leg_order_volume = passive_target - passive_traded
         if leg_order_volume:
             self.send_leg_order(self.spread.passive_leg.vt_symbol, leg_order_volume)
-            self.write_log(f'HEDGE PASSIVE LEG>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, send order:{datetime.now()}, tick datetime: {self.spread.active_leg.tick.datetime}, event_engine size:{self.algo_engine.event_engine.get_qsize()}. active_traded: {active_traded}, passive_traded: {passive_traded}, passive_target: {passive_target}')
+            # self.write_log(f'HEDGE PASSIVE LEG>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, send order:{datetime.now()}, tick datetime: {self.spread.active_leg.tick.datetime}, event_engine size:{self.algo_engine.event_engine.get_qsize()}. active_traded: {active_traded}, passive_traded: {passive_traded}, passive_target: {passive_target}')
             return False
 
         return True
