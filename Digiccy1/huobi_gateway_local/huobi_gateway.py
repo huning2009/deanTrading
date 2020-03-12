@@ -37,9 +37,9 @@ from myObject import (
 from myEvent import EVENT_TIMER
 
 
-REST_HOST = "https://api.huobipro.com"
-WEBSOCKET_DATA_HOST = "wss://api.huobi.pro/ws"       # Market Data
-WEBSOCKET_TRADE_HOST = "wss://api.huobi.pro/ws/v1"     # Account and Order
+REST_HOST = "https://api-aws.huobi.pro"
+WEBSOCKET_DATA_HOST = "wss://api-aws.huobi.pro/ws"       # Market Data
+WEBSOCKET_TRADE_HOST = "wss://api-aws.huobi.pro/ws/v1"     # Account and Order
 
 STATUS_HUOBI2VT = {
     "submitted": Status.NOTTRADED,
