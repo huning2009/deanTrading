@@ -14,6 +14,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
     algo_name = "SpreadTaker"
     SPREAD_LONG = 1
     SPREAD_SHORT = 2
+    SELL_BUY_RATIO = 2
 
     def __init__(
         self,
@@ -51,7 +52,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             self.take_active_leg(self.SPREAD_SHORT)
             self.write_log(f'ACTIVE SELL>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
         elif (self.spread.net_pos <= 0 and
-            self.spread.net_pos > -self.spread.max_pos*4 and
+            self.spread.net_pos > -self.spread.max_pos*self.SELL_BUY_RATIO and
             self.spread.bid_price >= self.spread.short_price):
             """卖出开仓"""
             self.take_active_leg(self.SPREAD_SHORT)
@@ -102,7 +103,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
                 spread_order_volume = -min(spread_volume_left, spread_order_volume)
             else:
                 # 裸卖空，自动借款，且借全款
-                spread_volume_left = self.spread.max_pos*4 + self.spread.net_pos
+                spread_volume_left = self.spread.max_pos*self.SELL_BUY_RATIO + self.spread.net_pos
                 if spread_volume_left > self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free:
                     borrowmoney = True
                     spread_order_volume = min(spread_volume_left, self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].max_borrow * 0.9)
