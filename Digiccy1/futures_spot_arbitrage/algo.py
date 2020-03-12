@@ -100,6 +100,9 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
                 # spread_order_volume = min(spread_order_volume, spread_volume_left)
         else:
             if self.spread.net_pos > 0:
+                if self.spread.net_pos > self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free:
+                    borrowmoney = True
+                    self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free = self.spread.net_pos
                 spread_order_volume = -self.spread.net_pos
                 # spread_volume_left = self.spread.net_pos
                 # spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
