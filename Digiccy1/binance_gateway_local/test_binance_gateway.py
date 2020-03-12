@@ -27,14 +27,14 @@ from myConstant import (
     Interval,
     Exchange, EVENT_ACCOUNT_MARGIN,EVENT_BORROW_MONEY,EVENT_REPAY_MONEY
 )
-from DatabaseManage.init_sqlite import get_sqlite, init_models
+# from DatabaseManage.init_sqlite import get_sqlite, init_models
 from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
 
 
 
 setting = load_json("connect_binance_huqh109.json")
-db = get_sqlite('info.db')
-DbContractData, DbAccountData, DbBarData = init_models(db)
+# db = get_sqlite('info.db')
+# DbContractData, DbAccountData, DbBarData = init_models(db)
 
 def process_event(event:Event):
     print(event.type+ "*"*30)
