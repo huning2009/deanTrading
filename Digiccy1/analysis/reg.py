@@ -50,11 +50,19 @@ df.sort_index(inplace=True)
 # print(type(df['diff']))
 df['sma'] = talib.SMA(df['diff'])
 df['u'], df['m'], df['d'] = talib.BBANDS(df['diff'], 20,2,2,0)
-df['diff'].plot()
+# df['u'] = df[(df['u']-df['d'])/df['m']<0.0003]['u']*1.3
+# df['d'] = df[(df['u']-df['d'])/df['m']<0.0003]['d']*1.3
+df['u1'] = df['u']
+df['d1'] = df['d']
+df.loc[(df['u']-df['d'])/df['m']<0.0003, 'u1'] = df.loc[(df['u']-df['d'])/df['m']<0.0003, 'u']*1.3
+df.loc[(df['u']-df['d'])/df['m']<0.0003, 'd1'] = df.loc[(df['u']-df['d'])/df['m']<0.0003, 'd']*1.3
+# df['diff'].plot()
 df['u'].plot()
-df['m'].plot()
+df['u1'].plot()
+# df['m'].plot()
 df['d'].plot()
-df['sma'].plot()
+df['d1'].plot()
+# df['sma'].plot()
 plt.show()
 
 # res = stats.shapiro(df['diff'])

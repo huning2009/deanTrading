@@ -728,7 +728,7 @@ class BinanceRestApi(RestClient):
             # print(">>>>>>>there is a borrowmoney callback")
             # print(data)
             dt1 = datetime.fromtimestamp(data['transactTime'] / 1000)
-            borrow_amount = data['marginBuyBorrowAmount']
+            borrow_amount = float(data['marginBuyBorrowAmount'])
             borrow_asset = data['marginBuyBorrowAsset']
             borrow_exchange = Exchange.BINANCE
             borrow_dict = {}
