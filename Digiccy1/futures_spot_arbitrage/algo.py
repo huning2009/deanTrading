@@ -89,18 +89,21 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         borrowmoney = False
         if direction == self.SPREAD_LONG:
             if self.spread.net_pos < 0:
-                spread_volume_left = self.spread.net_pos
-                spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
-                spread_order_volume = min(-spread_volume_left, spread_order_volume)
+                spread_order_volume = -self.spread.net_pos
+                # spread_volume_left = self.spread.net_pos
+                # spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
+                # spread_order_volume = min(-spread_volume_left, spread_order_volume)
             else:
-                spread_volume_left = self.spread.max_pos - self.spread.net_pos
-                spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
-                spread_order_volume = min(spread_order_volume, spread_volume_left)
+                spread_order_volume = self.spread.max_pos - self.spread.net_pos
+                # spread_volume_left = self.spread.max_pos - self.spread.net_pos
+                # spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
+                # spread_order_volume = min(spread_order_volume, spread_volume_left)
         else:
             if self.spread.net_pos > 0:
-                spread_volume_left = self.spread.net_pos
-                spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
-                spread_order_volume = -min(spread_volume_left, spread_order_volume)
+                spread_order_volume = -self.spread.net_pos
+                # spread_volume_left = self.spread.net_pos
+                # spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
+                # spread_order_volume = -min(spread_volume_left, spread_order_volume)
             else:
                 # 裸卖空，自动借款，且借全款
                 spread_volume_left = self.spread.max_pos*self.SELL_BUY_RATIO + self.spread.net_pos
@@ -112,8 +115,9 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
                     self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free = spread_order_volume
                     spread_order_volume = -spread_order_volume
                 else:
-                    spread_order_volume = max(self.spread.bid_volume, self.spread.lot_size)
-                    spread_order_volume = -min(spread_order_volume, spread_volume_left)
+                    # spread_order_volume = max(self.spread.bid_volume, self.spread.lot_size)
+                    # spread_order_volume = -min(spread_order_volume, spread_volume_left)
+                    spread_order_volume = -spread_volume_left
 
 
         # Calculate active leg order volume
