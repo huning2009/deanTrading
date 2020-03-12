@@ -125,13 +125,13 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             self.spread.active_leg.vt_symbol,
             spread_order_volume
         )
-
-        # Send active leg order
-        self.send_leg_order(
-            self.spread.active_leg.vt_symbol,
-            leg_order_volume,
-            borrowmoney
-        )
+        if abs(leg_order_volume) * self.spread.active_leg.last_price > 12:
+            # Send active leg order
+            self.send_leg_order(
+                self.spread.active_leg.vt_symbol,
+                leg_order_volume,
+                borrowmoney
+            )
 
     def hedge_passive_leg(self):
         """
@@ -157,7 +157,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         )
 
         leg_order_volume = passive_target - passive_traded
-        if leg_order_volume:
+        if abs(leg_order_volume) * self.spread.passive_leg.last_price > 12:
             self.send_leg_order(self.spread.passive_leg.vt_symbol, leg_order_volume)
             # self.write_log(f'HEDGE PASSIVE LEG>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, send order:{datetime.now()}, tick datetime: {self.spread.active_leg.tick.datetime}, event_engine size:{self.algo_engine.event_engine.get_qsize()}. active_traded: {active_traded}, passive_traded: {passive_traded}, passive_target: {passive_target}')
             return False
@@ -169,9 +169,6 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         """"""
         leg = self.spread.legs[vt_symbol]
         leg_contract = self.get_contract(vt_symbol)
-        # check min notion
-        if abs(leg_volume) * leg.last_price <12:
-            return
 
         if leg_volume > 0:
             if vt_symbol == self.spread.active_leg.vt_symbol:
