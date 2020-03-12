@@ -29,14 +29,17 @@ def process_log_event(event:Event):
     log = event.data
     print("%s %s" % (log.time.strftime("%Y-%m-%d %H:%M:%S"),log.msg))
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 binance_setting = load_json("connect_binance.json")
+setting_filename = "spread_trading_setting.json"
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 event_engine = EventEngine()
 event_engine.register(EVENT_LOG, process_log_event)
 # event_engine.register(EVENT_ORDER, process_event)
 # event_engine.register(EVENT_TRADE, process_event)
 
-fsa_engine = SpreadEngine(event_engine)
+fsa_engine = SpreadEngine(event_engine, setting_filename)
 
 fsa_engine.add_gateway(BinanceGateway)
 fsa_engine.add_gateway(BinanceFuturesGateway)

@@ -29,7 +29,7 @@ from .algo import SpreadTakerAlgo
 class SpreadEngine(object):
     """"""
 
-    def __init__(self, event_engine: EventEngine):
+    def __init__(self, event_engine: EventEngine, setting_filename:str):
         """Constructor"""
         self.active = False
 
@@ -38,7 +38,7 @@ class SpreadEngine(object):
         self.gateways = {}
         self.exchanges = []
 
-        self.data_engine: SpreadDataEngine = SpreadDataEngine(self)
+        self.data_engine: SpreadDataEngine = SpreadDataEngine(self, setting_filename)
         self.algo_engine: SpreadAlgoEngine = SpreadAlgoEngine(self)
 
         self.event_engine.start()
@@ -130,12 +130,11 @@ class SpreadEngine(object):
 
 class SpreadDataEngine:
     """"""
-    setting_filename = "spread_trading_setting.json"
-
-    def __init__(self, spread_engine: SpreadEngine):
+    def __init__(self, spread_engine: SpreadEngine, setting_filename:str = "spread_trading_setting.json"):
         """"""
         self.spread_engine: SpreadEngine = spread_engine
         self.event_engine: EventEngine = spread_engine.event_engine
+        self.setting_filename = setting_filename
 
         self.ticks = {}
         self.orders = {}
