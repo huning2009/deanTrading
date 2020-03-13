@@ -299,8 +299,8 @@ class SpreadDataEngine:
             if amount > 0:
                 self.spread_engine.repay(asset, amount, gateway_name)
         self.margin_accounts[margin_account_data.vt_symbol] = margin_account_data
-        print(self.borrowmoneys)
-        print(f'{margin_account_data.vt_symbol} max borrow: {margin_account_data.max_borrow}')
+        # print(self.borrowmoneys)
+        # print(f'{margin_account_data.vt_symbol} max borrow: {margin_account_data.max_borrow}')
     def get_leg(self, vt_symbol: str) -> LegData:
         """"""
         leg = self.legs.get(vt_symbol, None)
