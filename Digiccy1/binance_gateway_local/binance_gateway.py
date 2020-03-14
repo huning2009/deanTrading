@@ -11,19 +11,22 @@ from datetime import datetime, timedelta
 from enum import Enum
 from threading import Lock
 
-from vnpy.api.rest import RestClient, Request
-from vnpy.api.websocket import WebsocketClient
-from vnpy.trader.constant import (
+from myApi.rest import RestClient, Request
+from myApi.websocket import WebsocketClient
+from myConstant import (
     Direction,
     Exchange,
     Product,
     Status,
     Offset,
     OrderType,
-    Interval
+    Interval,
+    EVENT_ACCOUNT_MARGIN,
+    EVENT_BORROW_MONEY,
+    EVENT_REPAY_MONEY
 )
-from vnpy.trader.gateway import BaseGateway
-from vnpy.trader.object import (
+from myGateway import BaseGateway
+from myObject import (
     TickData,
     OrderData,
     TradeData,
@@ -33,14 +36,10 @@ from vnpy.trader.object import (
     OrderRequest,
     CancelRequest,
     SubscribeRequest,
-    HistoryRequest
+    HistoryRequest,
+    MarginAccountData
 )
-from vnpy.trader.event import EVENT_TIMER
-from vnpy.event import Event
-
-from myObject import MarginAccountData
-from myConstant import EVENT_ACCOUNT_MARGIN, EVENT_BORROW_MONEY, EVENT_REPAY_MONEY
-
+from myEvent import Event, EVENT_TIMER
 
 REST_HOST = "https://api.binance.com"
 WEBSOCKET_TRADE_HOST = "wss://stream.binance.com:9443/ws/"
@@ -111,7 +110,7 @@ class BinanceGateway(BaseGateway):
         self.trade_ws_api = BinanceTradeWebsocketApi(self)
         self.market_ws_api = BinanceDataWebsocketApi(self)
         self.rest_api = BinanceRestApi(self)
-
+        self.query_account_margin_count = 0
     def connect(self, setting: dict):
         """"""
         key = setting["key"]
@@ -175,13 +174,17 @@ class BinanceGateway(BaseGateway):
         # self.rest_api.keep_user_stream()
         self.rest_api.keep_user_stream_margin()
 
+        self.query_account_margin_count += 1
+        if self.query_account_margin_count > 300:
+            self.query_account_margin_count = 0
+            self.rest_api.query_account_margin()
+
     def on_account_margin(self, account: MarginAccountData):
         """
         Account event push.
         Account event of a specific vt_accountid is also pushed.
         """
         self.on_event(EVENT_ACCOUNT_MARGIN, account)
-        self.on_event(EVENT_ACCOUNT_MARGIN + account.vt_accountid, account)
 
     def on_borrow_money(self, data):
         self.on_event(EVENT_BORROW_MONEY, data)
@@ -216,6 +219,7 @@ class BinanceRestApi(RestClient):
         self.order_count = 1_000_000
         self.order_count_lock = Lock()
         self.connect_time = 0
+        self.latest_price = {}
 
     def sign(self, request):
         """
@@ -292,7 +296,9 @@ class BinanceRestApi(RestClient):
 
         self.query_time()
         # self.query_account()
-        # self.query_account_margin()
+        self.query_latest_price()
+        time.sleep(2)
+        self.query_account_margin()
         # self.query_order()
         self.query_contract()
         # self.start_user_stream()
@@ -309,6 +315,17 @@ class BinanceRestApi(RestClient):
             "GET",
             path,
             callback=self.on_query_time,
+            data=data
+        )
+
+    def query_latest_price(self):
+        """"""
+        data = {"security": Security.NONE}
+
+        self.add_request(
+            method="GET",
+            path="/api/v3/ticker/price",
+            callback=self.on_query_latest_price,
             data=data
         )
 
@@ -333,7 +350,7 @@ class BinanceRestApi(RestClient):
             callback=self.on_query_account_margin,
             data=data
         )
-
+        # print("query_account_margin")
     def query_order(self):
         """"""
         data = {"security": Security.SIGNED}
@@ -413,11 +430,6 @@ class BinanceRestApi(RestClient):
             "security": Security.SIGNED
         }
 
-        if req.direction == Direction.SHORT:
-            sideEffectType = "MARGIN_BUY"
-        else:
-            sideEffectType = "AUTO_REPAY"
-
         params = {
             "symbol": req.symbol,
             "side": DIRECTION_VT2BINANCE[req.direction],
@@ -425,10 +437,10 @@ class BinanceRestApi(RestClient):
             "price": str(req.price),
             "quantity": str(req.volume),
             "newClientOrderId": orderid,
-            "sideEffectType": sideEffectType,
-            "timeInForce": 'IOC',
-            "newOrderRespType": "ACK"
+            "timeInForce": 'IOC'
         }
+        if req.borrowmoney == True:
+            params["sideEffectType"] = "MARGIN_BUY"
 
         self.add_request(
             method="POST",
@@ -440,7 +452,7 @@ class BinanceRestApi(RestClient):
             on_error=self.on_send_order_error,
             on_failed=self.on_send_order_failed
         )
-
+        # print(f'Gateway send order:{order.vt_orderid}, datetime: {datetime.now()}')
         return order.vt_orderid
 
     def cancel_order(self, req: CancelRequest):
@@ -574,6 +586,8 @@ class BinanceRestApi(RestClient):
         self.keep_alive_count_margin += 1
         if self.keep_alive_count_margin < 600:
             return
+        else:
+            self.keep_alive_count_margin = 0
 
         data = {
             "security": Security.API_KEY
@@ -591,11 +605,17 @@ class BinanceRestApi(RestClient):
             data=data
         )
 
+        self.query_latest_price()
     def on_query_time(self, data, request):
         """"""
         local_time = int(time.time() * 1000)
         server_time = int(data["serverTime"])
         self.time_offset = local_time - server_time
+
+    def on_query_latest_price(self, data, request):
+        """"""
+        for d in data:
+            self.latest_price[d['symbol']] = float(d['price'])
 
     def on_query_account(self, data, request):
         """"""
@@ -614,19 +634,31 @@ class BinanceRestApi(RestClient):
 
     def on_query_account_margin(self, data, request):
         """"""
+        max_borrow_btc = max(float(data['totalNetAssetOfBtc'])*2 - float(data['totalLiabilityOfBtc']), 0)
+
         for account_data in data["userAssets"]:
+            if account_data["asset"] == "USDT":
+                price_based_BTC = self.latest_price.get("BTC" + account_data["asset"], 1)
+                max_borrow = max_borrow_btc * price_based_BTC
+            else:
+                price_based_BTC = self.latest_price.get(account_data["asset"]+"BTC", 1)
+                max_borrow = max_borrow_btc/price_based_BTC
+            
             account = MarginAccountData(
                 accountid=account_data["asset"],
+                exchange=Exchange.BINANCE,
                 borrowed=float(account_data["borrowed"]),
                 interest=float(account_data["interest"]),
                 free=float(account_data["free"]),
                 locked=float(account_data["locked"]),
                 netAsset=float(account_data["netAsset"]),
+                max_borrow=max_borrow,
                 gateway_name=self.gateway_name
             )
 
-            if account.netAsset:
-                self.gateway.on_account_margin(account)
+            # if account.netAsset or account.borrowed:
+            # print(f'{account_data["asset"]} based on BTC price: {price_based_BTC}, max_borrow:{account.max_borrow}')
+            self.gateway.on_account_margin(account)
 
         self.gateway.write_log("<杠杆>账户资金查询成功")
 
@@ -688,7 +720,24 @@ class BinanceRestApi(RestClient):
 
     def on_send_order(self, data, request):
         """"""
-        pass
+        # try:
+        #     print(f'rest api callback on_send_order:{data}, datetime: {datetime.now()}')
+        # except:
+        #     print('rest api on_send_order failed')
+        if 'marginBuyBorrowAsset' in data:
+            # print(">>>>>>>there is a borrowmoney callback")
+            # print(data)
+            dt1 = datetime.fromtimestamp(data['transactTime'] / 1000)
+            borrow_amount = float(data['marginBuyBorrowAmount'])
+            borrow_asset = data['marginBuyBorrowAsset']
+            borrow_exchange = Exchange.BINANCE
+            borrow_dict = {}
+            borrow_dict['borrow_asset'] = borrow_asset
+            borrow_dict['borrow_amount'] = borrow_amount
+            borrow_dict['datetime'] = dt1
+            borrow_dict['borrow_exchange'] = borrow_exchange
+
+            self.gateway.on_borrow_money(borrow_dict)
 
     def on_send_order_failed(self, status_code: str, request: Request):
         """
@@ -905,7 +954,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         )
 
         self.gateway.on_order(order)
-
+        # print(f"Gateway websocket get order response: {order.vt_orderid}, datetime: {datetime.now()}")
         # Push trade event
         trade_volume = float(packet["l"])
         if not trade_volume:
@@ -974,7 +1023,8 @@ class BinanceDataWebsocketApi(WebsocketClient):
         channels = []
         for ws_symbol in self.ticks.keys():
             channels.append(ws_symbol + "@ticker")
-            channels.append(ws_symbol + "@depth5")
+            channels.append(ws_symbol + "@depth5@100ms")
+            channels.append(ws_symbol + "@bookTicker")
 
         url = WEBSOCKET_DATA_HOST + "/".join(channels)
         self.init(url, self.proxy_host, self.proxy_port)
@@ -985,7 +1035,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
         stream = packet["stream"]
         data = packet["data"]
 
-        symbol, channel = stream.split("@")
+        symbol, channel = stream.split("@", 1)
         tick = self.ticks[symbol]
 
         if channel == "ticker":
@@ -995,6 +1045,12 @@ class BinanceDataWebsocketApi(WebsocketClient):
             tick.low_price = float(data['l'])
             tick.last_price = float(data['c'])
             tick.datetime = datetime.fromtimestamp(float(data['E']) / 1000)
+        elif channel == "bookTicker":
+            tick.bid_price_1 = float(data['b'])
+            tick.ask_price_1 = float(data['a'])
+            tick.bid_volume_1 = float(data['B'])
+            tick.ask_volume_1 = float(data['A'])
+            tick.datetime = datetime.now()
         else:
             bids = data["bids"]
             for n in range(5):
@@ -1007,6 +1063,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
                 price, volume = asks[n]
                 tick.__setattr__("ask_price_" + str(n + 1), float(price))
                 tick.__setattr__("ask_volume_" + str(n + 1), float(volume))
-
+            tick.datetime = datetime.now()
         if tick.last_price:
             self.gateway.on_tick(copy(tick))
+            # print(f'binance gateway tick.datetime: {tick.datetime}')

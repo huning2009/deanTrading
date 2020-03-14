@@ -1,8 +1,9 @@
 from typing import Any
+from datetime import datetime
 
-from vnpy.trader.constant import Direction, Offset
-from vnpy.trader.object import (TickData, OrderData, TradeData)
-from vnpy.trader.utility import round_to
+from myConstant import Direction, Offset
+from myObject import (TickData, OrderData, TradeData)
+from myUtility import round_to
 
 from .template import SpreadAlgoTemplate
 from .base import SpreadData
@@ -11,31 +12,18 @@ from .base import SpreadData
 class SpreadTakerAlgo(SpreadAlgoTemplate):
     """"""
     algo_name = "SpreadTaker"
+    SPREAD_LONG = 1
+    SPREAD_SHORT = 2
+    SELL_BUY_RATIO = 2
 
     def __init__(
         self,
         algo_engine: Any,
         algoid: str,
-        spread: SpreadData,
-        direction: Direction,
-        offset: Offset,
-        price: float,
-        volume: float,
-        lot_size: float,
-        payup: int,
-        interval: int,
-        cancel_active_short_interval: int,
-        lock: bool
-    ):
+        spread: SpreadData):
         """"""
-        super().__init__(
-            algo_engine, algoid, spread,
-            direction, offset, price, volume, lot_size,
-            payup, interval, cancel_active_short_interval, lock
-        )
-
-        self.cancel_interval: int = 2
-        self.timer_count: int = 0
+        super().__init__(algo_engine, algoid, spread)
+        self.interval = 1800
         # print('%s interval:%s' % (self.algoid, self.interval))
         # print('%s cancel_active_short_interval:%s' % (self.algoid, self.cancel_active_short_interval))
     def on_tick(self, tick: TickData):
@@ -43,43 +31,51 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         # Return if tick not inited
         if not self.spread.bid_volume or not self.spread.ask_volume:
             return
-
         # Return if there are any existing orders
         if not self.check_order_finished():
             return
-
         # Hedge if active leg is not fully hedged
-        if not self.check_hedge_finished():
-            self.hedge_passive_legs()
+        check_hedge_finished = self.hedge_passive_leg()
+        if not check_hedge_finished:
             return
 
         # Otherwise check if should take active leg
-        if self.direction == Direction.LONG:
-            if self.spread.ask_price <= self.price:
-                self.take_active_leg()
-                # print(f'spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_legs[0].bid_price}')
-        else:
-            if self.spread.bid_price >= self.price:
-                self.take_active_leg()
-                # print(f'spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_legs[0].ask_price}')
+        if (self.spread.net_pos >= 0 and
+            self.spread.net_pos < self.spread.max_pos and
+            self.spread.ask_price <= self.spread.buy_price):
+            """买入开仓"""
+            self.take_active_leg(self.SPREAD_LONG)
+            # self.write_log(f'ACTIVE LONG>>>spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
+        elif (self.spread.net_pos > 0 and
+            self.spread.bid_price >= self.spread.sell_price):
+            """卖出平仓"""
+            self.take_active_leg(self.SPREAD_SHORT)
+            # self.write_log(f'ACTIVE SELL>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
+        elif (self.spread.net_pos <= 0 and
+            self.spread.net_pos > -self.spread.max_pos*self.SELL_BUY_RATIO and
+            self.spread.bid_price >= self.spread.short_price):
+            """卖出开仓"""
+            self.take_active_leg(self.SPREAD_SHORT)
+            # self.write_log(f'ACTIVE SHORT>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
+        elif (self.spread.net_pos < 0 and
+            self.spread.ask_price < self.spread.cover_price):
+            """买入平仓"""
+            self.take_active_leg(self.SPREAD_LONG)
+            # self.write_log(f'ACTIVE COVER>>>spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
 
     def on_order(self, order: OrderData):
         """"""
-        # Only care active leg order update
-        if order.vt_symbol != self.spread.active_leg.vt_symbol:
-            return
-        # print('got active_leg on_order')
-        # Do nothing if still any existing orders
-        if not self.check_order_finished():
-            return
-        # print("check_order_finished pass")
-        # Hedge passive legs if necessary
-        if not self.check_hedge_finished():
-            self.hedge_passive_legs()
+        pass
 
     def on_trade(self, trade: TradeData):
         """"""
-        pass
+         # Only care active leg order update
+        if trade.vt_symbol == self.spread.active_leg.vt_symbol:
+            if not self.check_passive_order_finished():
+                return
+            # Hedge passive legs if necessary
+            self.hedge_passive_leg()
+            
 
     # def on_interval(self):
     #     """"""
@@ -87,75 +83,114 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
     #         self.cancel_all_order()
     #         print("algo on_interval cancel_all_order!!!")
 
-    def take_active_leg(self):
+    def take_active_leg(self, direction):
         """"""
         # Calculate spread order volume of new round trade
-        spread_volume_left = self.target - self.traded
-
-        if self.direction == Direction.LONG:
-            spread_order_volume = max(self.spread.ask_volume, self.lot_size)
-            spread_order_volume = min(spread_order_volume, spread_volume_left)
+        borrowmoney = False
+        if direction == self.SPREAD_LONG:
+            if self.spread.net_pos < 0:
+                spread_order_volume = -self.spread.net_pos
+                # spread_volume_left = self.spread.net_pos
+                # spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
+                # spread_order_volume = min(-spread_volume_left, spread_order_volume)
+            else:
+                spread_order_volume = self.spread.max_pos - self.spread.net_pos
+                # spread_volume_left = self.spread.max_pos - self.spread.net_pos
+                # spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
+                # spread_order_volume = min(spread_order_volume, spread_volume_left)
         else:
-            spread_order_volume = min(-self.spread.bid_volume, -self.lot_size)
-            spread_order_volume = max(spread_order_volume, spread_volume_left)
+            if self.spread.net_pos > 0:
+                if self.spread.net_pos > self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free:
+                    borrowmoney = True
+                    self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free = self.spread.net_pos
+                spread_order_volume = -self.spread.net_pos
+                # spread_volume_left = self.spread.net_pos
+                # spread_order_volume = max(self.spread.ask_volume, self.spread.lot_size)
+                # spread_order_volume = -min(spread_volume_left, spread_order_volume)
+            else:
+                # 裸卖空，自动借款，且借全款
+                spread_volume_left = self.spread.max_pos*self.SELL_BUY_RATIO + self.spread.net_pos
+                if spread_volume_left > self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free:
+                    borrowmoney = True
+                    spread_order_volume = min(spread_volume_left, self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].max_borrow * 0.9)
+                    if spread_order_volume < self.spread.lot_size:
+                        return
+                    self.algo_engine.spread_engine.data_engine.margin_accounts[self.spread.active_leg.vt_symbol].free = spread_order_volume
+                    spread_order_volume = -spread_order_volume
+                else:
+                    # spread_order_volume = max(self.spread.bid_volume, self.spread.lot_size)
+                    # spread_order_volume = -min(spread_order_volume, spread_volume_left)
+                    spread_order_volume = -spread_volume_left
+
 
         # Calculate active leg order volume
         leg_order_volume = self.spread.calculate_leg_volume(
             self.spread.active_leg.vt_symbol,
             spread_order_volume
         )
+        if abs(leg_order_volume) * self.spread.active_leg.last_price > 12:
+            # Send active leg order
+            self.send_leg_order(
+                self.spread.active_leg.vt_symbol,
+                leg_order_volume,
+                borrowmoney
+            )
 
-        # Send active leg order
-        self.send_leg_order(
-            self.spread.active_leg.vt_symbol,
-            leg_order_volume
-        )
-
-    def hedge_passive_legs(self):
+    def hedge_passive_leg(self):
         """
         Send orders to hedge all passive legs.
         """
         # Calcualte spread volume to hedge
+<<<<<<< HEAD
         active_leg = self.spread.active_leg
         active_traded = self.leg_traded[active_leg.vt_symbol]
         active_traded = round_to(active_traded, self.spread.min_volume)
         # print("algo hedge_passive_legs, active_traded=%s" % active_traded)
+=======
+        # active_leg = self.spread.active_leg
+        # active_traded = self.leg_traded[active_leg.vt_symbol]
+        active_traded = round_to(self.spread.active_leg.net_pos, self.spread.min_volume)
+>>>>>>> dev
 
         hedge_volume = self.spread.calculate_spread_volume(
-            active_leg.vt_symbol,
+            self.spread.active_leg.vt_symbol,
             active_traded
         )
 
         # Calculate passive leg target volume and do hedge
-        for leg in self.spread.passive_legs:
-            passive_traded = self.leg_traded[leg.vt_symbol]
-            passive_traded = round_to(passive_traded, self.spread.min_volume)
+        # passive_traded = self.leg_traded[self.spread.passive_leg.vt_symbol]
+        passive_traded = round_to(self.spread.passive_leg.net_pos, self.spread.min_volume)
 
-            passive_target = self.spread.calculate_leg_volume(
-                leg.vt_symbol,
-                hedge_volume
-            )
+        passive_target = self.spread.calculate_leg_volume(
+            self.spread.passive_leg.vt_symbol,
+            hedge_volume
+        )
 
-            leg_order_volume = passive_target - passive_traded
-            if leg_order_volume:
-                self.send_leg_order(leg.vt_symbol, leg_order_volume)
+        leg_order_volume = passive_target - passive_traded
+        if abs(leg_order_volume) * self.spread.passive_leg.last_price > 12:
+            self.send_leg_order(self.spread.passive_leg.vt_symbol, leg_order_volume)
+            # self.write_log(f'HEDGE PASSIVE LEG>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, send order:{datetime.now()}, tick datetime: {self.spread.active_leg.tick.datetime}, event_engine size:{self.algo_engine.event_engine.get_qsize()}. active_traded: {active_traded}, passive_traded: {passive_traded}, passive_target: {passive_target}')
+            return False
 
-    def send_leg_order(self, vt_symbol: str, leg_volume: float):
+        return True
+
+
+    def send_leg_order(self, vt_symbol: str, leg_volume: float, borrowmoney = False):
         """"""
         leg = self.spread.legs[vt_symbol]
-        leg_tick = self.get_tick(vt_symbol)
         leg_contract = self.get_contract(vt_symbol)
 
         if leg_volume > 0:
             if vt_symbol == self.spread.active_leg.vt_symbol:
-                price = round_to(leg_tick.ask_price_1 + leg_contract.pricetick * self.payup * 10,leg_contract.pricetick)
+                price = round_to(self.spread.active_leg.ask_price + leg_contract.pricetick * self.spread.payup * 10,leg_contract.pricetick)
             else:
-                price = round_to(leg_tick.ask_price_1 + leg_contract.pricetick * self.payup,leg_contract.pricetick)
+                price = round_to(self.spread.passive_leg.ask_price + leg_contract.pricetick * self.spread.payup,leg_contract.pricetick)
             self.send_long_order(leg.vt_symbol, price, abs(leg_volume))
         elif leg_volume < 0:
             if vt_symbol == self.spread.active_leg.vt_symbol:
-                price = round_to(leg_tick.bid_price_1 - leg_contract.pricetick * self.payup * 10,leg_contract.pricetick) 
+                # print(self.algo_engine.spread_engine.data_engine.margin_accounts)
+                price = round_to(self.spread.active_leg.bid_price - leg_contract.pricetick * self.spread.payup * 10,leg_contract.pricetick) 
             else:
-                price = round_to(leg_tick.bid_price_1 - leg_contract.pricetick * self.payup,leg_contract.pricetick)
-            self.send_short_order(leg.vt_symbol, price, abs(leg_volume))
+                price = round_to(self.spread.passive_leg.bid_price - leg_contract.pricetick * self.spread.payup,leg_contract.pricetick)
+            self.send_short_order(leg.vt_symbol, price, abs(leg_volume), borrowmoney)
         

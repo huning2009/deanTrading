@@ -11,17 +11,18 @@ from datetime import datetime, timedelta
 from enum import Enum
 from threading import Lock
 
-from vnpy.api.rest import RestClient, Request
-from vnpy.api.websocket import WebsocketClient
-from vnpy.trader.constant import (
+from myApi.rest import RestClient, Request
+from myApi.websocket import WebsocketClient
+from myConstant import (
     Direction,
     Product,
     Status,
     OrderType,
-    Interval
+    Interval,
+    Exchange
 )
-from vnpy.trader.gateway import BaseGateway
-from vnpy.trader.object import (
+from myGateway import BaseGateway
+from myObject import (
     TickData,
     OrderData,
     TradeData,
@@ -34,11 +35,7 @@ from vnpy.trader.object import (
     SubscribeRequest,
     HistoryRequest
 )
-from vnpy.trader.event import EVENT_TIMER
-from vnpy.event import Event
-
-from myConstant import Exchange
-
+from myEvent import Event, EVENT_TIMER
 
 REST_HOST = "https://fapi.binance.com"
 WEBSOCKET_TRADE_HOST = "wss://fstream.binance.com/ws/"
@@ -375,7 +372,7 @@ class BinanceRestApi(RestClient):
             on_error=self.on_send_order_error,
             on_failed=self.on_send_order_failed
         )
-
+        # print(f'Futures Gateway send order:{order.vt_orderid}, datetime: {datetime.now()}')
         return order.vt_orderid
 
     def cancel_order(self, req: CancelRequest):
@@ -416,6 +413,8 @@ class BinanceRestApi(RestClient):
         self.keep_alive_count += 1
         if self.keep_alive_count < 600:
             return
+        else:
+            self.keep_alive_count = 0
 
         data = {
             "security": Security.API_KEY
@@ -538,6 +537,10 @@ class BinanceRestApi(RestClient):
 
     def on_send_order(self, data, request):
         """"""
+        # try:
+        #     print(f'rest api callback on_send_order:{data}, datetime: {datetime.now()}')
+        # except:
+        #     print('rest api on_send_order failed')
         pass
 
     def on_send_order_failed(self, status_code: str, request: Request):
@@ -747,6 +750,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         )
 
         self.gateway.on_order(order)
+        # print(f"Gateway websocket get order response: {order.vt_orderid}, datetime: {datetime.now()}")
 
         # Push trade event
         trade_volume = float(packet["l"])
@@ -816,7 +820,8 @@ class BinanceDataWebsocketApi(WebsocketClient):
         channels = []
         for ws_symbol in self.ticks.keys():
             channels.append(ws_symbol + "@ticker")
-            channels.append(ws_symbol + "@depth5")
+            # channels.append(ws_symbol + "@depth5@100ms")
+            channels.append(ws_symbol + "@bookTicker")
 
         url = WEBSOCKET_DATA_HOST + "/".join(channels)
         self.init(url, self.proxy_host, self.proxy_port)
@@ -827,7 +832,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
         stream = packet["stream"]
         data = packet["data"]
 
-        symbol, channel = stream.split("@")
+        symbol, channel = stream.split("@", 1)
         tick = self.ticks[symbol]
 
         if channel == "ticker":
@@ -837,6 +842,11 @@ class BinanceDataWebsocketApi(WebsocketClient):
             tick.low_price = float(data['l'])
             tick.last_price = float(data['c'])
             tick.datetime = datetime.fromtimestamp(float(data['E']) / 1000)
+        elif channel == "bookTicker":
+            tick.bid_price_1 = float(data['b'])
+            tick.ask_price_1 = float(data['a'])
+            tick.bid_volume_1 = float(data['B'])
+            tick.ask_volume_1 = float(data['A'])
         else:
             bids = data["b"]
             for n in range(5):

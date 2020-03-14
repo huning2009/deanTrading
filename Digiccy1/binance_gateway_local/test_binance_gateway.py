@@ -1,17 +1,13 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path.cwd()))
+
 from time import sleep
 from datetime import datetime, timedelta
-from vnpy.trader.utility import load_json
-from vnpy.event import Event, EventEngine
-from vnpy.trader.event import (
-    EVENT_TICK,
-    EVENT_ORDER,
-    EVENT_TRADE,
-    EVENT_POSITION,
-	EVENT_ACCOUNT,
-	EVENT_CONTRACT,
-	EVENT_LOG,
-)
-from vnpy.trader.object import (
+from myUtility import load_json
+from myEvent import Event, EventEngine,EVENT_TICK, EVENT_ORDER, EVENT_TRADE, EVENT_POSITION, EVENT_ACCOUNT,	EVENT_CONTRACT,	EVENT_LOG
+
+from myObject import (
     TickData,
     OrderData,
     TradeData,
@@ -22,23 +18,23 @@ from vnpy.trader.object import (
     SubscribeRequest,
     HistoryRequest
 )
-from vnpy.trader.constant import (
+from myConstant import (
     Direction,
     Exchange,
     Product,
     Status,
     OrderType,
-    Interval
+    Interval,
+    Exchange, EVENT_ACCOUNT_MARGIN,EVENT_BORROW_MONEY,EVENT_REPAY_MONEY
 )
-from DatabaseManage.init_sqlite import get_sqlite, init_models
+# from DatabaseManage.init_sqlite import get_sqlite, init_models
 from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
-from myConstant import Exchange, EVENT_ACCOUNT_MARGIN,EVENT_BORROW_MONEY,EVENT_REPAY_MONEY
 
 
 
-setting = load_json("connect_binance.json")
-db = get_sqlite('info.db')
-DbContractData, DbAccountData, DbBarData = init_models(db)
+setting = load_json("connect_binance_huqh109.json")
+# db = get_sqlite('info.db')
+# DbContractData, DbAccountData, DbBarData = init_models(db)
 
 def process_event(event:Event):
     print(event.type+ "*"*30)
@@ -65,8 +61,8 @@ gateway.connect(setting)
 sleep(5)
 # gateway.repay_money("LINK", 1)
 
-# req = SubscribeRequest("ETHUSDT", Exchange.BINANCE)
-# gateway.subscribe(req)
+req = SubscribeRequest("ETHUSDT", Exchange.BINANCE)
+gateway.subscribe(req)
 # endtime = datetime.now()
 # starttime = endtime - timedelta(days=150)
 

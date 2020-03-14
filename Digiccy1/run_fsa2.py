@@ -1,9 +1,12 @@
 from time import sleep
+import sys
+from pathlib import Path
+sys.path.append(str(Path.cwd()))
 
-from vnpy.event import Event, EventEngine
-from vnpy.trader.engine import MainEngine
-from vnpy.trader.event import (
-    EVENT_TICK,
+from myUtility import load_json
+from myEvent import (
+    Event, 
+    EventEngine,
     EVENT_ORDER,
     EVENT_TRADE,
     EVENT_POSITION,
@@ -11,10 +14,8 @@ from vnpy.trader.event import (
 	EVENT_CONTRACT,
 	EVENT_LOG,
 )
-from vnpy.trader.utility import load_json
-
 from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
-from Digiccy1.futures_spot_arbitrage import FSASpreadTradingApp, EVENT_SPREAD_LOG
+from Digiccy1.futures_spot_arbitrage import SpreadEngine
 
 
 def process_event(event:Event):
@@ -28,34 +29,31 @@ def process_log_event(event:Event):
     log = event.data
     print("%s %s" % (log.time.strftime("%Y-%m-%d %H:%M:%S"),log.msg))
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 binance_setting = load_json("connect_binance.json")
+setting_filename = "fsa_setting2.json"
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 event_engine = EventEngine()
 event_engine.register(EVENT_LOG, process_log_event)
-event_engine.register(EVENT_SPREAD_LOG, process_log_event)
 # event_engine.register(EVENT_ORDER, process_event)
 # event_engine.register(EVENT_TRADE, process_event)
-main_engine = MainEngine(event_engine)
 
-main_engine.add_gateway(BinanceGateway)
-main_engine.add_gateway(BinanceFuturesGateway)
-print('add gateway finished')
+fsa_engine = SpreadEngine(event_engine, setting_filename)
 
+fsa_engine.add_gateway(BinanceGateway)
+fsa_engine.add_gateway(BinanceFuturesGateway)
+fsa_engine.write_log('Add gateway finished!')
 
-
-fsa_engine = main_engine.add_app(FSASpreadTradingApp)
 fsa_engine.start()
-print('add fsa_engine and start it')
 
-main_engine.connect(binance_setting, 'BINANCE')
-main_engine.connect(binance_setting, 'BINANCEFUTURES')
-print('gateways is connecting')
-sleep(20)
-fsa_engine.strategy_engine.init_all_strategies()
-fsa_engine.strategy_engine.start_all_strategies()
-print('everythins is OK!')
+fsa_engine.connect(binance_setting, 'BINANCE')
+fsa_engine.connect(binance_setting, 'BINANCEFUTURES')
+fsa_engine.write_log('Gateways is connecting, and sleep 20 seconds!')
+sleep(15)
 
 while True:
+    # print('sleep')
     sleep(10)
     # print('sleep')
     # cmd = input()

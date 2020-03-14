@@ -7,9 +7,16 @@ from queue import Empty, Queue
 from threading import Thread
 from time import sleep
 from typing import Any, Callable, List
+from datetime import datetime
 
 EVENT_TIMER = "eTimer"
-
+EVENT_TICK = "eTick."
+EVENT_TRADE = "eTrade."
+EVENT_ORDER = "eOrder."
+EVENT_POSITION = "ePosition."
+EVENT_ACCOUNT = "eAccount."
+EVENT_CONTRACT = "eContract."
+EVENT_LOG = "eLog"
 
 class Event:
     """
@@ -56,7 +63,9 @@ class EventEngine:
         """
         while self._active:
             try:
-                print('quese size is %s' % self._queue.qsize)
+                # qz = self._queue.qsize()
+                # if qz > 50:
+                #     print(f"self._queue.qsize:{qz}")
                 event = self._queue.get(block=True, timeout=1)
                 self._process(event)
             except Empty:
@@ -142,3 +151,6 @@ class EventEngine:
         """
         if handler in self._general_handlers:
             self._general_handlers.remove(handler)
+
+    def get_qsize(self):
+        return self._queue.qsize()
