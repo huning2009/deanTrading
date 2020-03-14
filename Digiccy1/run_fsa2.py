@@ -31,7 +31,7 @@ def process_log_event(event:Event):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 binance_setting = load_json("connect_binance.json")
-setting_filename = "spread_trading_setting.json"
+setting_filename = "fsa_setting2.json"
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 event_engine = EventEngine()

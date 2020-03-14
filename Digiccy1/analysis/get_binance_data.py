@@ -1,17 +1,12 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path.cwd()))
 from time import sleep
 from datetime import datetime, timedelta
-from vnpy.trader.utility import load_json
-from vnpy.event import Event, EventEngine
-from vnpy.trader.event import (
-    EVENT_TICK,
-    EVENT_ORDER,
-    EVENT_TRADE,
-    EVENT_POSITION,
-	EVENT_ACCOUNT,
-	EVENT_CONTRACT,
-	EVENT_LOG,
-)
-from vnpy.trader.object import (
+from myUtility import load_json
+from myEvent import Event, EventEngine,EVENT_TICK,EVENT_ORDER,EVENT_TRADE,EVENT_POSITION,EVENT_ACCOUNT,EVENT_CONTRACT,EVENT_LOG
+
+from myObject import (
     TickData,
     OrderData,
     TradeData,
@@ -22,17 +17,10 @@ from vnpy.trader.object import (
     SubscribeRequest,
     HistoryRequest
 )
-from vnpy.trader.constant import (
-    Direction,
-    Exchange,
-    Product,
-    Status,
-    OrderType,
-    Interval
-)
+
 from DatabaseManage.init_sqlite import get_sqlite, init_models
 from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
-from myConstant import Exchange, EVENT_ACCOUNT_MARGIN,EVENT_BORROW_MONEY,EVENT_REPAY_MONEY
+from myConstant import Exchange, EVENT_ACCOUNT_MARGIN,EVENT_BORROW_MONEY,EVENT_REPAY_MONEY,Direction,Exchange,Product,Status,OrderType,Interval
 
 
 
@@ -61,10 +49,10 @@ sleep(5)
 endtime = datetime.now()
 starttime = endtime - timedelta(days=60)
 
-symbol_l1 = ['EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT']
+symbol_l1 = ['BTCUSDT', 'EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT']
 symbol_l = ['ETHUSDT', 'ETCUSDT', 'TRXUSDT', 'ADAUSDT', 'ATOMUSDT', 'XMRUSDT', 'DASHUSDT']
-
-for symbol in symbol_l:
+l = ['BTCUSDT']
+for symbol in l:
     historyReq = HistoryRequest(symbol, Exchange.BINANCE, starttime, endtime, Interval.MINUTE)
     data_spot = gateway.query_history(historyReq)
     db_data_spot = [DbBarData.from_bar(bar) for bar in data_spot]
