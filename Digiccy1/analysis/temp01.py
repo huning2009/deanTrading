@@ -7,10 +7,11 @@ from collections import defaultdict
 # class ABC:
 #     def __init__(self):
 #         self.d1: Dict(str, List) = defaultdict(list)
-
-a = 10
-a = -a
-print(a)
+now = dtt.datetime.now()
+print(now.minute)
+# a = 10
+# a = -a
+# print(a)
 # abc = ABC()
 # abc.d1['a'].append(1)
 # print(abc.d1)

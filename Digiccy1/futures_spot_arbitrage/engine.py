@@ -188,7 +188,7 @@ class SpreadDataEngine:
         self.event_engine.register(EVENT_POSITION, self.process_position_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
-        self.event_engine.register(EVENT_BORROW_MONEY, self.process_borrowmoney_event)
+        # self.event_engine.register(EVENT_BORROW_MONEY, self.process_borrowmoney_event)
         self.event_engine.register(EVENT_ACCOUNT_MARGIN, self.process_account_margin_event)
 
     def process_timer_event(self, event: Event):
@@ -261,13 +261,14 @@ class SpreadDataEngine:
             self.write_log('subscribe>>>>>>>>>>>>>>>>>>>:%s' % leg.vt_symbol)
 
     def process_borrowmoney_event(self, event: Event) ->None:
-        borrowmoney_dict = event.data
-        # print(borrowmoney_dict)
-        vt_symbol = borrowmoney_dict['borrow_asset'] + "USDT." + borrowmoney_dict['borrow_exchange'].value
-        leg = self.legs.get(vt_symbol, None)
-        if not leg:
-            return
-        self.borrowmoneys[vt_symbol].append([borrowmoney_dict['datetime'], borrowmoney_dict['borrow_amount']])
+        # borrowmoney_dict = event.data
+        # # print(borrowmoney_dict)
+        # vt_symbol = borrowmoney_dict['borrow_asset'] + "USDT." + borrowmoney_dict['borrow_exchange'].value
+        # leg = self.legs.get(vt_symbol, None)
+        # if not leg:
+        #     return
+        # self.borrowmoneys[vt_symbol].append([borrowmoney_dict['datetime'], borrowmoney_dict['borrow_amount']])
+        pass
 
     def process_account_margin_event(self, event: Event):
         # print(">>>>>>>>process_account_margin_event")
@@ -277,27 +278,29 @@ class SpreadDataEngine:
         if not leg:
             return
 
-        dt_now = datetime.now()
+        dt_now_minute = datetime.now().minute
         
-        if margin_account_data.vt_symbol not in self.borrowmoneys and margin_account_data.borrowed:
-            self.borrowmoneys[margin_account_data.vt_symbol].append([dt_now, margin_account_data.borrowed])
-
-        if margin_account_data.borrowed != 0 and margin_account_data.free != 0:
-            amount = 0
-            gateway_name = margin_account_data.exchange.value
-            asset = margin_account_data.accountid
-            for l in self.borrowmoneys[margin_account_data.vt_symbol]:
-                if 60 - math.modf((dt_now - l[0]).seconds/3600)[0]*60 < 10:
-                    if l[1] <= margin_account_data.free:
-                        amount += l[1]
-                        margin_account_data.free -= l[1]
-                        self.borrowmoneys[margin_account_data.vt_symbol].remove(l)
-                    else:
-                        amount += margin_account_data.free
-                        l[1] -= margin_account_data.free
-                        margin_account_data.free = 0
-            if amount > 0:
+        # if margin_account_data.vt_symbol not in self.borrowmoneys and margin_account_data.borrowed:
+        #     self.borrowmoneys[margin_account_data.vt_symbol].append([dt_now, margin_account_data.borrowed])
+        if dt_now_minute >= 55:
+            if margin_account_data.borrowed > 0 and margin_account_data.free > 0:
+                amount = min(margin_account_data.borrowed, margin_account_data.free)
+                gateway_name = margin_account_data.exchange.value
+                asset = margin_account_data.accountid
+                # for l in self.borrowmoneys[margin_account_data.vt_symbol]:
+                #     if 60 - math.modf((dt_now - l[0]).seconds/3600)[0]*60 < 10:
+                #         if l[1] <= margin_account_data.free:
+                #             amount += l[1]
+                #             margin_account_data.free -= l[1]
+                #             self.borrowmoneys[margin_account_data.vt_symbol].remove(l)
+                #         else:
+                #             amount += margin_account_data.free
+                #             l[1] -= margin_account_data.free
+                #             margin_account_data.free = 0
                 self.spread_engine.repay(asset, amount, gateway_name)
+                
+                margin_account_data.borrowed -= amount
+                margin_account_data.free -= amount
         self.margin_accounts[margin_account_data.vt_symbol] = margin_account_data
         # print(self.borrowmoneys)
         # print(f'{margin_account_data.vt_symbol} max borrow: {margin_account_data.max_borrow}')
