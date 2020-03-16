@@ -207,7 +207,7 @@ class LogEngine:
         Add file output of log.
         """
         today_date = datetime.now().strftime("%Y%m%d")
-        filename = f"DeanTrading_{today_date}.log"
+        filename = f"{today_date}.log"
         log_path = get_folder_path("log")
         file_path = log_path.joinpath(filename)
 
