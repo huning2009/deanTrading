@@ -1,7 +1,11 @@
 """
 Event-driven framework of vn.py framework.
 """
+import sys
+from pathlib import Path
+sys.path.append(str(Path.cwd()))
 
+import logging
 from collections import defaultdict
 from queue import Empty, Queue
 from threading import Thread
@@ -17,6 +21,7 @@ EVENT_POSITION = "ePosition."
 EVENT_ACCOUNT = "eAccount."
 EVENT_CONTRACT = "eContract."
 EVENT_LOG = "eLog"
+from myUtility import get_folder_path
 
 class Event:
     """
@@ -154,3 +159,72 @@ class EventEngine:
 
     def get_qsize(self):
         return self._queue.qsize()
+
+
+class LogEngine:
+    """
+    Processes log event and output with logging module.
+    """
+
+    def __init__(self, event_engine: EventEngine, log_level, log_name):
+        """"""
+        self.event_engine = event_engine
+
+        self.level = log_level
+
+        self.logger = logging.getLogger(log_name)
+        self.logger.setLevel(self.level)
+
+        self.formatter = logging.Formatter(
+            "%(asctime)s  %(levelname)s: %(message)s"
+        )
+
+        self.add_null_handler()
+
+        self.add_console_handler()
+        self.add_file_handler()
+
+        self.register_event()
+
+    def add_null_handler(self):
+        """
+        Add null handler for logger.
+        """
+        null_handler = logging.NullHandler()
+        self.logger.addHandler(null_handler)
+
+    def add_console_handler(self):
+        """
+        Add console output of log.
+        """
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(self.level)
+        console_handler.setFormatter(self.formatter)
+        self.logger.addHandler(console_handler)
+
+    def add_file_handler(self):
+        """
+        Add file output of log.
+        """
+        today_date = datetime.now().strftime("%Y%m%d")
+        filename = f"vt_{today_date}.log"
+        log_path = get_folder_path("log")
+        file_path = log_path.joinpath(filename)
+
+        file_handler = logging.FileHandler(
+            file_path, mode="a", encoding="utf8"
+        )
+        file_handler.setLevel(self.level)
+        file_handler.setFormatter(self.formatter)
+        self.logger.addHandler(file_handler)
+
+    def register_event(self):
+        """"""
+        self.event_engine.register(EVENT_LOG, self.process_log_event)
+
+    def process_log_event(self, event: Event):
+        """
+        Process log event.
+        """
+        log = event.data
+        self.logger.log(log.level, log.msg)

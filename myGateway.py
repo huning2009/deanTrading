@@ -1,4 +1,4 @@
-
+from logging import INFO
 from abc import ABC, abstractmethod
 from typing import Any, Sequence, Dict, List, Optional, Callable
 from copy import copy
@@ -140,11 +140,11 @@ class BaseGateway(ABC):
         """
         self.on_event(EVENT_CONTRACT, contract)
 
-    def write_log(self, msg: str) -> None:
+    def write_log(self, msg: str, level=INFO) -> None:
         """
         Write a log event from gateway.
         """
-        log = LogData(msg=msg, gateway_name=self.gateway_name)
+        log = LogData(msg=msg, level=level, gateway_name=self.gateway_name)
         self.on_log(log)
 
     @abstractmethod
@@ -258,3 +258,4 @@ class BaseGateway(ABC):
         Return default setting dict.
         """
         return self.default_setting
+

@@ -1,3 +1,4 @@
+from logging import INFO
 import traceback
 import importlib
 import os
@@ -57,10 +58,11 @@ class SpreadEngine(object):
         self.data_engine.stop()
         self.algo_engine.stop()
 
-    def write_log(self, msg: str):
+    def write_log(self, msg: str, level=INFO):
         """"""
         log = LogData(
             msg=msg,
+            level=level,
             gateway_name = "SpreadTrading"
         )
         event = Event(EVENT_LOG, log)
@@ -542,10 +544,10 @@ class SpreadAlgoEngine:
 
         algo.stop()
 
-    def write_algo_log(self, algo: SpreadAlgoTemplate, msg: str) -> None:
+    def write_algo_log(self, algo: SpreadAlgoTemplate, msg: str, level=INFO) -> None:
         """"""
         msg = f"{algo.algoid}：{msg}"
-        self.write_log(msg)
+        self.write_log(msg, level=level)
 
     def send_order(
         self,
