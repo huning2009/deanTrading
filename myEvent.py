@@ -166,13 +166,13 @@ class LogEngine:
     Processes log event and output with logging module.
     """
 
-    def __init__(self, event_engine: EventEngine, log_level, log_name):
+    def __init__(self, event_engine: EventEngine, log_level, console_log=False):
         """"""
         self.event_engine = event_engine
 
         self.level = log_level
 
-        self.logger = logging.getLogger(log_name)
+        self.logger = logging.getLogger('DeanTRading')
         self.logger.setLevel(self.level)
 
         self.formatter = logging.Formatter(
@@ -180,8 +180,8 @@ class LogEngine:
         )
 
         self.add_null_handler()
-
-        self.add_console_handler()
+        if console_log:
+            self.add_console_handler()
         self.add_file_handler()
 
         self.register_event()
