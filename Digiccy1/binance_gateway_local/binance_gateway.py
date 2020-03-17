@@ -188,6 +188,7 @@ class BinanceGateway(BaseGateway):
 
     def on_borrow_money(self, data):
         self.on_event(EVENT_BORROW_MONEY, data)
+        
     def on_repay_money(self, data):
         self.on_event(EVENT_REPAY_MONEY, data)
 
@@ -724,20 +725,21 @@ class BinanceRestApi(RestClient):
         #     print(f'rest api callback on_send_order:{data}, datetime: {datetime.now()}')
         # except:
         #     print('rest api on_send_order failed')
-        if 'marginBuyBorrowAsset' in data:
-            # print(">>>>>>>there is a borrowmoney callback")
-            # print(data)
-            dt1 = datetime.fromtimestamp(data['transactTime'] / 1000)
-            borrow_amount = float(data['marginBuyBorrowAmount'])
-            borrow_asset = data['marginBuyBorrowAsset']
-            borrow_exchange = Exchange.BINANCE
-            borrow_dict = {}
-            borrow_dict['borrow_asset'] = borrow_asset
-            borrow_dict['borrow_amount'] = borrow_amount
-            borrow_dict['datetime'] = dt1
-            borrow_dict['borrow_exchange'] = borrow_exchange
+        # if 'marginBuyBorrowAsset' in data:
+        #     # print(">>>>>>>there is a borrowmoney callback")
+        #     # print(data)
+        #     dt1 = datetime.fromtimestamp(data['transactTime'] / 1000)
+        #     borrow_amount = float(data['marginBuyBorrowAmount'])
+        #     borrow_asset = data['marginBuyBorrowAsset']
+        #     borrow_exchange = Exchange.BINANCE
+        #     borrow_dict = {}
+        #     borrow_dict['borrow_asset'] = borrow_asset
+        #     borrow_dict['borrow_amount'] = borrow_amount
+        #     borrow_dict['datetime'] = dt1
+        #     borrow_dict['borrow_exchange'] = borrow_exchange
 
-            self.gateway.on_borrow_money(borrow_dict)
+        #     self.gateway.on_borrow_money(borrow_dict)
+        pass
 
     def on_send_order_failed(self, status_code: str, request: Request):
         """
