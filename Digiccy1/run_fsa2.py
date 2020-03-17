@@ -25,7 +25,7 @@ setting_filename = "fsa_setting2.json"
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 event_engine = EventEngine()
-log_engine = LogEngine(event_engine, log_level=DEBUG)
+log_engine = LogEngine(event_engine, log_level=DEBUG, log_name='fsa1')
 
 fsa_engine = SpreadEngine(event_engine, setting_filename)
 

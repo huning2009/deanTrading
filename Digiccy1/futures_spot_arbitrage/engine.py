@@ -397,12 +397,13 @@ class SpreadDataEngine:
         )
         spread.calculate_pos()
         self.spreads[name] = spread
-        print(f'{spread.name} net_pos: {spread.net_pos}')
+
         for leg in spread.legs.values():
             self.symbol_spread_map[leg.vt_symbol].append(spread)
 
-        self.write_log("价差创建成功：{}".format(name))
-
+        msg = f"价差创建成功：{spread.name}, net_pos: {spread.net_pos}"
+        self.write_log(msg)
+        
         self.spread_engine.algo_engine.start_algo(spread)
 
     def get_spread(self, name: str) -> SpreadData:
