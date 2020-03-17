@@ -441,18 +441,19 @@ class BinanceRestApi(RestClient):
 
     def on_query_account(self, data, request):
         """"""
+        futures_balance = 0
         for account_data in data["assets"]:
             account = AccountData(
                 accountid=account_data["asset"],
-                balance=float(account_data["walletBalance"]) ,
+                balance=float(account_data["marginBalance"]) ,
                 frozen=float(account_data["initialMargin"]) + float(account_data["maintMargin"]),
                 gateway_name=self.gateway_name
             )
 
             if account.balance:
                 self.gateway.on_account(account)
-
-        self.gateway.write_log("FUTURES账户资金查询成功")
+            futures_balance += account.balance
+        self.gateway.write_log(f"FUTURES账户资金查询成功: {futures_balance}")
 
     def on_query_position(self, data, request):
         """"""
