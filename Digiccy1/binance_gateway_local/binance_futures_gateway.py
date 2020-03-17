@@ -107,6 +107,8 @@ class BinanceFuturesGateway(BaseGateway):
         self.market_ws_api = BinanceDataWebsocketApi(self)
         self.rest_api = BinanceRestApi(self)
 
+        self.count = 0
+
     def connect(self, setting: dict):
         """"""
         key = setting["key"]
@@ -153,14 +155,14 @@ class BinanceFuturesGateway(BaseGateway):
 
     def process_timer_event(self, event: Event):
         """"""
-        # self.count += 1
+        self.count += 1
         self.rest_api.keep_user_stream()
 
-        # if self.count < 3:
-        #     return
-        # else:
-        #     self.count = 0
-            # self.query_account()
+        if self.count < 300:
+            return
+        else:
+            self.count = 0
+            self.query_account()
             # self.query_position()
 
     def init_query(self):
@@ -268,7 +270,7 @@ class BinanceRestApi(RestClient):
         self.gateway.write_log("FUTURES REST API启动成功")
 
         self.query_time()
-        # self.query_account()
+        self.query_account()
         # self.query_position()
         # self.query_order()
         self.query_contract()
