@@ -1,7 +1,7 @@
 """
 Gateway for Binance Crypto Exchange.
 """
-
+from logging import DEBUG
 import urllib
 import hashlib
 import hmac
@@ -107,6 +107,8 @@ class BinanceFuturesGateway(BaseGateway):
         self.market_ws_api = BinanceDataWebsocketApi(self)
         self.rest_api = BinanceRestApi(self)
 
+        self.count = 0
+
     def connect(self, setting: dict):
         """"""
         key = setting["key"]
@@ -153,14 +155,14 @@ class BinanceFuturesGateway(BaseGateway):
 
     def process_timer_event(self, event: Event):
         """"""
-        # self.count += 1
+        self.count += 1
         self.rest_api.keep_user_stream()
 
-        # if self.count < 3:
-        #     return
-        # else:
-        #     self.count = 0
-            # self.query_account()
+        if self.count < 300:
+            return
+        else:
+            self.count = 0
+            self.query_account()
             # self.query_position()
 
     def init_query(self):
@@ -268,7 +270,7 @@ class BinanceRestApi(RestClient):
         self.gateway.write_log("FUTURES REST API启动成功")
 
         self.query_time()
-        # self.query_account()
+        self.query_account()
         # self.query_position()
         # self.query_order()
         self.query_contract()
@@ -372,7 +374,8 @@ class BinanceRestApi(RestClient):
             on_error=self.on_send_order_error,
             on_failed=self.on_send_order_failed
         )
-        # print(f'Futures Gateway send order:{order.vt_orderid}, datetime: {datetime.now()}')
+        msg = f'Futures Gateway send order:{order.vt_orderid}'
+        self.gateway.write_log(msg, level=DEBUG)
         return order.vt_orderid
 
     def cancel_order(self, req: CancelRequest):
@@ -440,18 +443,19 @@ class BinanceRestApi(RestClient):
 
     def on_query_account(self, data, request):
         """"""
+        futures_balance = 0
         for account_data in data["assets"]:
             account = AccountData(
                 accountid=account_data["asset"],
-                balance=float(account_data["walletBalance"]) ,
+                balance=float(account_data["marginBalance"]) ,
                 frozen=float(account_data["initialMargin"]) + float(account_data["maintMargin"]),
                 gateway_name=self.gateway_name
             )
 
             if account.balance:
                 self.gateway.on_account(account)
-
-        self.gateway.write_log("FUTURES账户资金查询成功")
+            futures_balance += account.balance
+        self.gateway.write_log(f"FUTURES账户资金查询成功: {futures_balance}")
 
     def on_query_position(self, data, request):
         """"""
@@ -750,8 +754,8 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         )
 
         self.gateway.on_order(order)
-        # print(f"Gateway websocket get order response: {order.vt_orderid}, datetime: {datetime.now()}")
-
+        msg = f"Websocket get order response: {order.vt_orderid}"
+        self.gateway.write_log(msg, level=DEBUG)
         # Push trade event
         trade_volume = float(packet["l"])
         if not trade_volume:

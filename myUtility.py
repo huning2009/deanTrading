@@ -71,6 +71,15 @@ def get_file_path(filename: str) -> Path:
     """
     return TEMP_DIR.joinpath(filename)
 #--------------------------------------------------------------------
+def get_folder_path(folder_name: str):
+    """
+    Get path for temp folder with folder name.
+    """
+    folder_path = TEMP_DIR.joinpath(folder_name)
+    if not folder_path.exists():
+        folder_path.mkdir()
+    return folder_path
+#--------------------------------------------------------------------
 def load_json(filename: str) -> dict:
     """
     Load data from json file in temp path.

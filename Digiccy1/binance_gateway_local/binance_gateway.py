@@ -1,7 +1,7 @@
 """
 Gateway for Binance Crypto Exchange.
 """
-
+from logging import DEBUG
 import urllib
 import hashlib
 import hmac
@@ -177,6 +177,7 @@ class BinanceGateway(BaseGateway):
         self.query_account_margin_count += 1
         if self.query_account_margin_count > 300:
             self.query_account_margin_count = 0
+            self.rest_api.query_latest_price()
             self.rest_api.query_account_margin()
 
     def on_account_margin(self, account: MarginAccountData):
@@ -352,6 +353,7 @@ class BinanceRestApi(RestClient):
             data=data
         )
         # print("query_account_margin")
+    
     def query_order(self):
         """"""
         data = {"security": Security.SIGNED}
@@ -453,7 +455,8 @@ class BinanceRestApi(RestClient):
             on_error=self.on_send_order_error,
             on_failed=self.on_send_order_failed
         )
-        # print(f'Gateway send order:{order.vt_orderid}, datetime: {datetime.now()}')
+        msg = f'Rest send order:{order.vt_orderid}'
+        self.gateway.write_log(msg, level=DEBUG)
         return order.vt_orderid
 
     def cancel_order(self, req: CancelRequest):
@@ -606,7 +609,6 @@ class BinanceRestApi(RestClient):
             data=data
         )
 
-        self.query_latest_price()
     def on_query_time(self, data, request):
         """"""
         local_time = int(time.time() * 1000)
@@ -636,14 +638,16 @@ class BinanceRestApi(RestClient):
     def on_query_account_margin(self, data, request):
         """"""
         max_borrow_btc = max(float(data['totalNetAssetOfBtc'])*2 - float(data['totalLiabilityOfBtc']), 0)
-
+        account_net_based_USDT = 0
         for account_data in data["userAssets"]:
             if account_data["asset"] == "USDT":
                 price_based_BTC = self.latest_price.get("BTC" + account_data["asset"], 1)
                 max_borrow = max_borrow_btc * price_based_BTC
+                price_based_USDT = 1
             else:
                 price_based_BTC = self.latest_price.get(account_data["asset"]+"BTC", 1)
                 max_borrow = max_borrow_btc/price_based_BTC
+                price_based_USDT = self.latest_price.get(account_data["asset"]+"USDT", 0)
             
             account = MarginAccountData(
                 accountid=account_data["asset"],
@@ -660,8 +664,9 @@ class BinanceRestApi(RestClient):
             # if account.netAsset or account.borrowed:
             # print(f'{account_data["asset"]} based on BTC price: {price_based_BTC}, max_borrow:{account.max_borrow}')
             self.gateway.on_account_margin(account)
-
-        self.gateway.write_log("<杠杆>账户资金查询成功")
+            
+            account_net_based_USDT += account.netAsset * price_based_USDT
+        self.gateway.write_log(f"<杠杆>账户资金查询成功,based USDT: {account_net_based_USDT}")
 
     def on_query_order(self, data, request):
         """"""
@@ -956,7 +961,8 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         )
 
         self.gateway.on_order(order)
-        # print(f"Gateway websocket get order response: {order.vt_orderid}, datetime: {datetime.now()}")
+        msg = f"Websocket get order response: {order.vt_orderid}"
+        self.gateway.write_log(msg, level=DEBUG)
         # Push trade event
         trade_volume = float(packet["l"])
         if not trade_volume:

@@ -1,3 +1,4 @@
+from logging import DEBUG
 from typing import Any
 from datetime import datetime
 
@@ -45,23 +46,24 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
             self.spread.ask_price <= self.spread.buy_price):
             """买入开仓"""
             self.take_active_leg(self.SPREAD_LONG)
-            # self.write_log(f'ACTIVE LONG>>>spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
+            msg = f'ACTIVE LONG>>>spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}'
+            self.write_log(msg, level=DEBUG)
         elif (self.spread.net_pos > 0 and
             self.spread.bid_price >= self.spread.sell_price):
             """卖出平仓"""
             self.take_active_leg(self.SPREAD_SHORT)
-            # self.write_log(f'ACTIVE SELL>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
+
         elif (self.spread.net_pos <= 0 and
             self.spread.net_pos > -self.spread.max_pos*self.SELL_BUY_RATIO and
             self.spread.bid_price >= self.spread.short_price):
             """卖出开仓"""
             self.take_active_leg(self.SPREAD_SHORT)
-            # self.write_log(f'ACTIVE SHORT>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
+            msg = f'ACTIVE SHORT>>>spread.bid_price:{self.spread.bid_price}, activeleg.bid_price:{self.spread.active_leg.bid_price}, passiveleg.ask_price:{self.spread.passive_leg.ask_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}'
+            self.write_log(msg, level=DEBUG)
         elif (self.spread.net_pos < 0 and
             self.spread.ask_price < self.spread.cover_price):
             """买入平仓"""
             self.take_active_leg(self.SPREAD_LONG)
-            # self.write_log(f'ACTIVE COVER>>>spread.ask_price:{self.spread.ask_price}, activeleg.ask_price:{self.spread.active_leg.ask_price}, passiveleg.bid_price:{self.spread.passive_leg.bid_price}, tick datetime: {self.spread.active_leg.tick.datetime}, send order:{datetime.now()}, event_engine size:{self.algo_engine.event_engine.get_qsize()}')
 
     def on_order(self, order: OrderData):
         """"""

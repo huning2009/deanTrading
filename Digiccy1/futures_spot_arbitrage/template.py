@@ -1,4 +1,4 @@
-
+from logging import INFO
 from collections import defaultdict
 from typing import Dict, List, Set, Callable
 from copy import copy
@@ -153,9 +153,9 @@ class SpreadAlgoTemplate:
         # self.put_algo_event()
         pass
 
-    def write_log(self, msg: str):
+    def write_log(self, msg: str, level=INFO):
         """"""
-        self.algo_engine.write_algo_log(self, msg)
+        self.algo_engine.write_algo_log(self, msg, level=level)
 
     def send_long_order(self, vt_symbol: str, price: float, volume: float):
         """"""

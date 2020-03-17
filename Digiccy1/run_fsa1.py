@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path.cwd()))
 
+from logging import DEBUG, INFO, CRITICAL
 from myUtility import load_json
 from myEvent import (
     Event, 
@@ -13,21 +14,10 @@ from myEvent import (
 	EVENT_ACCOUNT,
 	EVENT_CONTRACT,
 	EVENT_LOG,
+    LogEngine
 )
 from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
 from Digiccy1.futures_spot_arbitrage import SpreadEngine
-
-
-def process_event(event:Event):
-    print("* "*30 + event.type)
-    if isinstance(event.data, dict):
-        print(event.data)
-    else:
-        print(event.data.__dict__)
-
-def process_log_event(event:Event):
-    log = event.data
-    print("%s %s" % (log.time.strftime("%Y-%m-%d %H:%M:%S"),log.msg))
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 binance_setting = load_json("connect_binance.json")
@@ -35,9 +25,7 @@ setting_filename = "fsa_setting1.json"
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 event_engine = EventEngine()
-event_engine.register(EVENT_LOG, process_log_event)
-# event_engine.register(EVENT_ORDER, process_event)
-# event_engine.register(EVENT_TRADE, process_event)
+log_engine = LogEngine(event_engine, log_level=CRITICAL, log_name='fsa1')
 
 fsa_engine = SpreadEngine(event_engine, setting_filename)
 
