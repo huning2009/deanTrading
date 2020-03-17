@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path.cwd()))
 
-from logging import DEBUG, INFO
+from logging import DEBUG, INFO, CRITICAL
 from myUtility import load_json
 from myEvent import (
     Event, 
