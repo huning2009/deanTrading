@@ -177,6 +177,7 @@ class BinanceGateway(BaseGateway):
         self.query_account_margin_count += 1
         if self.query_account_margin_count > 300:
             self.query_account_margin_count = 0
+            self.rest_api.query_latest_price()
             self.rest_api.query_account_margin()
 
     def on_account_margin(self, account: MarginAccountData):
@@ -608,7 +609,6 @@ class BinanceRestApi(RestClient):
             data=data
         )
 
-        self.query_latest_price()
     def on_query_time(self, data, request):
         """"""
         local_time = int(time.time() * 1000)
