@@ -13,7 +13,7 @@ import sys
 from copy import copy
 from datetime import datetime
 
-from myEvent import Event
+from myEvent import Event, EVENT_TIMER
 from myApi.rest import RestClient, Request
 from myApi.websocket import WebsocketClient
 from myConstant import (
@@ -21,7 +21,8 @@ from myConstant import (
     Exchange,
     Product,
     Status,
-    OrderType
+    OrderType,
+    Interval
 )
 from myGateway import BaseGateway, LocalOrderManager
 from myObject import (
@@ -30,12 +31,12 @@ from myObject import (
     TradeData,
     AccountData,
     ContractData,
+    BarData,
     OrderRequest,
     CancelRequest,
-    SubscribeRequest
+    SubscribeRequest,
+    HistoryRequest
 )
-from myEvent import EVENT_TIMER
-
 
 REST_HOST = "https://api-aws.huobi.pro"
 WEBSOCKET_DATA_HOST = "wss://api-aws.huobi.pro/ws"       # Market Data
@@ -58,6 +59,11 @@ ORDERTYPE_VT2HUOBI = {
 }
 ORDERTYPE_HUOBI2VT = {v: k for k, v in ORDERTYPE_VT2HUOBI.items()}
 
+INTERVAL_VT2HUOBI = {
+    Interval.MINUTE: "1min",
+    Interval.HOUR: "60min",
+    Interval.DAILY: "1day"
+}
 
 huobi_symbols = set()
 symbol_name_map = {}
@@ -129,6 +135,10 @@ class HuobiGateway(BaseGateway):
         """"""
         pass
 
+    def query_history(self, req: HistoryRequest):
+        """"""
+        return self.rest_api.query_history(req)
+
     def close(self):
         """"""
         self.rest_api.stop()
@@ -166,6 +176,7 @@ class HuobiRestApi(RestClient):
         self.key = ""
         self.secret = ""
         self.account_id = ""
+        self.margin_account_id = ""
 
     def sign(self, request):
         """
@@ -227,7 +238,9 @@ class HuobiRestApi(RestClient):
 
     def query_account_balance(self):
         """"""
-        path = f"/v1/account/accounts/{self.account_id}/balance"
+        if not self.margin_account_id:
+            return
+        path = f"/v1/account/accounts/{self.margin_account_id}/balance"
         self.add_request(
             method="GET",
             path=path,
@@ -250,6 +263,58 @@ class HuobiRestApi(RestClient):
             callback=self.on_query_contract
         )
 
+    def query_history(self, req: HistoryRequest):
+        """"""
+        # Create query params
+        params = {
+            "symbol": req.symbol,
+            "period": INTERVAL_VT2HUOBI[req.interval],
+            "size": 2000
+        }
+
+        # Get response from server
+        resp = self.request(
+            "GET",
+            "/market/history/kline",
+            params=params
+        )
+
+        # Break if request failed with other status code
+        history = []
+
+        if resp.status_code // 100 != 2:
+            msg = f"获取历史数据失败，状态码：{resp.status_code}，信息：{resp.text}"
+            self.gateway.write_log(msg)
+        else:
+            data = resp.json()
+            if not data:
+                msg = f"获取历史数据为空"
+                self.gateway.write_log(msg)
+            else:
+                for d in data["data"]:
+                    dt = datetime.fromtimestamp(d["id"])
+
+                    bar = BarData(
+                        symbol=req.symbol,
+                        exchange=req.exchange,
+                        datetime=dt,
+                        interval=req.interval,
+                        volume=d["vol"],
+                        open_price=d["open"],
+                        high_price=d["high"],
+                        low_price=d["low"],
+                        close_price=d["close"],
+                        gateway_name=self.gateway_name
+                    )
+                    history.append(bar)
+
+                begin = history[0].datetime
+                end = history[-1].datetime
+                msg = f"获取历史数据成功，{req.symbol} - {req.interval.value}，{begin} - {end}"
+                self.gateway.write_log(msg)
+
+        return history
+
     def send_order(self, req: OrderRequest):
         """"""
         huobi_type = ORDERTYPE_VT2HUOBI.get(
@@ -264,7 +329,7 @@ class HuobiRestApi(RestClient):
         order.time = datetime.now().strftime("%H:%M:%S")
 
         data = {
-            "account-id": self.account_id,
+            "account-id": self.margin_account_id,
             "amount": str(req.volume),
             "symbol": req.symbol,
             "type": huobi_type,
@@ -301,11 +366,14 @@ class HuobiRestApi(RestClient):
         """"""
         if self.check_error(data, "查询账户"):
             return
-
+        print(data)
         for d in data["data"]:
-            if d["type"] == "spot":
-                self.account_id = d["id"]
-                self.gateway.write_log(f"账户代码{self.account_id}查询成功")
+            # if d["type"] == "spot":
+            #     self.account_id = d["id"]
+            #     self.gateway.write_log(f"账户代码{self.account_id}查询成功")
+            if d["type"] == "super-margin":
+                self.margin_account_id = d["id"]
+                self.gateway.write_log(f"账户代码{self.margin_account_id}查询成功")
 
         self.query_account_balance()
 
@@ -382,6 +450,7 @@ class HuobiRestApi(RestClient):
                 size=1,
                 min_volume=min_volume,
                 product=Product.SPOT,
+                history_data=True,
                 gateway_name=self.gateway_name,
             )
             self.gateway.on_contract(contract)
@@ -507,7 +576,7 @@ class HuobiWebsocketApiBase(WebsocketClient):
         params.update(create_signature(self.key, "GET", self.sign_host, self.path, self.secret))
         return self.send_packet(params)
 
-    def on_login(self, packet):
+    def on_login(self):
         """"""
         pass
 

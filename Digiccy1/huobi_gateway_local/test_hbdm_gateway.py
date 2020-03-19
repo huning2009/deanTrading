@@ -4,7 +4,7 @@ sys.path.append(str(Path.cwd()))
 
 from datetime import datetime, timedelta
 from time import sleep
-from Digiccy1.huobi_gateway_local import HuobiGateway
+from Digiccy1.huobi_gateway_local import HbdmGateway
 from myUtility import load_json
 from myEvent import (
     Event, 
@@ -46,13 +46,13 @@ def process_event(event:Event):
 
 event_engine = EventEngine()
 event_engine.register(EVENT_TICK, process_event)
-# event_engine.register(EVENT_CONTRACT, process_event)
+event_engine.register(EVENT_CONTRACT, process_event)
 event_engine.register(EVENT_POSITION, process_event)
 # event_engine.register(EVENT_ACCOUNT, process_event)
 event_engine.register(EVENT_LOG, process_event)
 event_engine.start()
 
-gateway = HuobiGateway(event_engine)
+gateway = HbdmGateway(event_engine)
 
 gateway.connect(setting)
 

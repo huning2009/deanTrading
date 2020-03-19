@@ -3,12 +3,19 @@ import datetime as dtt
 import math
 from typing import List, Dict, Set, Callable, Any, Type
 from collections import defaultdict
-
+import pandas as pd
+df1 = pd.DataFrame([[1,2,3],[4,5,6]])
+df2 = pd.DataFrame([['a'],['b'],['c']])
+df1.set_index(pd.date_range('2020-1-1', '2020-1-2'), inplace=True)
+df2.set_index(pd.date_range('2020-1-1', '2020-1-3'), inplace=True)
+print(df2)
+df = pd.concat([df1,df2], axis=1, join='inner')
+print(df)
 # class ABC:
 #     def __init__(self):
 #         self.d1: Dict(str, List) = defaultdict(list)
-now = dtt.datetime.now()
-print(now.minute)
+# now = dtt.datetime.now()
+# print(now.minute)
 # a = 10
 # a = -a
 # print(a)
