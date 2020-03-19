@@ -126,6 +126,7 @@ class SpreadData:
     def __init__(
         self,
         name: str,
+        algo_name: str,
         legs: List[LegData],
         price_multipliers: Dict[str, int],
         trading_multipliers: Dict[str, int],
@@ -142,6 +143,7 @@ class SpreadData:
     ):
         """"""
         self.name: str = name
+        self.algo_name: str = algo_name
 
         self.legs: Dict[str, LegData] = {}
         self.active_leg: LegData = None

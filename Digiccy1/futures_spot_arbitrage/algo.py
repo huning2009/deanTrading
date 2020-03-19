@@ -9,10 +9,9 @@ from myUtility import round_to
 from .template import SpreadAlgoTemplate
 from .base import SpreadData
 
-
 class SpreadTakerAlgo(SpreadAlgoTemplate):
     """"""
-    algo_name = "SpreadTaker"
+    algo_name = "FuturesSpotSpread"
     SPREAD_LONG = 1
     SPREAD_SHORT = 2
     SELL_BUY_RATIO = 2

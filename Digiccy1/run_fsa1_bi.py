@@ -21,7 +21,7 @@ from Digiccy1.futures_spot_arbitrage import SpreadEngine
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 binance_setting = load_json("connect_binance.json")
-setting_filename = "fsa_setting1.json"
+setting_filename = "fsa_setting1_bi.json"
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 event_engine = EventEngine()
