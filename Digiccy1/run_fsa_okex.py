@@ -17,9 +17,14 @@ from myEvent import (
     LogEngine
 )
 # from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
-from Digiccy1.okex_gateway_local import OkexGateway, OkexfGateway
+from Digiccy1.okex_gateway_local import OkexGateway, OkexfGateway, OkexsGateway
 from Digiccy1.futures_spot_arbitrage import SpreadEngine
-
+"""
+合约格式：
+交割合约：LTC-USDT-200327.OKEX
+永续合约: LINK-USDT-SWAP.OKEXS
+币币/杠杆： TCT-USDT.OKEX
+"""
 
 def main():
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -33,13 +38,13 @@ def main():
     fsa_engine = SpreadEngine(event_engine, setting_filename)
 
     fsa_engine.add_gateway(OkexGateway)
-    fsa_engine.add_gateway(OkexfGateway)
+    fsa_engine.add_gateway(OkexsGateway)
     fsa_engine.write_log('Add gateway finished!')
 
     fsa_engine.start()
 
     fsa_engine.connect(gateway_setting, 'OKEX')
-    # fsa_engine.connect(gateway_setting, 'OKEX')
+    # fsa_engine.connect(gateway_setting, 'OKEXS')
     fsa_engine.write_log('Gateways is connecting, and sleep 20 seconds!')
     sleep(15)
 

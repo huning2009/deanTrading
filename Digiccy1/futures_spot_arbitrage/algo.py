@@ -38,7 +38,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         check_hedge_finished = self.hedge_passive_leg()
         if not check_hedge_finished:
             return
-
+        # print(tick.vt_symbol)
         # Otherwise check if should take active leg
         if (self.spread.net_pos >= 0 and
             self.spread.net_pos < self.spread.max_pos and

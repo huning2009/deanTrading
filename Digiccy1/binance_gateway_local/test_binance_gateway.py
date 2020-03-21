@@ -5,7 +5,17 @@ sys.path.append(str(Path.cwd()))
 from time import sleep
 from datetime import datetime, timedelta
 from myUtility import load_json
-from myEvent import Event, EventEngine,EVENT_TICK, EVENT_ORDER, EVENT_TRADE, EVENT_POSITION, EVENT_ACCOUNT,	EVENT_CONTRACT,	EVENT_LOG
+from myEvent import (
+    Event, 
+    EventEngine,
+    EVENT_TICK, 
+    EVENT_ORDER, 
+    EVENT_TRADE, 
+    EVENT_POSITION, 
+    EVENT_ACCOUNT,	
+    EVENT_CONTRACT,
+    EVENT_LOG
+)
 
 from myObject import (
     TickData,
@@ -28,7 +38,12 @@ from myConstant import (
     Exchange, EVENT_ACCOUNT_MARGIN,EVENT_BORROW_MONEY,EVENT_REPAY_MONEY
 )
 # from DatabaseManage.init_sqlite import get_sqlite, init_models
-from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
+from Digiccy1.binance_gateway_local import (
+    BinanceGateway, 
+    BinanceFuturesGateway, 
+    BinanceDepthGateway, 
+    BinanceFuturesDepthGateway
+)
 
 
 
@@ -46,14 +61,14 @@ def process_event(event:Event):
 event_engine = EventEngine()
 event_engine.register(EVENT_TICK, process_event)
 # event_engine.register(EVENT_CONTRACT, process_event)
-event_engine.register(EVENT_ACCOUNT, process_event)
-event_engine.register(EVENT_ACCOUNT_MARGIN, process_event)
+# event_engine.register(EVENT_ACCOUNT, process_event)
+# event_engine.register(EVENT_ACCOUNT_MARGIN, process_event)
 event_engine.register(EVENT_LOG, process_event)
-event_engine.register(EVENT_BORROW_MONEY, process_event)
-event_engine.register(EVENT_REPAY_MONEY, process_event)
+# event_engine.register(EVENT_BORROW_MONEY, process_event)
+# event_engine.register(EVENT_REPAY_MONEY, process_event)
 event_engine.start()
 
-gateway = BinanceGateway(event_engine)
+gateway = BinanceDepthGateway(event_engine)
 gateway.connect(setting)
 
 # gateway_futures = BinanceFuturesGateway(event_engine)

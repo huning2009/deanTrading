@@ -6,7 +6,31 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 import talib as ta
+from numpy import ndarray
 
+l = ['a', 'b']
+l1 = []
+d = {}
+l1.extend([{i:[1,2]} for i in l])
+print(l1)
+
+
+# df = pd.DataFrame(columns=['price', 'vol', 'symbol'])
+# # print(df)
+# df.loc['a'] = [1,2, 'btc']
+# df.loc['b'] = [11,21, 'btc']
+
+# def print_index(x):
+#     print(x['vol'])
+
+
+# df.apply(print_index, axis=1)
+"""class AAA:
+    def __init__(self):
+        self.a =11
+aaa = AAA()
+
+print(isinstance(aaa,AAA))"""
 """
 df = pd.Series([1,2,3,4,5,6,7,8])
 s1 = (df.diff()/df).std()
@@ -22,9 +46,9 @@ print(u.iloc[-1])
 atr = ta.ATR(df['high'], df['low'], df['close'], 2)
 print(atr.iloc[-1])
 """
-l = ['a', 'b']
-l.remove("a")
-print(l)
+# arr = np.array([[1.1,2],[1.0, 4], [0.9,3], [0.8,4]])
+
+# print(type(arr))
 # arr = np.array([1.0,2.0,3.,4.,5.])
 # print(arr)
 # u,m,d = ta.BBANDS(arr, 5)

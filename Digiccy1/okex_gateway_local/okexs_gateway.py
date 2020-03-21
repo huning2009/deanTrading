@@ -340,7 +340,6 @@ class OkexsRestApi(RestClient):
                 gateway_name=self.gateway_name,
             )
             self.gateway.on_contract(contract)
-
             instruments.add(instrument_data["instrument_id"])
 
         self.gateway.write_log("合约信息查询成功")
@@ -762,7 +761,7 @@ class OkexsWebsocketApi(WebsocketClient):
 
         tick.datetime = _parse_timestamp(d["timestamp"])
         self.gateway.on_tick(copy(tick))
-
+        print(tick.vt_symbol)
     def on_order(self, data):
         """"""
         order = _parse_order_info(data, gateway_name=self.gateway_name)

@@ -2,6 +2,7 @@ from logging import INFO
 from collections import defaultdict
 from typing import Dict, List, Set, Callable
 from copy import copy
+import pandas as pd
 
 from myObject import TickData, TradeData, OrderData, ContractData, BarData
 from myConstant import Direction, Status, Offset, Interval
@@ -129,11 +130,11 @@ class SpreadAlgoTemplate:
     def update_order(self, order: OrderData):
         """"""
         # print('algo template update_order, order.is_active:%s' % order.is_active())
-        if not order.is_active():
-            vt_orderids = self.leg_orders[order.vt_symbol]
-            if order.vt_orderid in vt_orderids:
-                vt_orderids.remove(order.vt_orderid)
-
+        if not order.is_active() and order.vt_orderid in self.leg_orders_df.index:
+            # vt_orderids = self.leg_orders[order.vt_symbol]
+            # if order.vt_orderid in vt_orderids:
+            #     vt_orderids.remove(order.vt_orderid)
+            self.leg_orders_df.drop(order.vt_orderid)
             # if order.vt_orderid in self.active_short_orderids:
             #     self.active_short_orderids.remove(order.vt_orderid)
         self.on_order(order)
@@ -193,7 +194,7 @@ class SpreadAlgoTemplate:
             borrowmoney
         )
 
-        self.leg_orders[vt_symbol].extend(vt_orderids)
+        self.leg_orders[vt_symbol].extend([{vt_orderid: [price, volume, direction]} for vt_orderid in vt_orderids])
 
         msg = "发出委托，{}，{}，{}@{}".format(
             vt_symbol,
@@ -203,10 +204,14 @@ class SpreadAlgoTemplate:
         )
         self.write_log(msg)
 
-    # def cancel_leg_order(self, vt_symbol: str):
-    #     """"""
-    #     for vt_orderid in self.leg_orders[vt_symbol]:
-    #         self.algo_engine.cancel_order(self, vt_orderid)
+    def cancel_leg_order(self, vt_symbol: str):
+        """"""
+        for d in self.leg_orders[vt_symbol]:
+            self.cancel_order(d)            
+
+    def cancel_order(self, vt_orderid: str):
+        """"""
+        self.algo_engine.cancel_order(self, vt_orderid)
 
     # def cancel_all_order(self):
     #     """"""

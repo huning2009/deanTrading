@@ -9,15 +9,40 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import math
 
-from myEvent import EventEngine, Event, EVENT_TICK, EVENT_POSITION, EVENT_CONTRACT, EVENT_ACCOUNT, EVENT_LOG, EVENT_ORDER, EVENT_TRADE, EVENT_TIMER
+from myEvent import (
+    EventEngine, 
+    Event, 
+    EVENT_TICK, 
+    EVENT_POSITION, 
+    EVENT_CONTRACT, 
+    EVENT_ACCOUNT, 
+    EVENT_LOG, 
+    EVENT_ORDER, 
+    EVENT_TRADE, 
+    EVENT_TIMER
+)
 from myConverter import OffsetConverter
 from myUtility import load_json, save_json
 from myObject import (
-    TickData, ContractData, LogData, CancelRequest, PositionData,
-    SubscribeRequest, OrderRequest, MarginAccountData, FuturesAccountData
+    TickData, 
+    ContractData, 
+    LogData, 
+    CancelRequest, 
+    PositionData,
+    SubscribeRequest, 
+    OrderRequest, 
+    MarginAccountData, 
+    FuturesAccountData
 )
 from myConstant import (
-    Direction, Offset, OrderType, Interval, EVENT_ACCOUNT_MARGIN, EVENT_ACCOUNT_FUTURES, Exchange, EVENT_BORROW_MONEY
+    Direction, 
+    Offset, 
+    OrderType, 
+    Interval, 
+    EVENT_ACCOUNT_MARGIN, 
+    EVENT_ACCOUNT_FUTURES, 
+    Exchange, 
+    EVENT_BORROW_MONEY
 )
 from myGateway import BaseGateway
 
@@ -25,10 +50,10 @@ from .base import (
     LegData, SpreadData
 )
 from .template import SpreadAlgoTemplate
-from .algo import SpreadTakerAlgo
+from .maker_algo import SpreadMakerAlgo
 
 algo_class_dict = {}
-algo_class_dict['FuturesSpotSpread'] = SpreadTakerAlgo
+algo_class_dict['SpreadMaker'] = SpreadMakerAlgo
 
 class SpreadEngine(object):
     """"""
@@ -306,7 +331,6 @@ class SpreadAlgoEngine:
         self.event_engine.register(EVENT_TRADE, self.process_trade_event)
         # self.event_engine.register(EVENT_POSITION, self.process_position_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
-        self.event_engine.register(EVENT_TIMER, self.process_timer_event)
         # self.event_engine.register(EVENT_BORROW_MONEY, self.process_borrowmoney_event)
         self.event_engine.register(EVENT_ACCOUNT_MARGIN, self.process_account_margin_event)
 
@@ -335,26 +359,8 @@ class SpreadAlgoEngine:
             return
         leg.update_tick(tick)
         print(tick.vt_symbol)
-        for spread in self.spread_engine.symbol_spread_map[tick.vt_symbol]:
-            spread.calculate_price()
             
         self.process_tick(tick)
-
-    # def process_position_event(self, event: Event) -> None:
-    #     """"""
-    #     position = event.data
-
-    #     self.offset_converter.update_position(position)
-
-    #     self.positions[position.vt_positionid] = position
-
-    #     leg = self.spread_engine.legs.get(position.vt_symbol, None)
-    #     if not leg:
-    #         return
-    #     leg.update_position(position)
-
-    #     for spread in self.spread_engine.symbol_spread_map[position.vt_symbol]:
-    #         spread.calculate_pos()
 
     def process_trade_event(self, event: Event) -> None:
         """"""

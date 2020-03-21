@@ -1,2 +1,4 @@
 from .binance_gateway import BinanceGateway
+from .binance_gateway_depth import BinanceDepthGateway
 from .binance_futures_gateway import BinanceFuturesGateway
+from .binance_futures_gateway_depth import BinanceFuturesDepthGateway
