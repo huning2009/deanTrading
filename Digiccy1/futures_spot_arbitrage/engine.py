@@ -280,11 +280,11 @@ class SpreadDataEngine:
         if not leg:
             return
 
-        dt_now_minute = datetime.now().minute
+        dt_now = datetime.now()
         
         # if margin_account_data.vt_symbol not in self.borrowmoneys and margin_account_data.borrowed:
         #     self.borrowmoneys[margin_account_data.vt_symbol].append([dt_now, margin_account_data.borrowed])
-        if dt_now_minute >= 55:
+        if dt_now.minute >= 55 and dt_now.hour > 5 and dt_now.hour < 8:
             if margin_account_data.borrowed > 0 and margin_account_data.free > 0:
                 amount = min(margin_account_data.borrowed, margin_account_data.free)
                 gateway_name = margin_account_data.exchange.value
