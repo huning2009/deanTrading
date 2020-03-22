@@ -186,7 +186,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     def on_order(self, order: OrderData):
         """"""
         if order.vt_symbol == self.active_leg.vt_symbol and order.status == Status.CANCELLED:
-            print(f'cancelled order volume: {order.volume}')
+            self.write_log(f'cancelled order volume: {order.volume}')
             if order.direction == Direction.LONG:
                 self.hanging_net_pos -= order.volume
             else:
