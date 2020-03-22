@@ -565,7 +565,7 @@ class SpreadAlgoEngine:
             self.offset_converter.update_order_request(req, vt_orderid)
             # Save relationship between orderid and algo.
             self.order_algo_map[vt_orderid] = algo
-            self.write_log(f'send_order vt_orderid: {vt_orderid}')
+            self.write_log(f'send_order vt_orderid: {vt_orderid}, event_engine size: {self.event_engine.get_qsize()}')
             # print('%s algo engine send_order vt_orderid:%s,price: %s' % (algo.algoid, vt_orderid, req.price))
 
         return vt_orderids

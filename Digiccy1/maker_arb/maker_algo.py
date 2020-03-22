@@ -40,7 +40,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         self.hanging_net_pos = 0.0
 
-
     def on_tick(self, tick: TickData):
         """"""
         if (self.active_leg.bids is None) or (self.passive_leg.bids is None):
@@ -117,7 +116,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
             self.long_active_leg(self.shadow_coverbids, self.active_bestbid, -self.hanging_net_pos)
         
-
     # 根据passive的bids asks计算影子盘口
     def cal_shadow_buybook(self):
         """"""
@@ -198,15 +196,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         if trade.vt_symbol == self.active_leg.vt_symbol:
             # Hedge passive legs if necessary
             self.hedge_passive_leg()
-
-
-            
-
-    # def on_interval(self):
-    #     """"""
-    #     if not self.check_order_finished():
-    #         self.cancel_all_order()
-    #         print("algo on_interval cancel_all_order!!!")
 
     def long_active_leg(self, shadow_bids, bestbid, vol):
         # 超出报价范围的原委托撤销，否则修改挂单数量
