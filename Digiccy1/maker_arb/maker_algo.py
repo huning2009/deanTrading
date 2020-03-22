@@ -333,10 +333,10 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.passive_leg.vt_symbol,
             hedge_volume
         )
-        self.write_log(f'hedge_passive_leg active_traded: {active_traded}, passive_target: {passive_target}, passive_traded: {passive_traded}')
         leg_order_volume = passive_target - passive_traded
         if abs(leg_order_volume) * self.passive_leg.bids[0,0] > 12:
             self.send_passiveleg_order(leg_order_volume)
+            self.write_log(f'hedge_passive_leg active_traded: {active_traded}, passive_target: {passive_target}, passive_traded: {passive_traded}')
             return False
 
         return True
