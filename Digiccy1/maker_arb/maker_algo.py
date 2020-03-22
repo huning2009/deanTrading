@@ -3,7 +3,7 @@ from typing import Any
 from datetime import datetime
 import numpy as np
 
-from myConstant import Direction, Offset
+from myConstant import Direction, Offset, Status
 from myObject import (TickData, OrderData, TradeData)
 from myUtility import round_to
 
@@ -38,6 +38,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.shadow_shortasks = None
         self.shadow_coverbids = None
 
+        self.hanging_net_pos = 0.0
+
 
     def on_tick(self, tick: TickData):
         """"""
@@ -53,7 +55,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # 首先判断是否有敞口，有则对冲
         self.hedge_passive_leg()
 
-        if abs(self.spread.net_pos) < self.pos_threshold:
+        if abs(self.hanging_net_pos) < self.pos_threshold:
             # 无持仓
             if tick.vt_symbol == self.active_leg.vt_symbol:
                 self.active_bestbid = self.cal_active_bestbid()
@@ -65,7 +67,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.long_active_leg(self.shadow_buybids, self.active_bestbid, self.spread.max_pos)
             self.short_active_leg(self.shadow_shortasks, self.active_bestask, self.spread.max_pos * self.SELL_BUY_RATIO)
 
-        elif self.spread.net_pos > self.pos_threshold and (self.spread.net_pos + self.pos_threshold) < self.spread.max_pos:
+        elif self.hanging_net_pos > self.pos_threshold and (self.hanging_net_pos + self.pos_threshold) < self.spread.max_pos:
             # 持有active 多单，passive空单。不到最大单量，买开同时卖平
             if tick.vt_symbol == self.active_leg.vt_symbol:
                 self.active_bestbid = self.cal_active_bestbid()
@@ -74,10 +76,10 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 self.shadow_buybids = self.cal_shadow_buybook()
                 self.shadow_sellasks = self.cal_shadow_sellbook()
 
-            self.long_active_leg(self.shadow_buybids, self.active_bestbid, self.spread.max_pos - self.spread.net_pos)
-            self.short_active_leg(self.shadow_sellasks, self.active_bestask, self.spread.net_pos)
+            self.long_active_leg(self.shadow_buybids, self.active_bestbid, self.spread.max_pos - self.hanging_net_pos)
+            self.short_active_leg(self.shadow_sellasks, self.active_bestask, self.hanging_net_pos)
 
-        elif (self.spread.net_pos + self.pos_threshold) > self.spread.max_pos:
+        elif (self.hanging_net_pos + self.pos_threshold) > self.spread.max_pos:
             # 持有active 多单，passive空单。已到最大单量，仅卖平
             if tick.vt_symbol == self.active_leg.vt_symbol:
                 if self.shadow_sellasks is not None:
@@ -92,9 +94,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     self.active_bestask = self.cal_active_bestask()
                     self.shadow_sellasks = self.cal_shadow_sellbook()
                     
-            self.short_active_leg(self.shadow_sellasks, self.active_bestask, self.spread.net_pos)
+            self.short_active_leg(self.shadow_sellasks, self.active_bestask, self.hanging_net_pos)
 
-        elif self.spread.net_pos < -self.pos_threshold and (self.spread.net_pos - self.pos_threshold) > -self.spread.max_pos * self.SELL_BUY_RATIO:
+        elif self.hanging_net_pos < -self.pos_threshold and (self.hanging_net_pos - self.pos_threshold) > -self.spread.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。不到最大单量，卖开同时买平
             if tick.vt_symbol == self.active_leg.vt_symbol:
                 self.active_bestbid = self.cal_active_bestbid()
@@ -103,17 +105,17 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 self.shadow_coverbids = self.cal_shadow_coverbook()
                 self.shadow_shortasks = self.cal_shadow_shortbook()
             
-            self.long_active_leg(self.shadow_coverbids, self.active_bestbid, -self.spread.net_pos)
-            self.short_active_leg(self.shadow_shortasks, self.active_bestask, self.spread.max_pos * self.SELL_BUY_RATIO + self.spread.net_pos)
+            self.long_active_leg(self.shadow_coverbids, self.active_bestbid, -self.hanging_net_pos)
+            self.short_active_leg(self.shadow_shortasks, self.active_bestask, self.spread.max_pos * self.SELL_BUY_RATIO + self.hanging_net_pos)
 
-        elif (self.spread.net_pos - self.pos_threshold) < -self.spread.max_pos * self.SELL_BUY_RATIO:
+        elif (self.hanging_net_pos - self.pos_threshold) < -self.spread.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。已到最大单量，仅买平
             if tick.vt_symbol == self.active_leg.vt_symbol:
                 self.active_bestbid = self.cal_active_bestbid()
             else:
                 self.shadow_coverbids = self.cal_shadow_coverbook()
 
-            self.long_active_leg(self.shadow_coverbids, self.active_bestbid, -self.spread.net_pos)
+            self.long_active_leg(self.shadow_coverbids, self.active_bestbid, -self.hanging_net_pos)
         
 
     # 根据passive的bids asks计算影子盘口
@@ -183,7 +185,12 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
     def on_order(self, order: OrderData):
         """"""
-        pass
+        if order.vt_symbol == self.active_leg.vt_symbol and order.status == Status.CANCELLED:
+            print(f'cancelled order volume: {order.volume}')
+            if order.direction == Direction.LONG:
+                self.hanging_net_pos -= order.volume
+            else:
+                self.hanging_net_pos += order.volume
 
     def on_trade(self, trade: TradeData):
         """"""
@@ -191,6 +198,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         if trade.vt_symbol == self.active_leg.vt_symbol:
             # Hedge passive legs if necessary
             self.hedge_passive_leg()
+
+
             
 
     # def on_interval(self):
@@ -299,6 +308,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 price = round_to(row[0], self.active_leg.pricetick)
                 if row[1] * row[0] > 12:
                     self.send_long_order(self.active_leg.vt_symbol, price, row[1])
+                    self.hanging_net_pos += row[1]
         else:
             # 检查是否需要借款
             sum_short_vol = order_arr[:,1].sum()
@@ -310,6 +320,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 price = round_to(row[0], self.active_leg.pricetick)
                 if row[1] * row[0] > 12:
                     self.send_short_order(self.active_leg.vt_symbol, price, row[1])
+                    self.hanging_net_pos -= row[1]
 
     def hedge_passive_leg(self):
         """
