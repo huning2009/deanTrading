@@ -7,13 +7,21 @@ import pandas as pd
 import numpy as np
 import talib as ta
 from numpy import ndarray
+from collections import defaultdict
+from typing import Dict, List, Set, Callable
 
-l = ['a', 'b']
-l1 = []
-d = {}
-l1.extend([{i:[1,2]} for i in l])
-print(l1)
 
+bids = np.array([[1.2,100], [1.1, 20], [1.0, 102]])
+narr = np.where(abs(bids[:,0]-0.5)== min(abs(bids[:,0]-0.5)))
+print(bids[narr])
+
+# l = ['a', 'b', 'c']
+# l1= []
+# l1.extend([i,1,2] for i in l)
+# print(l1)
+# l = ['a', 1]
+# arr = np.array([['a', 1], ['b', 1]])
+# print(np.cumsum(arr[:,1].astype('float')))
 
 # df = pd.DataFrame(columns=['price', 'vol', 'symbol'])
 # # print(df)

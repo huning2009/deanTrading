@@ -44,7 +44,7 @@ def main():
     fsa_engine.start()
 
     fsa_engine.connect(gateway_setting, 'OKEX')
-    # fsa_engine.connect(gateway_setting, 'OKEXS')
+    fsa_engine.connect(gateway_setting, 'OKEXS')
     fsa_engine.write_log('Gateways is connecting, and sleep 20 seconds!')
     sleep(15)
 

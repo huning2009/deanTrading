@@ -2,6 +2,7 @@ from logging import INFO
 import traceback
 import importlib
 import os
+from time import sleep
 from typing import List, Dict, Set, Callable, Any, Type
 from collections import defaultdict
 from copy import copy
@@ -306,7 +307,7 @@ class SpreadAlgoEngine:
         self.event_engine.register(EVENT_TRADE, self.process_trade_event)
         # self.event_engine.register(EVENT_POSITION, self.process_position_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
-        self.event_engine.register(EVENT_TIMER, self.process_timer_event)
+        # self.event_engine.register(EVENT_TIMER, self.process_timer_event)
         # self.event_engine.register(EVENT_BORROW_MONEY, self.process_borrowmoney_event)
         self.event_engine.register(EVENT_ACCOUNT_MARGIN, self.process_account_margin_event)
 
@@ -334,10 +335,9 @@ class SpreadAlgoEngine:
         if not leg:
             return
         leg.update_tick(tick)
-        print(tick.vt_symbol)
         for spread in self.spread_engine.symbol_spread_map[tick.vt_symbol]:
             spread.calculate_price()
-            
+        
         self.process_tick(tick)
 
     # def process_position_event(self, event: Event) -> None:
@@ -403,6 +403,7 @@ class SpreadAlgoEngine:
             req = SubscribeRequest(
                 contract.symbol, contract.exchange
             )
+            sleep(3)
             self.spread_engine.subscribe(req, contract.gateway_name)
             self.write_log('subscribe>>>>>>>>>>>>>>>>>>>:%s' % leg.vt_symbol)
 

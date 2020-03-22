@@ -34,7 +34,7 @@ class SpreadAlgoTemplate:
         self.traded_volume: float = 0           # Volume traded (Abs value)
 
         # self.leg_traded: Dict[str, float] = defaultdict(int)
-        self.leg_orders: Dict[str, List[str]] = defaultdict(list)
+        self.leg_orders: Dict[str, dict] = defaultdict(dict)
 
         self.write_log(f"算法已启动,max_pos: {self.spread.max_pos}, buy_price: {self.spread.buy_price}, sell_price: {self.spread.sell_price}, short_price: {self.spread.short_price}, cover_price: {self.spread.cover_price}")
 
@@ -130,13 +130,11 @@ class SpreadAlgoTemplate:
     def update_order(self, order: OrderData):
         """"""
         # print('algo template update_order, order.is_active:%s' % order.is_active())
-        if not order.is_active() and order.vt_orderid in self.leg_orders_df.index:
-            # vt_orderids = self.leg_orders[order.vt_symbol]
-            # if order.vt_orderid in vt_orderids:
-            #     vt_orderids.remove(order.vt_orderid)
-            self.leg_orders_df.drop(order.vt_orderid)
-            # if order.vt_orderid in self.active_short_orderids:
-            #     self.active_short_orderids.remove(order.vt_orderid)
+        if not order.is_active():
+            for l in self.leg_orders[order.vt_symbol]:
+                if order.vt_orderid == l[0]:
+                    self.leg_orders[order.vt_symbol].remove(l)
+
         self.on_order(order)
 
     def update_timer(self):
@@ -194,7 +192,7 @@ class SpreadAlgoTemplate:
             borrowmoney
         )
 
-        self.leg_orders[vt_symbol].extend([{vt_orderid: [price, volume, direction]} for vt_orderid in vt_orderids])
+        self.leg_orders[vt_symbol].extend([[vt_orderid, price, volume, direction] for vt_orderid in vt_orderids])
 
         msg = "发出委托，{}，{}，{}@{}".format(
             vt_symbol,
@@ -207,7 +205,7 @@ class SpreadAlgoTemplate:
     def cancel_leg_order(self, vt_symbol: str):
         """"""
         for d in self.leg_orders[vt_symbol]:
-            self.cancel_order(d)            
+            self.cancel_order(d[0])            
 
     def cancel_order(self, vt_orderid: str):
         """"""

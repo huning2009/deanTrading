@@ -753,7 +753,6 @@ class OkexWebsocketApi(WebsocketClient):
         tick.datetime = datetime.strptime(
             d["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ")
         self.gateway.on_tick(copy(tick))
-        print(tick.vt_symbol)
         
     def on_order(self, d):
         """"""

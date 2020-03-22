@@ -2,6 +2,7 @@ from logging import INFO
 import traceback
 import importlib
 import os
+from time import sleep
 from typing import List, Dict, Set, Callable, Any, Type
 from collections import defaultdict
 from copy import copy
@@ -409,6 +410,7 @@ class SpreadAlgoEngine:
             req = SubscribeRequest(
                 contract.symbol, contract.exchange
             )
+            sleep(3)
             self.spread_engine.subscribe(req, contract.gateway_name)
             self.write_log('subscribe>>>>>>>>>>>>>>>>>>>:%s' % leg.vt_symbol)
 

@@ -761,7 +761,6 @@ class OkexsWebsocketApi(WebsocketClient):
 
         tick.datetime = _parse_timestamp(d["timestamp"])
         self.gateway.on_tick(copy(tick))
-        print(tick.vt_symbol)
     def on_order(self, data):
         """"""
         order = _parse_order_info(data, gateway_name=self.gateway_name)
