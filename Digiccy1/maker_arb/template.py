@@ -2,7 +2,6 @@ from logging import INFO
 from collections import defaultdict
 from typing import Dict, List, Set, Callable
 from copy import copy
-import pandas as pd
 
 from myObject import TickData, TradeData, OrderData, ContractData, BarData
 from myConstant import Direction, Status, Offset, Interval
@@ -34,7 +33,8 @@ class SpreadAlgoTemplate:
         self.traded_volume: float = 0           # Volume traded (Abs value)
 
         # self.leg_traded: Dict[str, float] = defaultdict(int)
-        self.leg_orders: Dict[str, dict] = defaultdict(dict)
+        self.leg_orders: Dict[str, list] = defaultdict(list)
+        self.hanging_orders = list()
 
         self.write_log(f"算法已启动,max_pos: {self.spread.max_pos}, buy_price: {self.spread.buy_price}, sell_price: {self.spread.sell_price}, short_price: {self.spread.short_price}, cover_price: {self.spread.cover_price}")
 
@@ -134,7 +134,12 @@ class SpreadAlgoTemplate:
             for l in self.leg_orders[order.vt_symbol]:
                 if order.vt_orderid == l[0]:
                     self.leg_orders[order.vt_symbol].remove(l)
+            if order.vt_orderid in self.hanging_orders:
+                self.hanging_orders.remove(order.vt_orderid)
 
+        elif order.status in [Status.NOTTRADED, Status.PARTTRADED]:
+            self.hanging_orders.append(order.vt_orderid)
+            
         self.on_order(order)
 
     def update_timer(self):
@@ -275,8 +280,9 @@ class SpreadAlgoTemplate:
         """"""
         return self.algo_engine.get_contract(vt_symbol)
 
-    def borrow_money(self):
-        pass
+    def borrow_money(self, amount):
+        asset = self.spread.active_leg.vt_symbol.replace("USDT", "")
+        self.algo_engine.spread_engine.borrow_money(asset, amount, self.get_contract(self.spread.active_leg.vt_symbol).gateway_name)
 
     @virtual
     def on_tick(self, tick: TickData):

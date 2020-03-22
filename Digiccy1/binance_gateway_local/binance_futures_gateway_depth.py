@@ -842,8 +842,8 @@ class BinanceDataWebsocketApi(WebsocketClient):
         tick = self.ticks[symbol]
 
         if channel == "depth20@100ms":
-            tick.bids = np.array(data['bids'])
-            tick.asks = np.array(data['asks'])
+            tick.bids = np.array(data['b']).astype(float)
+            tick.asks = np.array(data['a']).astype(float)
         elif channel == "ticker":
             tick.volume = float(data['v'])
             tick.open_price = float(data['o'])
@@ -857,5 +857,5 @@ class BinanceDataWebsocketApi(WebsocketClient):
             tick.bid_volume_1 = float(data['B'])
             tick.ask_volume_1 = float(data['A'])
 
-        if tick.bids:
+        if tick.bids[0,1]:
             self.gateway.on_tick(copy(tick))

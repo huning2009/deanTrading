@@ -22,8 +22,8 @@ class LegData:
         self.vt_symbol: str = vt_symbol
 
         # Price and position data
-        self.bid = []
-        self.ask = []
+        self.bids = None
+        self.asks = None
 
         self.long_pos: float = 0
         self.short_pos: float = 0
@@ -52,8 +52,7 @@ class LegData:
         # print(f"leg update_tick {tick.vt_symbol}")
         self.bids = tick.bids
         self.asks = tick.asks
-
-        self.tick = tick
+        
     def update_position(self, position: PositionData):
         """"""
         if position.direction == Direction.NET:

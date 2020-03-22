@@ -254,7 +254,6 @@ class SpreadEngine(object):
         """
         gateway = gateway_class(self.event_engine)
         self.gateways[gateway.gateway_name] = gateway
-        print( self.gateways)
         # Add gateway supported exchanges into engine
         for exchange in gateway.exchanges:
             if exchange not in self.exchanges:
@@ -283,6 +282,9 @@ class SpreadEngine(object):
         gateway = self.get_gateway(gateway_name)
         gateway.repay_money(asset, amount)
 
+    def borrow_money(self,  asset, amount, gateway_name):
+        gateway = self.get_gateway(gateway_name)
+        gateway.borrow_money(asset, amount)
 
 class SpreadAlgoEngine:
     """"""
@@ -305,6 +307,7 @@ class SpreadAlgoEngine:
 
         self.ticks = {}
         self.orders = {}
+        self.active_orders = {}
         self.trades = {}
         # self.positions = {}
         self.margin_accounts: Dict[str, MarginAccountData] = {}
@@ -359,7 +362,6 @@ class SpreadAlgoEngine:
         if not leg:
             return
         leg.update_tick(tick)
-        print(tick.vt_symbol)
             
         self.process_tick(tick)
 
@@ -369,7 +371,7 @@ class SpreadAlgoEngine:
         if trade.vt_tradeid in self.vt_tradeids:
             return
         self.vt_tradeids.add(trade.vt_tradeid)
-
+        self.write_log(f'process_trade_event trade.vt_tradeid: {trade.vt_tradeid}, trade.vt_orderid: {trade.vt_orderid}')
         algo = self.order_algo_map.get(trade.vt_orderid, None)
         # print("process_trade_event(algo engine)>>>>vt_orderid: %s" % trade.vt_orderid)
         # if algo:
@@ -391,10 +393,18 @@ class SpreadAlgoEngine:
 
         algo = self.order_algo_map.get(order.vt_orderid, None)
         if algo:
-            self.offset_converter.update_order(order)
-            algo.update_order(order)
             self.orders[order.vt_orderid] = order
 
+            # If order is active, then update data in dict.
+            if order.is_active():
+                self.active_orders[order.vt_orderid] = order
+            # Otherwise, pop inactive order from in dict
+            elif order.vt_orderid in self.active_orders:
+                self.active_orders.pop(order.vt_orderid)
+
+            self.offset_converter.update_order(order)
+
+            algo.update_order(order)
 
     def process_contract_event(self, event: Event) -> None:
         """"""
@@ -406,13 +416,12 @@ class SpreadAlgoEngine:
         if leg:
             # Update contract data
             leg.update_contract(contract)
-            print(contract.symbol, contract.exchange)
             req = SubscribeRequest(
                 contract.symbol, contract.exchange
             )
             sleep(3)
             self.spread_engine.subscribe(req, contract.gateway_name)
-            self.write_log('subscribe>>>>>>>>>>>>>>>>>>>:%s' % leg.vt_symbol)
+            print('subscribe>>>>>>>>>>>>>>>>>>>:%s' % leg.vt_symbol)
 
     def process_borrowmoney_event(self, event: Event) ->None:
         # borrowmoney_dict = event.data
@@ -437,7 +446,7 @@ class SpreadAlgoEngine:
         if dt_now_minute >= 55:
             if margin_account_data.borrowed > 0 and margin_account_data.free > 0:
                 amount = min(margin_account_data.borrowed, margin_account_data.free)
-                gateway_name = margin_account_data.exchange.value
+                gateway_name = margin_account_data.gateway_name
                 asset = margin_account_data.accountid
 
                 self.spread_engine.repay(asset, amount, gateway_name)
@@ -556,6 +565,7 @@ class SpreadAlgoEngine:
             self.offset_converter.update_order_request(req, vt_orderid)
             # Save relationship between orderid and algo.
             self.order_algo_map[vt_orderid] = algo
+            self.write_log(f'send_order vt_orderid: {vt_orderid}')
             # print('%s algo engine send_order vt_orderid:%s,price: %s' % (algo.algoid, vt_orderid, req.price))
 
         return vt_orderids

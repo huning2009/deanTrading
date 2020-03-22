@@ -442,7 +442,7 @@ class BinanceRestApi(RestClient):
             "price": str(req.price),
             "quantity": str(req.volume),
             "newClientOrderId": orderid,
-            "timeInForce": 'IOC'
+            "timeInForce": 'GTC'
         }
         if req.borrowmoney == True:
             params["sideEffectType"] = "MARGIN_BUY"
@@ -1049,8 +1049,8 @@ class BinanceDataWebsocketApi(WebsocketClient):
         tick = self.ticks[symbol]
 
         if channel == "depth20@100ms":
-            tick.bids = np.array(data['bids'])
-            tick.asks = np.array(data['asks'])
+            tick.bids = np.array(data['bids']).astype(float)
+            tick.asks = np.array(data['asks']).astype(float)
 
         elif channel == "ticker":
             tick.volume = float(data['v'])
@@ -1066,6 +1066,6 @@ class BinanceDataWebsocketApi(WebsocketClient):
             tick.ask_volume_1 = float(data['A'])
             tick.datetime = datetime.now()
 
-        if tick.bids:
+        if tick.bids[0,1]:
             self.gateway.on_tick(copy(tick))
             # print(f'binance gateway tick.datetime: {tick.datetime}')
