@@ -229,7 +229,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 if shadow_bid * vol < 12:
                     return
                 # 可用资金不足，立即返回
-                if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT"+self.get_contract(self.active_leg.vt_symbol).exchange.value].free:
+                if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free:
                     return
                 self.submitting_long_oderid = self.send_long_order(self.active_leg.vt_symbol, shadow_bid, vol)
                 self.submitting_long_price = shadow_bid
