@@ -180,7 +180,8 @@ class BinanceDepthGateway(BaseGateway):
         if self.query_account_margin_count > 300:
             self.query_account_margin_count = 0
             self.rest_api.query_latest_price()
-            self.rest_api.query_account_margin()
+
+        self.rest_api.query_account_margin()
 
     def on_account_margin(self, account: MarginAccountData):
         """
