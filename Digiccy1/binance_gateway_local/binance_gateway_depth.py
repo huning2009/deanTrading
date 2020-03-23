@@ -670,7 +670,7 @@ class BinanceRestApi(RestClient):
             self.gateway.on_account_margin(account)
             
             account_net_based_USDT += account.netAsset * price_based_USDT
-        self.gateway.write_log(f"<杠杆>账户资金查询成功,based USDT: {account_net_based_USDT}")
+        # self.gateway.write_log(f"<杠杆>账户资金查询成功,based USDT: {account_net_based_USDT}")
 
     def on_query_order(self, data, request):
         """"""
