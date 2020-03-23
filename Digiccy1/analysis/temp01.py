@@ -7,14 +7,24 @@ import pandas as pd
 import numpy as np
 import talib as ta
 from numpy import ndarray
+import copy
 from collections import defaultdict
 from typing import Dict, List, Set, Callable
 
-a = 'aaa'
-b = ['aaa']
-print(a==b)
 
-# bids = np.array([[1.2,100], [1.1, 20], [1.0, 102]])
+b ='aaa'
+a=b
+a='asd'
+print(a)
+print(b)
+"""
+bids = np.array([[1.2,100], [1.1, 20], [1.0, 102]])
+print(bids)
+b = copy.copy(bids)
+b[0,0] = 999
+print(b)
+print(bids)
+"""
 # c = bids[bids[:,0]>1.05].shape[0]
 # bids[:c,1] = np.cumsum(bids[:c,1], axis=0)
 # print(bids[c-1:,:])

@@ -2,6 +2,7 @@ from logging import DEBUG
 from typing import Any
 from datetime import datetime
 import numpy as np
+import copy
 
 from myConstant import Direction, Offset, Status
 from myObject import (TickData, OrderData, TradeData)
@@ -108,29 +109,33 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     # 根据passive的bids asks计算影子盘口
     def cal_shadow_buybid(self, max_vol):
         """"""
-        cumshadow_bids = self.passive_leg.bids
+        cumshadow_bids = copy.copy(self.passive_leg.bids)
         cumshadow_bids[:,1] = np.cumsum(cumshadow_bids[:,1], axis=0)
         cumshadow_bids[:,1][cumshadow_bids[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_bids[:,1])
-
+        # print(f'n = {n}')
+        # print(cumshadow_bids)
+        # print(self.passive_leg.bids)
         shadow_buybid = (cumshadow_bids[n,0] - self.passive_leg.pricetick * self.payup) * (1-self.COMMISSION + self.spread.buy_price)
 
         return shadow_buybid
 
     def cal_shadow_shortask(self, max_vol):
         """"""
-        cumshadow_asks = self.passive_leg.asks
+        cumshadow_asks = copy.copy(self.passive_leg.asks)
         cumshadow_asks[:,1] = np.cumsum(cumshadow_asks[:,1], axis=0)
         cumshadow_asks[:,1][cumshadow_asks[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_asks[:,1])
-
+        # print(f'n = {n}')
+        # print(cumshadow_asks)
+        # print(self.passive_leg.asks)
         shadow_shortask = (cumshadow_asks[n,0] + self.passive_leg.pricetick * self.payup) * (1 + self.COMMISSION + self.spread.short_price)
 
         return shadow_shortask
 
     def cal_shadow_coverbid(self, max_vol):
         """"""
-        cumshadow_bids = self.passive_leg.bids
+        cumshadow_bids = copy.copy(self.passive_leg.bids)
         cumshadow_bids[:,1] = np.cumsum(cumshadow_bids[:,1], axis=0)
         cumshadow_bids[:,1][cumshadow_bids[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_bids[:,1])
@@ -141,7 +146,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
     def cal_shadow_sellask(self, max_vol):
         """"""
-        cumshadow_asks = self.passive_leg.asks
+        cumshadow_asks = copy.copy(self.passive_leg.asks)
         cumshadow_asks[:,1] = np.cumsum(cumshadow_asks[:,1], axis=0)
         cumshadow_asks[:,1][cumshadow_asks[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_asks[:,1])
@@ -153,7 +158,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     # 根据active bids asks计算最优买卖价
     def cal_active_bestbid(self, max_vol):
         """"""
-        bids = self.active_leg.bids
+        bids = copy.copy(self.active_leg.bids)
         # 去掉自己挂单
         if self.submitting_long_oderid is not None:
             min_value = min(abs(bids[:,0] - self.submitting_long_price))
@@ -168,7 +173,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
     def cal_active_bestask(self, max_vol):
         """"""
-        asks = self.active_leg.asks
+        asks = copy.copy(self.active_leg.asks)
         # 去掉自己挂单
         if self.submitting_short_oderid is not None:
             min_value = min(abs(asks[:,0] - self.submitting_short_price))
@@ -220,6 +225,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_long_oderid is None:
+                # 不足最小金额，立即返回
+                if shadow_bid * vol < 12:
+                    return
                 self.submitting_long_oderid = self.send_long_order(self.active_leg.vt_symbol, shadow_bid, vol)
                 self.submitting_long_price = shadow_bid
                 self.submitting_long_vol = vol
@@ -241,13 +249,18 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_short_oderid is None:
+                # 不足最小金额，立即返回
+                if shadow_ask * vol < 12:
+                    return
                 borrow = False
-                if vol < self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free:
+                if vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free:
                     borrow = True
                     self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free = vol
                 self.submitting_short_oderid = self.send_short_order(self.active_leg.vt_symbol, shadow_ask, vol, borrow)
                 self.submitting_short_price = shadow_ask
                 self.submitting_short_vol = vol
+                if borrow:
+                    self.cancel_short_orderid = self.submitting_short_oderid
             else:
                 if self.submitting_short_price != shadow_ask and self.cancel_short_orderid is None:
                     self.cancel_order(self.submitting_short_oderid)
