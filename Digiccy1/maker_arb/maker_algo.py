@@ -239,7 +239,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
     def short_active_leg(self, shadow_ask, bestask, vol):
         # 市场最优低于要提报价格，则不报。
-        if bestask > shadow_ask:
+        if bestask < shadow_ask:
             if self.submitting_short_oderid and self.cancel_short_orderid is None:
                 self.cancel_order(self.submitting_short_oderid)
                 self.cancel_short_orderid = self.submitting_short_oderid
