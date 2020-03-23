@@ -34,7 +34,6 @@ class SpreadAlgoTemplate:
 
         # self.leg_traded: Dict[str, float] = defaultdict(int)
         self.leg_orders: Dict[str, list] = defaultdict(list)
-        self.hanging_orders = list()
 
         self.write_log(f"算法已启动,max_pos: {self.spread.max_pos}, buy_price: {self.spread.buy_price}, sell_price: {self.spread.sell_price}, short_price: {self.spread.short_price}, cover_price: {self.spread.cover_price}")
 
@@ -134,12 +133,7 @@ class SpreadAlgoTemplate:
             for l in self.leg_orders[order.vt_symbol]:
                 if order.vt_orderid == l[0]:
                     self.leg_orders[order.vt_symbol].remove(l)
-            if order.vt_orderid in self.hanging_orders:
-                self.hanging_orders.remove(order.vt_orderid)
 
-        elif order.status in [Status.NOTTRADED, Status.PARTTRADED]:
-            self.hanging_orders.append(order.vt_orderid)
-            
         self.on_order(order)
 
     def update_timer(self):
@@ -163,11 +157,13 @@ class SpreadAlgoTemplate:
 
     def send_long_order(self, vt_symbol: str, price: float, volume: float):
         """"""
-        self.send_order(vt_symbol, price, volume, Direction.LONG)
+        vt_orderids = self.send_order(vt_symbol, price, volume, Direction.LONG)
+        return vt_orderids
 
     def send_short_order(self, vt_symbol: str, price: float, volume: float, borrowmoney=False):
         """"""
-        self.send_order(vt_symbol, price, volume, Direction.SHORT, borrowmoney)
+        vt_orderids = self.send_order(vt_symbol, price, volume, Direction.SHORT, borrowmoney)
+        return vt_orderids
 
     def send_order(
         self,
@@ -207,6 +203,7 @@ class SpreadAlgoTemplate:
         )
         self.write_log(msg)
 
+        return vt_orderids[0]
     def cancel_leg_order(self, vt_symbol: str):
         """"""
         for d in self.leg_orders[vt_symbol]:

@@ -14,6 +14,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     """"""
     algo_name = "SpreadMaker"
     SELL_BUY_RATIO = 2
+    FILT_RATIO = 0.1
     COMMISSION = (0.0015 + 0.0005) * 2
 
     def __init__(
@@ -27,155 +28,155 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.active_leg = self.spread.active_leg
         self.passive_leg = self.spread.passive_leg
         self.pos_threshold = self.spread.max_pos * 0.001
+        self.max_pos = self.spread.max_pos
+        self.payup = self.spread.payup
 
-        self.my_bestbid = None
-        self.my_bestask = None
+        self.submitting_long_oderid = None
+        self.submitting_long_price = None
+        self.submitting_long_vol = None
+        self.submitting_short_oderid = None
+        self.submitting_short_price = None
+        self.submitting_short_vol = None
 
-        self.active_bestbid = None
-        self.active_bestask = None
-        self.shadow_buybids = None
-        self.shadow_sellasks = None
-        self.shadow_shortasks = None
-        self.shadow_coverbids = None
-
-        self.hanging_net_pos = 0.0
+        self.cancel_long_orderid = None
+        self.cancel_short_orderid = None
 
     def on_tick(self, tick: TickData):
         """"""
         if (self.active_leg.bids is None) or (self.passive_leg.bids is None):
-            # 初始化
-            if tick.vt_symbol == self.active_leg.vt_symbol:
-                self.active_bestbid = self.cal_active_bestbid()
-                self.active_bestask = self.cal_active_bestask()
-            else:
-                self.shadow_buybids = self.cal_shadow_buybook()
-                self.shadow_shortasks = self.cal_shadow_shortbook()
             return
         # 首先判断是否有敞口，有则对冲
         self.hedge_passive_leg()
 
-        if abs(self.hanging_net_pos) < self.pos_threshold:
+        if abs(self.spread.net_pos) < self.pos_threshold:
             # 无持仓
-            if tick.vt_symbol == self.active_leg.vt_symbol:
-                self.active_bestbid = self.cal_active_bestbid()
-                self.active_bestask = self.cal_active_bestask()
-            else:
-                self.shadow_buybids = self.cal_shadow_buybook()
-                self.shadow_shortasks = self.cal_shadow_shortbook()
+            long_vol = self.spread.max_pos
+            short_vol = self.spread.max_pos * self.SELL_BUY_RATIO
 
-            self.long_active_leg(self.shadow_buybids, self.active_bestbid, self.spread.max_pos)
-            self.short_active_leg(self.shadow_shortasks, self.active_bestask, self.spread.max_pos * self.SELL_BUY_RATIO)
+            bestbid = self.cal_active_bestbid(long_vol)
+            bestask = self.cal_active_bestask(short_vol)
+            shadow_buybid = self.cal_shadow_buybid(long_vol)
+            shadow_shortask = self.cal_shadow_shortask(short_vol)
 
-        elif self.hanging_net_pos > self.pos_threshold and (self.hanging_net_pos + self.pos_threshold) < self.spread.max_pos:
+            self.long_active_leg(shadow_buybid, bestbid, long_vol)
+            self.short_active_leg(shadow_shortask, bestask, short_vol)
+
+        elif self.spread.net_pos > self.pos_threshold and (self.spread.net_pos + self.pos_threshold) < self.spread.max_pos:
             # 持有active 多单，passive空单。不到最大单量，买开同时卖平
-            if tick.vt_symbol == self.active_leg.vt_symbol:
-                self.active_bestbid = self.cal_active_bestbid()
-                self.active_bestask = self.cal_active_bestask()
-            else:
-                self.shadow_buybids = self.cal_shadow_buybook()
-                self.shadow_sellasks = self.cal_shadow_sellbook()
+            long_vol = self.spread.max_pos - self.spread.net_pos
+            short_vol = self.spread.net_pos
 
-            self.long_active_leg(self.shadow_buybids, self.active_bestbid, self.spread.max_pos - self.hanging_net_pos)
-            self.short_active_leg(self.shadow_sellasks, self.active_bestask, self.hanging_net_pos)
+            bestbid = self.cal_active_bestbid(long_vol)
+            bestask = self.cal_active_bestask(short_vol)
+            shadow_buybid = self.cal_shadow_buybid(long_vol)
+            shadow_sellask = self.cal_shadow_sellask(short_vol)
 
-        elif (self.hanging_net_pos + self.pos_threshold) > self.spread.max_pos:
+            self.long_active_leg(shadow_buybid, bestbid, long_vol)
+            self.short_active_leg(shadow_sellask, bestask, short_vol)
+
+        elif (self.spread.net_pos + self.pos_threshold) > self.spread.max_pos:
             # 持有active 多单，passive空单。已到最大单量，仅卖平
-            if tick.vt_symbol == self.active_leg.vt_symbol:
-                if self.shadow_sellasks is not None:
-                    self.active_bestask = self.cal_active_bestask()
-                else:
-                    self.active_bestask = self.cal_active_bestask()
-                    self.shadow_sellasks = self.cal_shadow_sellbook()
-            else:
-                if self.active_bestask is not None:
-                    self.shadow_sellasks = self.cal_shadow_sellbook()
-                else:
-                    self.active_bestask = self.cal_active_bestask()
-                    self.shadow_sellasks = self.cal_shadow_sellbook()
+            short_vol = self.spread.net_pos
+
+            bestask = self.cal_active_bestask(short_vol)
+            shadow_sellask = self.cal_shadow_sellask(short_vol)
                     
-            self.short_active_leg(self.shadow_sellasks, self.active_bestask, self.hanging_net_pos)
+            self.short_active_leg(shadow_sellask, bestask, short_vol)
 
-        elif self.hanging_net_pos < -self.pos_threshold and (self.hanging_net_pos - self.pos_threshold) > -self.spread.max_pos * self.SELL_BUY_RATIO:
+        elif self.spread.net_pos < -self.pos_threshold and (self.spread.net_pos - self.pos_threshold) > -self.spread.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。不到最大单量，卖开同时买平
-            if tick.vt_symbol == self.active_leg.vt_symbol:
-                self.active_bestbid = self.cal_active_bestbid()
-                self.active_bestask = self.cal_active_bestask()
-            else:
-                self.shadow_coverbids = self.cal_shadow_coverbook()
-                self.shadow_shortasks = self.cal_shadow_shortbook()
+            long_vol = -self.spread.net_pos
+            short_vol = self.spread.max_pos * self.SELL_BUY_RATIO + self.spread.net_pos
+
+            bestbid = self.cal_active_bestbid(long_vol)
+            bestask = self.cal_active_bestask(short_vol)
+            shadow_coverbid = self.cal_shadow_coverbid(long_vol)
+            shadow_shortask = self.cal_shadow_shortask(short_vol)
             
-            self.long_active_leg(self.shadow_coverbids, self.active_bestbid, -self.hanging_net_pos)
-            self.short_active_leg(self.shadow_shortasks, self.active_bestask, self.spread.max_pos * self.SELL_BUY_RATIO + self.hanging_net_pos)
+            self.long_active_leg(shadow_coverbid, bestbid, long_vol)
+            self.short_active_leg(shadow_shortask, bestask, short_vol)
 
-        elif (self.hanging_net_pos - self.pos_threshold) < -self.spread.max_pos * self.SELL_BUY_RATIO:
+        elif (self.spread.net_pos - self.pos_threshold) < -self.spread.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。已到最大单量，仅买平
-            if tick.vt_symbol == self.active_leg.vt_symbol:
-                self.active_bestbid = self.cal_active_bestbid()
-            else:
-                self.shadow_coverbids = self.cal_shadow_coverbook()
+            long_vol = -self.spread.net_pos
 
-            self.long_active_leg(self.shadow_coverbids, self.active_bestbid, -self.hanging_net_pos)
+            bestbid = self.cal_active_bestbid(long_vol)
+            shadow_coverbid = self.cal_shadow_coverbid(long_vol)
+
+            self.long_active_leg(shadow_coverbid, bestbid, long_vol)
         
     # 根据passive的bids asks计算影子盘口
-    def cal_shadow_buybook(self):
+    def cal_shadow_buybid(self, max_vol):
         """"""
-        shadow_bids = self.passive_leg.bids
-        shadow_bids[:,0] = shadow_bids[:,0] * (1-self.COMMISSION - self.spread.buy_price) - self.passive_leg.pricetick * self.spread.payup
+        cumshadow_bids = self.passive_leg.bids
+        cumshadow_bids[:,1] = np.cumsum(cumshadow_bids[:,1], axis=0)
+        cumshadow_bids[:,1][cumshadow_bids[:,1] > max_vol] = 0
+        n = np.count_nonzero(cumshadow_bids[:,1])
 
-        return shadow_bids
+        shadow_buybid = (cumshadow_bids[n,0] - self.passive_leg.pricetick * self.payup) * (1-self.COMMISSION + self.spread.buy_price)
 
-    def cal_shadow_shortbook(self):
+        return shadow_buybid
+
+    def cal_shadow_shortask(self, max_vol):
         """"""
-        shadow_asks = self.passive_leg.asks
-        shadow_asks[:,0] = shadow_asks[:,0] * (1 + self.COMMISSION + self.spread.short_price) + self.passive_leg.pricetick * self.spread.payup
+        cumshadow_asks = self.passive_leg.asks
+        cumshadow_asks[:,1] = np.cumsum(cumshadow_asks[:,1], axis=0)
+        cumshadow_asks[:,1][cumshadow_asks[:,1] > max_vol] = 0
+        n = np.count_nonzero(cumshadow_asks[:,1])
 
-        return shadow_asks
+        shadow_shortask = (cumshadow_asks[n,0] + self.passive_leg.pricetick * self.payup) * (1 + self.COMMISSION + self.spread.short_price)
 
-    def cal_shadow_coverbook(self):
+        return shadow_shortask
+
+    def cal_shadow_coverbid(self, max_vol):
         """"""
-        shadow_bids = self.passive_leg.bids
-        shadow_bids[:,0] = shadow_bids[:,0] * (1-self.COMMISSION - self.spread.cover_price) - self.passive_leg.pricetick * self.spread.payup
+        cumshadow_bids = self.passive_leg.bids
+        cumshadow_bids[:,1] = np.cumsum(cumshadow_bids[:,1], axis=0)
+        cumshadow_bids[:,1][cumshadow_bids[:,1] > max_vol] = 0
+        n = np.count_nonzero(cumshadow_bids[:,1])
 
-        return shadow_bids
+        shadow_coverbid = (cumshadow_bids[n,0] - self.passive_leg.pricetick * self.payup) * (1-self.COMMISSION + self.spread.cover_price)
 
-    def cal_shadow_sellbook(self):
+        return shadow_coverbid
+
+    def cal_shadow_sellask(self, max_vol):
         """"""
-        shadow_asks = self.passive_leg.asks
-        shadow_asks[:,0] = shadow_asks[:,0] * (1 + self.COMMISSION + self.spread.sell_price) + self.passive_leg.pricetick * self.spread.payup
+        cumshadow_asks = self.passive_leg.asks
+        cumshadow_asks[:,1] = np.cumsum(cumshadow_asks[:,1], axis=0)
+        cumshadow_asks[:,1][cumshadow_asks[:,1] > max_vol] = 0
+        n = np.count_nonzero(cumshadow_asks[:,1])
 
-        return shadow_asks
+        shadow_sellask = (cumshadow_asks[n,0] + self.passive_leg.pricetick * self.spread.payup) * (1 + self.COMMISSION + self.spread.sell_price)
+
+        return shadow_sellask
 
     # 根据active bids asks计算最优买卖价
-    def cal_active_bestbid(self):
+    def cal_active_bestbid(self, max_vol):
         """"""
         bids = self.active_leg.bids
         # 去掉自己挂单
-        for l in self.leg_orders[self.active_leg.vt_symbol]:
-            if l[3] == Direction.LONG:
-                min_value = min(abs(bids[:,0] - l[1]))
-                index_arr = np.where(abs(bids[:,0] - l[1]) == min_value)
-                bids[index_arr][0,1] -= l[2]
-        bids[:,1][bids[:,1] < 0] = 0
+        if self.submitting_long_oderid is not None:
+            min_value = min(abs(bids[:,0] - self.submitting_long_price))
+            index_arr = np.where(abs(bids[:,0] - self.submitting_long_price) == min_value)
+            bids[index_arr][0,1] -= min(self.submitting_long_vol, bids[index_arr][0,1])
         # 
         bids[:,1] = np.cumsum(bids[:,1], axis=0)
-        bids[:,1][bids[:,1] > self.spread.calculate_leg_volume(self.active_leg.vt_symbol, self.spread.max_pos * 0.1)]=0
+        bids[:,1][bids[:,1] > max_vol * self.FILT_RATIO] = 0
         n = np.count_nonzero(bids[:,1])
         bestbid = bids[n,0]
         return bestbid
 
-    def cal_active_bestask(self):
+    def cal_active_bestask(self, max_vol):
         """"""
         asks = self.active_leg.asks
         # 去掉自己挂单
-        for l in self.leg_orders[self.active_leg.vt_symbol]:
-            if l[3] == Direction.SHORT:
-                min_value = min(abs(asks[:,0] - l[1]))
-                index_arr = np.where(abs(asks[:,0] - l[1]) == min_value)
-                asks[index_arr][0,1] -= l[2]
-        asks[:,1][asks[:,1] < 0] = 0
+        if self.submitting_short_oderid is not None:
+            min_value = min(abs(asks[:,0] - self.submitting_short_price))
+            index_arr = np.where(abs(asks[:,0] - self.submitting_short_price) == min_value)
+            asks[index_arr][0,1] -= min(self.submitting_short_vol, asks[index_arr][0,1])
 
         asks[:,1] = np.cumsum(asks[:,1], axis=0)
-        asks[:,1][asks[:,1] > self.spread.calculate_leg_volume(self.active_leg.vt_symbol, self.spread.max_pos * 0.1)]=0
+        asks[:,1][asks[:,1] > max_vol * self.FILT_RATIO] = 0
         n = np.count_nonzero(asks[:,1])
         bestask = asks[n,0]
 
@@ -183,12 +184,22 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
     def on_order(self, order: OrderData):
         """"""
-        if order.vt_symbol == self.active_leg.vt_symbol and order.status == Status.CANCELLED:
-            self.write_log(f'cancelled order volume: {order.volume}')
-            if order.direction == Direction.LONG:
-                self.hanging_net_pos -= order.volume
-            else:
-                self.hanging_net_pos += order.volume
+        if order.vt_symbol == self.active_leg.vt_symbol and order.status in [Status.CANCELLED, Status.REJECTED, Status.ALLTRADED]:
+            self.write_log(f'cancelled or rejected: order id: {order.vt_orderid}, volume: {order.volume}')
+
+            if order.vt_orderid == self.submitting_long_oderid:
+                self.submitting_long_oderid = None
+                self.submitting_long_price = None
+                self.submitting_long_vol = None
+            elif order.vt_orderid == self.submitting_short_oderid:
+                self.submitting_short_oderid = None
+                self.submitting_short_price = None
+                self.submitting_short_vol = None
+
+            if order.vt_orderid == self.cancel_long_orderid:
+                self.cancel_long_orderid = None
+            elif order.vt_orderid == self.cancel_short_orderid:
+                self.cancel_short_orderid = None
 
     def on_trade(self, trade: TradeData):
         """"""
@@ -197,119 +208,50 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             # Hedge passive legs if necessary
             self.hedge_passive_leg()
 
-    def long_active_leg(self, shadow_bids, bestbid, vol):
-        # 超出报价范围的原委托撤销，否则修改挂单数量
-        if bestbid > shadow_bids[0,0]:
-            for l in self.leg_orders[self.active_leg.vt_symbol]:
-                if l[3] == Direction.LONG:
-                    if l[1] > bestbid:
-                        if l[0] in self.hanging_orders:
-                            self.cancel_order(l[0])
+    def long_active_leg(self, shadow_bid, bestbid, vol):
+        # 市场最优高于要提报价格，则不报。
+        if bestbid > shadow_bid:
+            if self.submitting_long_oderid and self.cancel_long_orderid is None:
+                self.cancel_order(self.submitting_long_oderid)
+                self.cancel_long_orderid = self.submitting_long_oderid
         else:
             # 根据 bestbid 调整shadow_bids
-            n = shadow_bids[shadow_bids[:,0] > bestbid].shape[0]
-            shadow_bids[:n,1] = np.cumsum(shadow_bids[:n,1], axis=0)
-            shadow_bids = shadow_bids[n-1:,:]
-            shadow_bids[0,0] = bestbid + self.active_leg.pricetick * 2
-            # 根据调整后的shadow_bids计算挂单簿
-            cum_bids = np.cumsum(shadow_bids, axis=0)
-            cum_bids[:,1][cum_bids[:,1] > vol] = 0
-            n = np.count_nonzero(cum_bids[:,1])
-            if n == 0:
-                order_bids = shadow_bids[0,:].reshape(1,2)
-                order_bids[0,1] = vol
+            shadow_bid = bestbid + self.active_leg.pricetick * 2
+            shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
+            # 如果没有报单，则发出委托；否则取消原委托
+            if self.submitting_long_oderid is None:
+                self.submitting_long_oderid = self.send_long_order(self.active_leg.vt_symbol, shadow_bid, vol)
+                self.submitting_long_price = shadow_bid
+                self.submitting_long_vol = vol
             else:
-                order_bids = shadow_bids[:n+1,:]
-                order_bids[n,1] = vol - cum_bids[n-1,1]
-                print(order_bids)
+                if self.submitting_long_price != shadow_bid and self.cancel_long_orderid is None:
+                    self.cancel_order(self.submitting_long_oderid)
+                    self.cancel_long_orderid = self.submitting_long_oderid
 
-            for l in self.leg_orders[self.active_leg.vt_symbol]:
-                if l[3] == Direction.LONG:
-                    if (l[1] > order_bids[0,0] or l[1] < order_bids[-1,1]):
-                        if l[0] in self.hanging_orders:
-                            self.cancel_order(l[0])
-                        else:
-                            return
-                    else:
-                        min_value = min(abs(order_bids[:,0] - l[1]))
-                        index_arr = np.where(abs(order_bids[:,0] - l[1]) == min_value)      #返回的是tuble
-                        if order_bids[index_arr][0,1] < l[2]:
-                            if l[0] in self.hanging_orders:
-                                self.cancel_order(l[0])
-                            else:
-                                return
-                        else:
-                            order_bids[index_arr,1][0,1] -= l[2]
 
-            # 形成最终order_bids，发出报单
-            self.send_activeleg_order(order_bids, Direction.LONG)
-
-    def short_active_leg(self, shadow_asks, bestask, vol):
-        # 超出报价范围的原委托撤销，否则修改挂单数量
-        if bestask < shadow_asks[0,0]:
-            for l in self.leg_orders[self.active_leg.vt_symbol]:
-                if l[3] == Direction.SHORT:
-                    if l[1] < bestask:
-                        if l[0] in self.hanging_orders:
-                            self.cancel_order(l[0])
+    def short_active_leg(self, shadow_ask, bestask, vol):
+        # 市场最优低于要提报价格，则不报。
+        if bestask > shadow_ask:
+            if self.submitting_short_oderid and self.cancel_short_orderid is None:
+                self.cancel_order(self.submitting_short_oderid)
+                self.cancel_short_orderid = self.submitting_short_oderid
         else:
-            # 根据 bestbid 调整shadow_bids
-            n = shadow_asks[shadow_asks[:,0] < bestask].shape[0]
-            shadow_asks[:n,1] = np.cumsum(shadow_asks[:n,1], axis=0)
-            shadow_asks = shadow_asks[n-1:,:]
-            shadow_asks[0,0] = bestask - self.active_leg.pricetick * 2
-            # 根据调整后的shadow_bids计算挂单簿
-            cum_asks = np.cumsum(shadow_asks, axis=0)
-            cum_asks[:,1][cum_asks[:,1] > vol] = 0
-            n = np.count_nonzero(cum_asks[:,1])
-            if n == 0:
-                order_asks = shadow_asks[0,:].reshape(1,2)
-                order_asks[0,1] = vol
+            # 根据 bestask shadow_ask
+            shadow_ask = bestask - self.active_leg.pricetick * 2
+            shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
+            # 如果没有报单，则发出委托；否则取消原委托
+            if self.submitting_short_oderid is None:
+                borrow = False
+                if vol < self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free:
+                    borrow = True
+                    self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free = vol
+                self.submitting_short_oderid = self.send_short_order(self.active_leg.vt_symbol, shadow_ask, vol, borrow)
+                self.submitting_short_price = shadow_ask
+                self.submitting_short_vol = vol
             else:
-                order_asks = shadow_asks[:n+1,:]
-                order_asks[n,1] = vol - cum_asks[n-1,1]
-
-            for l in self.leg_orders[self.active_leg.vt_symbol]:
-                if l[3] == Direction.SHORT:
-                    if (l[1] > order_asks[0,0] or l[1] < order_asks[-1,1]):
-                        if l[0] in self.hanging_orders:
-                            self.cancel_order(l[0])
-                        else:
-                            return
-                    else:
-                        min_value = min(abs(order_asks[:,0] - l[1]))
-                        index_arr = np.where(abs(order_asks[:,0] - l[1]) == min_value)      #返回的是tuble
-                        if order_asks[index_arr,1][0,1] < l[2]:
-                            if l[0] in self.hanging_orders:
-                                self.cancel_order(l[0])             #或者修改原挂单，并更新委托量为0
-                            else:
-                                return
-                        else:
-                            order_asks[index_arr,1][0,1] -= l[2]
-
-            # 形成最终order_bids，发出报单
-            self.send_activeleg_order(order_asks, Direction.SHORT)
-    
-    def send_activeleg_order(self, order_arr, direction):
-        """"""
-        if direction == Direction.LONG:
-            for row in order_arr:
-                price = round_to(row[0], self.active_leg.pricetick)
-                if row[1] * row[0] > 12:
-                    self.send_long_order(self.active_leg.vt_symbol, price, row[1])
-                    self.hanging_net_pos += row[1]
-        else:
-            # 检查是否需要借款
-            sum_short_vol = order_arr[:,1].sum()
-            if sum_short_vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free:
-                self.borrow_money(sum_short_vol - self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free)
-                self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free = sum_short_vol
-
-            for row in order_arr:
-                price = round_to(row[0], self.active_leg.pricetick)
-                if row[1] * row[0] > 12:
-                    self.send_short_order(self.active_leg.vt_symbol, price, row[1])
-                    self.hanging_net_pos -= row[1]
+                if self.submitting_short_price != shadow_ask and self.cancel_short_orderid is None:
+                    self.cancel_order(self.submitting_short_oderid)
+                    self.cancel_short_orderid = self.submitting_short_oderid
 
     def hedge_passive_leg(self):
         """
@@ -343,7 +285,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
     def send_passiveleg_order(self, leg_volume: float, borrowmoney = False):
         """"""
-
         if leg_volume > 0:
             price = round_to(self.passive_leg.asks[0,0] + self.passive_leg.pricetick * self.spread.payup,self.passive_leg.pricetick)
             self.send_long_order(self.passive_leg.vt_symbol, price, leg_volume)

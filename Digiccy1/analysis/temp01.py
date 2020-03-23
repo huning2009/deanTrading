@@ -10,11 +10,14 @@ from numpy import ndarray
 from collections import defaultdict
 from typing import Dict, List, Set, Callable
 
+a = 'aaa'
+b = ['aaa']
+print(a==b)
 
-bids = np.array([[1.2,100], [1.1, 20], [1.0, 102]])
-c = bids[bids[:,0]>1.05].shape[0]
-bids[:c,1] = np.cumsum(bids[:c,1], axis=0)
-print(bids[c-1:,:])
+# bids = np.array([[1.2,100], [1.1, 20], [1.0, 102]])
+# c = bids[bids[:,0]>1.05].shape[0]
+# bids[:c,1] = np.cumsum(bids[:c,1], axis=0)
+# print(bids[c-1:,:])
 """
 print(bids[bids[:,1] > 100].shape)
 bids[:,1][bids[:,1] > 100] = 0

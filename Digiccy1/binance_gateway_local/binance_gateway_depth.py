@@ -444,8 +444,9 @@ class BinanceRestApi(RestClient):
             "newClientOrderId": orderid,
             "timeInForce": 'GTC'
         }
-        if req.borrowmoney == True:
+        if req.borrowmoney:
             params["sideEffectType"] = "MARGIN_BUY"
+            params["timeInForce"] = "IOC"
 
         self.add_request(
             method="POST",
