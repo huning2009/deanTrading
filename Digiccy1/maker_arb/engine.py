@@ -438,7 +438,7 @@ class SpreadAlgoEngine:
         # 根据self.borrowmoneys 检查是否需要还款
         margin_account_data = event.data
         leg = self.spread_engine.legs.get(margin_account_data.vt_symbol, None)
-        if not leg:
+        if not leg and margin_account_data.vt_symbol.split('.')[0] != 'USDTUSDT':
             return
 
         dt_now_minute = datetime.now().minute

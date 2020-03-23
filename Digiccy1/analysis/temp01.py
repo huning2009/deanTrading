@@ -11,12 +11,8 @@ import copy
 from collections import defaultdict
 from typing import Dict, List, Set, Callable
 
-
-b ='aaa'
-a=b
-a='asd'
-print(a)
-print(b)
+sym = 'USDTUSDT.binance'
+print(sym.split('.')[0])
 """
 bids = np.array([[1.2,100], [1.1, 20], [1.0, 102]])
 print(bids)
