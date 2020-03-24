@@ -350,7 +350,7 @@ class SpreadAlgoEngine:
             for spread in self.spread_engine.spreads.values():
                 d = dict()
                 for leg in spread.legs.values():
-                    d[leg.vt_symbol] = leg.last_price
+                    d[leg.vt_symbol] = leg.bids[0,0]
 
                 timer_msg = "TIMER CHECK %s %s: %s, spead_pos: %s, active_leg_net_pos: %s, passive_leg_net_pos: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), spread.name, d, spread.net_pos, spread.active_leg.net_pos, spread.passive_leg.net_pos)
                 self.write_log(timer_msg)
