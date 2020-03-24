@@ -17,7 +17,7 @@ from DatabaseManage.init_sqlite import get_sqlite, init_models
 db = get_sqlite('info.db')
 DbContractData, DbAccountData, DbBarData = init_models(db)
 
-symbol='XTZUSDT'
+symbol='LINKUSDT'
 fu_symbol = symbol
 # buy = -33
 # short = 33

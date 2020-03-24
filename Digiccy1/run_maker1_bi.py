@@ -21,7 +21,7 @@ from Digiccy1.maker_arb import SpreadEngine
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 binance_setting = load_json("connect_binance.json")
-setting_filename = "maker_setting1_bi_test.json"
+setting_filename = "maker_setting1_bi.json"
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 event_engine = EventEngine()
