@@ -17,16 +17,16 @@ from DatabaseManage.init_sqlite import get_sqlite, init_models
 db = get_sqlite('info.db')
 DbContractData, DbAccountData, DbBarData = init_models(db)
 
-symbol='BCH200327'
-fu_symbol = 'BCH200626'
+symbol='BCHUSDT'
+fu_symbol = symbol
 # buy = -33
 # short = 33
-exchange='HBDM'
-futures_exchange='HBDM'
-start_time = dtt.datetime.now() - dtt.timedelta(days=60)
+exchange='BINANCE'
+futures_exchange='BINANCEFUTURES'
+start_time = dtt.datetime.now() - dtt.timedelta(days=10)
 
 print(dtt.datetime.now())
-data = DbBarData.select().where((DbBarData.symbol==symbol) & (DbBarData.exchange==exchange) & (DbBarData.datetime>start_time))
+data = DbBarData.select().where((DbBarData.symbol==symbol) & (DbBarData.exchange==exchange) & (DbBarData.datetime>start_time) & (DbBarData.interval=='1m'))
 print(dtt.datetime.now())
 # df = pd.DataFrame([model_to_dict(bar) for bar in data])
 df = pd.DataFrame([bar.to_dict() for bar in data])
@@ -40,7 +40,7 @@ print(btc_binance_df.tail)
 
 
 print(dtt.datetime.now())
-data = DbBarData.select().where((DbBarData.symbol==fu_symbol) & (DbBarData.exchange==futures_exchange) & (DbBarData.datetime>start_time))
+data = DbBarData.select().where((DbBarData.symbol==fu_symbol) & (DbBarData.exchange==futures_exchange) & (DbBarData.datetime>start_time) & (DbBarData.interval=='1m'))
 print(dtt.datetime.now())
 df = pd.DataFrame([bar.to_dict() for bar in data])
 # df = pd.DataFrame([model_to_dict(bar) for bar in data])

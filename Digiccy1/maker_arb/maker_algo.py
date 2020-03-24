@@ -15,8 +15,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     """"""
     algo_name = "SpreadMaker"
     SELL_BUY_RATIO = 2
-    FILT_RATIO = 0.1
-    COMMISSION = (0.0015 + 0.0005) * 2
+    FILT_RATIO = 0.6
+    COMMISSION = (0.0008 + 0.0005) * 2
 
     def __init__(
         self,
@@ -140,7 +140,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         cumshadow_bids[:,1][cumshadow_bids[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_bids[:,1])
 
-        shadow_coverbid = (cumshadow_bids[n,0] - self.passive_leg.pricetick * self.payup) * (1-self.COMMISSION + self.spread.cover_price)
+        shadow_coverbid = (cumshadow_bids[n,0] - self.passive_leg.pricetick * self.payup) * (1 + self.spread.cover_price)
 
         return shadow_coverbid
 
@@ -151,7 +151,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         cumshadow_asks[:,1][cumshadow_asks[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_asks[:,1])
 
-        shadow_sellask = (cumshadow_asks[n,0] + self.passive_leg.pricetick * self.spread.payup) * (1 + self.COMMISSION + self.spread.sell_price)
+        shadow_sellask = (cumshadow_asks[n,0] + self.passive_leg.pricetick * self.spread.payup) * (1 + self.spread.sell_price)
 
         return shadow_sellask
 
