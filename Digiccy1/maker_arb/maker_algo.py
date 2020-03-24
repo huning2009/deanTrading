@@ -247,7 +247,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 self.cancel_long_orderid = self.submitting_long_oderid
         else:
             # 根据 bestbid 调整shadow_bids
-            shadow_bid = bestbid + self.active_leg.pricetick * 2
+            # shadow_bid = bestbid + self.active_leg.pricetick * 2
             shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_long_oderid is None:
@@ -274,7 +274,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 self.cancel_short_orderid = self.submitting_short_oderid
         else:
             # 根据 bestask shadow_ask
-            shadow_ask = bestask - self.active_leg.pricetick * 2
+            # shadow_ask = bestask - self.active_leg.pricetick * 2
             shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_short_oderid is None:
