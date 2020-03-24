@@ -441,9 +441,9 @@ class SpreadAlgoEngine:
         if not leg and margin_account_data.vt_symbol.split('.')[0] != 'USDTUSDT':
             return
 
-        dt_now_minute = datetime.now().minute
+        dt_now = datetime.now()
         
-        if dt_now_minute >= 55:
+        if dt_now.minute >= 55 and (dt_now.hour > 21 or dt_now.hour < 12):
             if margin_account_data.borrowed > 0 and margin_account_data.free > 0:
                 amount = min(margin_account_data.borrowed, margin_account_data.free)
                 gateway_name = margin_account_data.gateway_name
