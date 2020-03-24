@@ -60,6 +60,7 @@ class Exchange(Enum):
     BITMEX = "BITMEX"
     OKEX = "OKEX"
     HUOBI = "HUOBI"
+    HBDM = "HBDM"
     BITFINEX = "BITFINEX"
     BINANCE = "BINANCE"
     BINANCEFUTURES = "BINANCEFUTURES"

@@ -9,9 +9,10 @@ from myUtility import round_to
 from .template import SpreadAlgoTemplate
 from .base import SpreadData
 
+
 class SpreadTakerAlgo(SpreadAlgoTemplate):
     """"""
-    algo_name = "FuturesSpotSpread"
+    algo_name = "SpreadTaker"
     SPREAD_LONG = 1
     SPREAD_SHORT = 2
     SELL_BUY_RATIO = 2
@@ -38,7 +39,7 @@ class SpreadTakerAlgo(SpreadAlgoTemplate):
         check_hedge_finished = self.hedge_passive_leg()
         if not check_hedge_finished:
             return
-        print(f"slgo on_tick: {tick.vt_symbol}")
+
         # Otherwise check if should take active leg
         if (self.spread.net_pos >= 0 and
             self.spread.net_pos < self.spread.max_pos and

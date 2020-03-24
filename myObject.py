@@ -2,7 +2,7 @@
 from datetime import datetime
 from dataclasses import dataclass
 from logging import INFO
-
+from numpy import ndarray
 from myConstant import Direction, Exchange, Interval, Offset, Status, Product, OptionType, OrderType
 
 ACTIVE_STATUSES = set([Status.SUBMITTING, Status.NOTTRADED, Status.PARTTRADED])
@@ -148,6 +148,27 @@ class TickData(BaseData):
     ask_volume_4: float = 0
     ask_volume_5: float = 0
 
+    def __post_init__(self):
+        """"""
+        self.vt_symbol = f"{self.symbol}.{self.exchange.value}"
+
+@dataclass
+class DepthTickData(BaseData):
+    """
+    Tick data contains information about:
+        * last trade in market
+        * orderbook snapshot
+        * intraday market statistics.
+    """
+
+    symbol: str
+    exchange: Exchange
+    datetime: datetime
+
+    name: str = ""
+
+    bids = []
+    asks = []
     def __post_init__(self):
         """"""
         self.vt_symbol = f"{self.symbol}.{self.exchange.value}"

@@ -227,4 +227,4 @@ class LogEngine:
         Process log event.
         """
         log = event.data
-        self.logger.log(log.level, log.msg)
+        self.logger.log(log.level, log.gateway_name + " " + log.msg)

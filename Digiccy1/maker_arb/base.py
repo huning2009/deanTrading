@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from functools import lru_cache
 
-from myObject import TickData, PositionData, TradeData, ContractData, BarData
+from myObject import TickData, DepthTickData, PositionData, TradeData, ContractData, BarData
 from myConstant import Direction, Offset, Exchange, Interval
 from myUtility import floor_to, ceil_to, round_to, extract_vt_symbol
 
@@ -22,10 +22,8 @@ class LegData:
         self.vt_symbol: str = vt_symbol
 
         # Price and position data
-        self.bid_price: float = 0
-        self.ask_price: float = 0
-        self.bid_volume: float = 0
-        self.ask_volume: float = 0
+        self.bids = None
+        self.asks = None
 
         self.long_pos: float = 0
         self.short_pos: float = 0
@@ -35,7 +33,7 @@ class LegData:
         self.net_pos_price: float = 0       # Average entry price of net position
 
         # Tick data buf
-        self.tick: TickData = None
+        self.tick: DepthTickData = None
 
         # Contract data
         self.size: float = 0
@@ -47,17 +45,14 @@ class LegData:
         self.size = contract.size
         self.net_position = contract.net_position
         self.min_volume = contract.min_volume
+        self.pricetick = contract.pricetick
 
     def update_tick(self, tick: TickData):
         """"""
         # print(f"leg update_tick {tick.vt_symbol}")
-        self.bid_price = tick.bid_price_1
-        self.ask_price = tick.ask_price_1
-        self.bid_volume = tick.bid_volume_1
-        self.ask_volume = tick.ask_volume_1
-        self.last_price = tick.last_price
-
-        self.tick = tick
+        self.bids = tick.bids
+        self.asks = tick.asks
+        
     def update_position(self, position: PositionData):
         """"""
         if position.direction == Direction.NET:
@@ -177,14 +172,15 @@ class SpreadData:
                 self.passive_leg=leg
 
         # Spread data
-        self.bid_price: float = 0
-        self.ask_price: float = 0
-        self.bid_volume: float = 0
-        self.ask_volume: float = 0
+        # self.bid_price: float = 0
+        # self.ask_price: float = 0
+        # self.bid_volume: float = 0
+        # self.ask_volume: float = 0
 
         self.net_pos: float = 0
         self.datetime: datetime = None
 
+    """
     def calculate_price(self):
         """"""
         self.clear_price()
@@ -245,6 +241,7 @@ class SpreadData:
         # Update calculate time
         self.datetime = datetime.now()
         # print(self.name + str(self.bid_price)+":"+str(self.ask_price))
+    """
     def calculate_pos(self):
         """"""
         long_pos = 0
@@ -328,22 +325,6 @@ class SpreadData:
             spread_volume = ceil_to(spread_volume, self.min_volume)
 
         return spread_volume
-
-    def to_tick(self):
-        """"""
-        tick = TickData(
-            symbol=self.name,
-            exchange=Exchange.LOCAL,
-            datetime=self.datetime,
-            name=self.name,
-            last_price=(self.bid_price + self.ask_price) / 2,
-            bid_price_1=self.bid_price,
-            ask_price_1=self.ask_price,
-            bid_volume_1=self.bid_volume,
-            ask_volume_1=self.ask_volume,
-            gateway_name="SPREAD"
-        )
-        return tick
 
     def is_inverse(self, vt_symbol: str) -> bool:
         """"""

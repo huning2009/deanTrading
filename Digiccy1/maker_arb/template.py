@@ -33,7 +33,7 @@ class SpreadAlgoTemplate:
         self.traded_volume: float = 0           # Volume traded (Abs value)
 
         # self.leg_traded: Dict[str, float] = defaultdict(int)
-        self.leg_orders: Dict[str, List[str]] = defaultdict(list)
+        self.leg_orders: Dict[str, list] = defaultdict(list)
 
         self.write_log(f"算法已启动,max_pos: {self.spread.max_pos}, buy_price: {self.spread.buy_price}, sell_price: {self.spread.sell_price}, short_price: {self.spread.short_price}, cover_price: {self.spread.cover_price}")
 
@@ -130,12 +130,10 @@ class SpreadAlgoTemplate:
         """"""
         # print('algo template update_order, order.is_active:%s' % order.is_active())
         if not order.is_active():
-            vt_orderids = self.leg_orders[order.vt_symbol]
-            if order.vt_orderid in vt_orderids:
-                vt_orderids.remove(order.vt_orderid)
+            for l in self.leg_orders[order.vt_symbol]:
+                if order.vt_orderid == l[0]:
+                    self.leg_orders[order.vt_symbol].remove(l)
 
-            # if order.vt_orderid in self.active_short_orderids:
-            #     self.active_short_orderids.remove(order.vt_orderid)
         self.on_order(order)
 
     def update_timer(self):
@@ -159,11 +157,13 @@ class SpreadAlgoTemplate:
 
     def send_long_order(self, vt_symbol: str, price: float, volume: float):
         """"""
-        self.send_order(vt_symbol, price, volume, Direction.LONG)
+        vt_orderids = self.send_order(vt_symbol, price, volume, Direction.LONG)
+        return vt_orderids
 
     def send_short_order(self, vt_symbol: str, price: float, volume: float, borrowmoney=False):
         """"""
-        self.send_order(vt_symbol, price, volume, Direction.SHORT, borrowmoney)
+        vt_orderids = self.send_order(vt_symbol, price, volume, Direction.SHORT, borrowmoney)
+        return vt_orderids
 
     def send_order(
         self,
@@ -193,7 +193,7 @@ class SpreadAlgoTemplate:
             borrowmoney
         )
 
-        self.leg_orders[vt_symbol].extend(vt_orderids)
+        self.leg_orders[vt_symbol].extend([[vt_orderid, price, volume, direction] for vt_orderid in vt_orderids])
 
         msg = "发出委托，{}，{}，{}@{}".format(
             vt_symbol,
@@ -203,81 +203,83 @@ class SpreadAlgoTemplate:
         )
         self.write_log(msg)
 
+        return vt_orderids[0]
     def cancel_leg_order(self, vt_symbol: str):
         """"""
-        for vt_orderid in self.leg_orders[vt_symbol]:
-            self.algo_engine.cancel_order(self, vt_orderid)
+        for d in self.leg_orders[vt_symbol]:
+            self.cancel_order(d[0])            
 
-    def cancel_all_order(self):
+    def cancel_order(self, vt_orderid: str):
         """"""
-        for vt_symbol in self.leg_orders.keys():
-            self.cancel_leg_order(vt_symbol)
+        self.algo_engine.cancel_order(self, vt_orderid)
 
-    def cancel_all_order_but_active_short(self):
-        """"""
-        for vt_symbol in self.leg_orders.keys():
-            for vt_orderid in self.leg_orders[vt_symbol]:
-                if vt_orderid not in self.active_short_orderids:
-                    self.algo_engine.cancel_order(self, vt_orderid)
-                    self.write_log("cancel_all_order_but_active_short: %s" % vt_orderid)
-    def cancel_active_short_order(self):
-        for vt_orderid in self.leg_orders[self.spread.active_leg.vt_symbol]:
-            if vt_orderid in self.active_short_orderids:
-                self.algo_engine.cancel_order(self, vt_orderid)
-                self.write_log("cancel_active_short_order: %s" % vt_orderid)
+    # def cancel_all_order(self):
+    #     """"""
+    #     for vt_symbol in self.leg_orders.keys():
+    #         self.cancel_leg_order(vt_symbol)
 
-    def calculate_traded(self):
-        """"""
-        self.traded = 0
-        # print('algo template calculate_traded>>>>')
-        for n, leg in enumerate(self.spread.legs.values()):
-            leg_traded = self.leg_traded[leg.vt_symbol]
-            trading_multiplier = self.spread.trading_multipliers[
-                leg.vt_symbol]
+    # def cancel_all_order_but_active_short(self):
+    #     """"""
+    #     for vt_symbol in self.leg_orders.keys():
+    #         for vt_orderid in self.leg_orders[vt_symbol]:
+    #             if vt_orderid not in self.active_short_orderids:
+    #                 self.algo_engine.cancel_order(self, vt_orderid)
+    #                 self.write_log("cancel_all_order_but_active_short: %s" % vt_orderid)
+    # def cancel_active_short_order(self):
+    #     for vt_orderid in self.leg_orders[self.spread.active_leg.vt_symbol]:
+    #         if vt_orderid in self.active_short_orderids:
+    #             self.algo_engine.cancel_order(self, vt_orderid)
+    #             self.write_log("cancel_active_short_order: %s" % vt_orderid)
 
-            adjusted_leg_traded = leg_traded / trading_multiplier
-            adjusted_leg_traded = round_to(
-                adjusted_leg_traded, self.spread.min_volume)
+    # def calculate_traded(self):
+    #     """"""
+    #     self.traded = 0
+    #     # print('algo template calculate_traded>>>>')
+    #     for n, leg in enumerate(self.spread.legs.values()):
+    #         leg_traded = self.leg_traded[leg.vt_symbol]
+    #         trading_multiplier = self.spread.trading_multipliers[
+    #             leg.vt_symbol]
 
-            if adjusted_leg_traded > 0:
-                adjusted_leg_traded = floor_to(
-                    adjusted_leg_traded, self.spread.min_volume)
-            else:
-                adjusted_leg_traded = ceil_to(
-                    adjusted_leg_traded, self.spread.min_volume)
+    #         adjusted_leg_traded = leg_traded / trading_multiplier
+    #         adjusted_leg_traded = round_to(
+    #             adjusted_leg_traded, self.spread.min_volume)
 
-            if not n:
-                self.traded = adjusted_leg_traded
-            else:
-                if adjusted_leg_traded > 0:
-                    self.traded = min(self.traded, adjusted_leg_traded)
-                elif adjusted_leg_traded < 0:
-                    self.traded = max(self.traded, adjusted_leg_traded)
-                else:
-                    self.traded = 0
+    #         if adjusted_leg_traded > 0:
+    #             adjusted_leg_traded = floor_to(
+    #                 adjusted_leg_traded, self.spread.min_volume)
+    #         else:
+    #             adjusted_leg_traded = ceil_to(
+    #                 adjusted_leg_traded, self.spread.min_volume)
 
-        self.traded_volume = abs(self.traded)
+    #         if not n:
+    #             self.traded = adjusted_leg_traded
+    #         else:
+    #             if adjusted_leg_traded > 0:
+    #                 self.traded = min(self.traded, adjusted_leg_traded)
+    #             elif adjusted_leg_traded < 0:
+    #                 self.traded = max(self.traded, adjusted_leg_traded)
+    #             else:
+    #                 self.traded = 0
 
-        if self.traded == self.target:
-            self.status = Status.ALLTRADED
-            # print("algo calculate_traded: %s status is ALLTRADE" % self.algoid)
-        elif not self.traded:
-            self.status = Status.NOTTRADED
-            # print("algo calculate_traded: %s status is NOTTRADED" % self.algoid)
-        else:
-            self.status = Status.PARTTRADED
-            # print("algo calculate_traded: %s status is PARTTRADED" % self.algoid)
+    #     self.traded_volume = abs(self.traded)
 
-    def get_tick(self, vt_symbol: str) -> TickData:
-        """"""
-        return self.algo_engine.get_tick(vt_symbol)
+    #     if self.traded_volume == self.spread.max_pos:
+    #         self.status = Status.ALLTRADED
+    #         print("algo calculate_traded: %s status is ALLTRADE" % self.algoid)
+    #     elif not self.traded_volume:
+    #         self.status = Status.NOTTRADED
+    #         print("algo calculate_traded: %s status is NOTTRADED" % self.algoid)
+    #     else:
+    #         self.status = Status.PARTTRADED
+    #         print("algo calculate_traded: %s status is PARTTRADED" % self.algoid)
 
     def get_contract(self, vt_symbol: str) -> ContractData:
         """"""
         return self.algo_engine.get_contract(vt_symbol)
 
-    def borrow_money(self):
-        pass
+    def borrow_money(self, amount):
+        asset = self.spread.active_leg.vt_symbol.replace("USDT", "")
+        self.algo_engine.spread_engine.borrow_money(asset, amount, self.get_contract(self.spread.active_leg.vt_symbol).gateway_name)
 
     @virtual
     def on_tick(self, tick: TickData):

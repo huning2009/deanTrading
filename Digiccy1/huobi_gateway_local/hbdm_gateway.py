@@ -15,7 +15,7 @@ from datetime import datetime
 from threading import Lock
 from typing import Sequence
 
-from myEvent import Event
+from myEvent import Event, EVENT_TIMER
 from myApi.rest import RestClient, Request
 from myApi.websocket import WebsocketClient
 from myConstant import (
@@ -41,8 +41,6 @@ from myObject import (
     SubscribeRequest,
     HistoryRequest
 )
-from myEvent import EVENT_TIMER
-
 
 REST_HOST = "https://api.hbdm.com"
 WEBSOCKET_DATA_HOST = "wss://www.hbdm.com/ws"               # Market Data
@@ -573,8 +571,6 @@ class HbdmRestApi(RestClient):
                 history_data=True,
                 gateway_name=self.gateway_name,
             )
-            print("hbdm contacts:" + "*"*30)
-            print(contract.__dict__)
             self.gateway.on_contract(contract)
 
             symbol_type_map[contract.symbol] = d["contract_type"]
@@ -746,7 +742,7 @@ class HbdmWebsocketApiBase(WebsocketClient):
         params.update(create_signature(self.key, "GET", self.sign_host, self.path, self.secret))
         return self.send_packet(params)
 
-    def on_login(self, packet):
+    def on_login(self):
         """"""
         pass
 

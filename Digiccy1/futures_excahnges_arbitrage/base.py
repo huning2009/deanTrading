@@ -50,7 +50,6 @@ class LegData:
 
     def update_tick(self, tick: TickData):
         """"""
-        # print(f"leg update_tick {tick.vt_symbol}")
         self.bid_price = tick.bid_price_1
         self.ask_price = tick.ask_price_1
         self.bid_volume = tick.bid_volume_1
@@ -127,7 +126,6 @@ class SpreadData:
     def __init__(
         self,
         name: str,
-        algo_name: str,
         legs: List[LegData],
         price_multipliers: Dict[str, int],
         trading_multipliers: Dict[str, int],
@@ -144,7 +142,6 @@ class SpreadData:
     ):
         """"""
         self.name: str = name
-        self.algo_name: str = algo_name
 
         self.legs: Dict[str, LegData] = {}
         self.active_leg: LegData = None
