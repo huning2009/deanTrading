@@ -42,7 +42,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.cancel_long_orderid = None
         self.cancel_short_orderid = None
 
-    def on_tick(self, tick: TickData):
+    def on_tick(self):
         """"""
         if (self.active_leg.bids is None) or (self.passive_leg.bids is None):
             return
@@ -189,22 +189,40 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
     def on_order(self, order: OrderData):
         """"""
-        if order.vt_symbol == self.active_leg.vt_symbol and order.status in [Status.CANCELLED, Status.REJECTED, Status.ALLTRADED]:
-            self.write_log(f'cancelled or rejected: order id: {order.vt_orderid}, volume: {order.volume}')
+        if order.vt_symbol == self.active_leg.vt_symbol:
+            if order.status in [Status.REJECTED, Status.ALLTRADED]:
+                self.write_log(f'rejected or alltrade: order id: {order.vt_orderid}, volume: {order.volume}')
 
-            if order.vt_orderid == self.submitting_long_oderid:
-                self.submitting_long_oderid = None
-                self.submitting_long_price = None
-                self.submitting_long_vol = None
-            elif order.vt_orderid == self.submitting_short_oderid:
-                self.submitting_short_oderid = None
-                self.submitting_short_price = None
-                self.submitting_short_vol = None
+                if order.vt_orderid == self.submitting_long_oderid:
+                    self.submitting_long_oderid = None
+                    self.submitting_long_price = None
+                    self.submitting_long_vol = None
+                elif order.vt_orderid == self.submitting_short_oderid:
+                    self.submitting_short_oderid = None
+                    self.submitting_short_price = None
+                    self.submitting_short_vol = None
 
-            if order.vt_orderid == self.cancel_long_orderid:
-                self.cancel_long_orderid = None
-            elif order.vt_orderid == self.cancel_short_orderid:
-                self.cancel_short_orderid = None
+                if order.vt_orderid == self.cancel_long_orderid:
+                    self.cancel_long_orderid = None
+                elif order.vt_orderid == self.cancel_short_orderid:
+                    self.cancel_short_orderid = None
+
+            elif order.status == Status.CANCELLED:
+                if order.vt_orderid == self.submitting_long_oderid:
+                    self.submitting_long_oderid = None
+                    self.submitting_long_price = None
+                    self.submitting_long_vol = None
+                elif order.vt_orderid == self.submitting_short_oderid:
+                    self.submitting_short_oderid = None
+                    self.submitting_short_price = None
+                    self.submitting_short_vol = None
+
+                if order.vt_orderid == self.cancel_long_orderid:
+                    self.cancel_long_orderid = None
+                elif order.vt_orderid == self.cancel_short_orderid:
+                    self.cancel_short_orderid = None
+
+                self.on_tick()
 
     def on_trade(self, trade: TradeData):
         """"""
