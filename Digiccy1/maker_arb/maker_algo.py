@@ -224,6 +224,14 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
                 self.on_tick()
 
+        else:
+            if order.status == Status.CANCELLED:
+                if order.direction == Direction.LONG:
+                    vol = order.volume - order.traded
+                else:
+                    vol = -(order.volume - order.traded)
+                self.send_passiveleg_order(vol, PAYUPN=2)
+
     def on_trade(self, trade: TradeData):
         """"""
          # Only care active leg order update
@@ -253,7 +261,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 self.submitting_long_price = shadow_bid
                 self.submitting_long_vol = vol
             else:
-                if abs(self.submitting_long_price - shadow_bid) > self.active_leg.pricetick*3 and self.cancel_long_orderid is None:
+                if abs(self.submitting_long_price - shadow_bid) > self.active_leg.pricetick * 2 and self.cancel_long_orderid is None:
                     self.cancel_order(self.submitting_long_oderid)
                     self.cancel_long_orderid = self.submitting_long_oderid
 
@@ -321,11 +329,11 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         return True
 
-    def send_passiveleg_order(self, leg_volume: float, borrowmoney = False):
+    def send_passiveleg_order(self, leg_volume: float, borrowmoney = False, PAYUPN=0):
         """"""
         if leg_volume > 0:
-            price = round_to(self.passive_leg.asks[0,0] + self.passive_leg.pricetick * self.spread.payup,self.passive_leg.pricetick)
+            price = round_to(self.passive_leg.asks[0,0] + self.passive_leg.pricetick * (self.payup + PAYUPN),self.passive_leg.pricetick)
             self.send_long_order(self.passive_leg.vt_symbol, price, leg_volume)
         elif leg_volume < 0:
-            price = round_to(self.spread.passive_leg.bids[0,0] - self.passive_leg.pricetick * self.spread.payup,self.passive_leg.pricetick)
+            price = round_to(self.spread.passive_leg.bids[0,0] - self.passive_leg.pricetick * (self.payup + PAYUPN),self.passive_leg.pricetick)
             self.send_short_order(self.passive_leg.vt_symbol, price, abs(leg_volume))
