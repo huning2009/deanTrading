@@ -42,7 +42,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.cancel_long_orderid = None
         self.cancel_short_orderid = None
 
-    def on_tick(self):
+    def on_tick(self, tick=None):
         """"""
         if (self.active_leg.bids is None) or (self.passive_leg.bids is None):
             return
