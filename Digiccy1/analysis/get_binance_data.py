@@ -78,7 +78,7 @@ endtime = datetime.now()
 starttime = endtime - timedelta(days=12)
 
 # symbol_l1 = ['BTCUSDT', 'EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT', 'ETHUSDT', 'ETCUSDT']
-symbol_l1 = ['LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT', 'ETHUSDT', 'ETCUSDT']
+symbol_l1 = ['BNBUSDT', 'LINKUSDT', 'XTZUSDT', 'ETHUSDT', 'ETCUSDT']
 symbol_l = ['TRXUSDT', 'ADAUSDT', 'ATOMUSDT', 'XMRUSDT', 'DASHUSDT']
 l = ['BSV200327', 'BSV200626']
 l1 = ['bsvusdt']

@@ -253,7 +253,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 self.submitting_long_price = shadow_bid
                 self.submitting_long_vol = vol
             else:
-                if self.submitting_long_price != shadow_bid and self.cancel_long_orderid is None:
+                if abs(self.submitting_long_price - shadow_bid) > self.active_leg.pricetick*3 and self.cancel_long_orderid is None:
                     self.cancel_order(self.submitting_long_oderid)
                     self.cancel_long_orderid = self.submitting_long_oderid
 
@@ -287,7 +287,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 if borrow:
                     self.cancel_short_orderid = self.submitting_short_oderid
             else:
-                if self.submitting_short_price != shadow_ask and self.cancel_short_orderid is None:
+                if abs(self.submitting_short_price - shadow_ask) > self.active_leg.pricetick*3 and self.cancel_short_orderid is None:
                     self.cancel_order(self.submitting_short_oderid)
                     self.cancel_short_orderid = self.submitting_short_oderid
 
