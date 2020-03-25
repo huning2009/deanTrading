@@ -259,12 +259,12 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     self.write_log(f"lower then 9th bids, cancel order, oder_id: {self.cancel_long_orderid}, 9th bids: {self.active_leg.bids[9,0]}, shadow_bid: {shadow_bid}", level=DEBUG)
         # 开始报价
         elif self.active_leg.bids[9,0] < shadow_bid:
-            if shadow_bid > bestbid:
-                # 根据 bestbid 调整shadow_bids
-                shadow_bid = bestbid + self.active_leg.pricetick * 2
-                shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
-            else:
-                shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
+            # if shadow_bid > bestbid:
+            #     # 根据 bestbid 调整shadow_bids
+            #     shadow_bid = bestbid + self.active_leg.pricetick * 2
+            #     shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
+            # else:
+            shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
 
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_long_dict['order_id'] is None:
@@ -302,12 +302,12 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     self.write_log(f"higher then 9th asks, cancel order, oder_id: {self.cancel_short_orderid}, 9th ask: {self.active_leg.asks[9,0]}, shadow_ask :{shadow_ask}", level=DEBUG)
         # 开始报价
         elif self.active_leg.asks[9,0] > shadow_ask:
-            if shadow_ask < bestask:
-                # 根据 bestask shadow_ask
-                shadow_ask = bestask - self.active_leg.pricetick * 2
-                shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
-            else:
-                shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
+            # if shadow_ask < bestask:
+            #     # 根据 bestask shadow_ask
+            #     shadow_ask = bestask - self.active_leg.pricetick * 2
+            #     shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
+            # else:
+            shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_short_dict['order_id'] is None:
                 # 不足最小金额，立即返回

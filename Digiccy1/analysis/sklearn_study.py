@@ -17,10 +17,10 @@ d = np.column_stack((X,Y))
 在numpy中，选择行/列，如果不加：，则返回的是一维数组；加上：，则返回的是二维数组
 print(d[:,4:][:5])
 """
-
+print(d[-5:])
 text_encode = preprocessing.OneHotEncoder()
 d_ft = text_encode.fit_transform(d[:, -1:])
-print(d_ft[0,0])
+print()
 
 # l = np.array([1,2,3,4,5]).reshape(1,-1)
 # print(l.mean(axis=1))

@@ -25,7 +25,7 @@ setting_filename = "maker_setting1_bi.json"
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 event_engine = EventEngine()
-log_engine = LogEngine(event_engine, log_level=INFO, log_name='fsa1')
+log_engine = LogEngine(event_engine, log_level=CRITICAL, log_name='fsa1')
 
 fsa_engine = SpreadEngine(event_engine, setting_filename)
 

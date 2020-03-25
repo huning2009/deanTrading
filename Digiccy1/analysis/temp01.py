@@ -12,8 +12,8 @@ from collections import defaultdict
 from typing import Dict, List, Set, Callable
 
 
-d = defaultdict(str)
-print(d['a'] is None)
+arr = np.random.ranf()
+print(arr)
 
 
 """ list index
