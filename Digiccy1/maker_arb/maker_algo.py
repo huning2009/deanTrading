@@ -256,7 +256,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 if self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
                     self.cancel_order(self.submitting_long_dict['order_id'])
                     self.cancel_long_orderid = self.submitting_long_dict['order_id']
-                    self.write_log(f"lower then 9th bids, cancel order")
+                    self.write_log(f"lower then 9th bids, cancel order, oder_id: {self.cancel_long_orderid}, 9th bids: {self.active_leg.bids[9,0]}, shadow_bid: {shadow_bid}", level=DEBUG)
         # 开始报价
         else:
             if shadow_bid > bestbid:
@@ -283,6 +283,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     if abs(self.submitting_long_dict['price'] - shadow_bid) > self.active_leg.pricetick * 3 and self.cancel_long_orderid is None:
                         self.cancel_order(self.submitting_long_dict['order_id'])
                         self.cancel_long_orderid = self.submitting_long_dict['order_id']
+                        self.write_log(f"long more than 3 tick, last short: {self.submitting_long_dict['price']}, this shadow_bid: {shadow_bid}")
 
 
     def short_active_leg(self, shadow_ask, bestask, vol):
@@ -292,7 +293,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 if self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
                     self.cancel_order(self.submitting_short_dict['order_id'])
                     self.cancel_short_orderid = self.submitting_short_dict['order_id']
-                    self.write_log(f"higher then 9th asks, cancel order")
+                    self.write_log(f"higher then 9th asks, cancel order, oder_id: {self.cancel_short_orderid}, 9th ask: {self.active_leg.asks[9,0]}, shadow_ask :{shadow_ask}", level=DEBUG)
         # 开始报价
         else:
             if shadow_ask < bestask:
@@ -325,6 +326,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.pricetick*3 and self.cancel_short_orderid is None:
                         self.cancel_order(self.submitting_short_dict['order_id'])
                         self.cancel_short_orderid = self.submitting_short_dict['order_id']
+                        self.write_log(f"short more than 3 tick, last short: {self.submitting_short_dict['price']}, this shadow_ask: {shadow_ask}")
 
 
     def hedge_passive_leg(self):
