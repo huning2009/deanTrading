@@ -256,6 +256,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 if self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
                     self.cancel_order(self.submitting_long_dict['order_id'])
                     self.cancel_long_orderid = self.submitting_long_dict['order_id']
+                    self.write_log(f"lower then 9th bids, cancel order")
         # 开始报价
         else:
             if shadow_bid > bestbid:
@@ -264,6 +265,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
             else:
                 shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
+
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_long_dict['order_id'] is None:
                 # 不足最小金额，立即返回
@@ -290,6 +292,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 if self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
                     self.cancel_order(self.submitting_short_dict['order_id'])
                     self.cancel_short_orderid = self.submitting_short_dict['order_id']
+                    self.write_log(f"higher then 9th asks, cancel order")
         # 开始报价
         else:
             if shadow_ask < bestask:
