@@ -270,7 +270,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             if self.submitting_long_dict['order_id'] is None:
                 # 可用资金不足，调整数量
                 if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free:
-                    vol = self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free
+                    vol = self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free * 0.9
                 # 不足最小金额，立即返回
                 if shadow_bid * vol < 12:
                     return
