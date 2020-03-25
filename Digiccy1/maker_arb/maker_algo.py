@@ -15,7 +15,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     """"""
     algo_name = "SpreadMaker"
     SELL_BUY_RATIO = 2
-    FILT_RATIO = 0.6
+    FILT_RATIO = 0.1
     COMMISSION = 0.0008 + 0.0004
 
     def __init__(
