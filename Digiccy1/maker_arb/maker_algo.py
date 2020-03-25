@@ -33,7 +33,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.payup = self.spread.payup
 
         self.submitting_long_dict = {}   # key: orderid (None or orderid), status, price, vol, traded
+        self.submitting_long_dict['order_id'] = None
         self.submitting_short_dict = {}
+        self.submitting_short_dict['order_id'] = None
 
         self.cancel_long_orderid = None
         self.cancel_short_orderid = None

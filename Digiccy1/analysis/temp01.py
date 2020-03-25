@@ -12,10 +12,8 @@ from collections import defaultdict
 from typing import Dict, List, Set, Callable
 
 
-d = defaultdict(list)
-d['a'] = 'asdas'
-if not d['b']:
-    print(d['a'])
+d = defaultdict(str)
+print(d['a'] is None)
 
 
 """ list index
