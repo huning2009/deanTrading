@@ -191,7 +191,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         """"""
         if order.vt_symbol == self.active_leg.vt_symbol:
             if order.status in [Status.REJECTED, Status.ALLTRADED]:
-                self.write_log(f'rejected or alltrade: order id: {order.vt_orderid}, volume: {order.volume}')
+                self.write_log(f'rejected or alltrade: order id: {order.vt_orderid}, volume: {order.volume}', level=DEBUG)
 
                 if order.vt_orderid == self.submitting_long_oderid:
                     self.submitting_long_oderid = None
@@ -208,6 +208,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     self.cancel_short_orderid = None
 
             elif order.status == Status.CANCELLED:
+                self.write_log(f'cancel: order id: {order.vt_orderid}, volume: {order.volume}', level=DEBUG)
+
                 if order.vt_orderid == self.submitting_long_oderid:
                     self.submitting_long_oderid = None
                     self.submitting_long_price = None

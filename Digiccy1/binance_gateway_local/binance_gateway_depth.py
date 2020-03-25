@@ -965,7 +965,7 @@ class BinanceTradeWebsocketApi(WebsocketClient):
         )
 
         self.gateway.on_order(order)
-        msg = f"Websocket get order response: {order.vt_orderid}"
+        msg = f"Websocket get order response: {order.vt_orderid}, status: {order.status}, packet status: {packet['X']}"
         self.gateway.write_log(msg, level=DEBUG)
         # Push trade event
         trade_volume = float(packet["l"])

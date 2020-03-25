@@ -20,12 +20,12 @@ from Digiccy1.binance_gateway_local import BinanceDepthGateway, BinanceFuturesDe
 from Digiccy1.maker_arb import SpreadEngine
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-binance_setting = load_json("connect_binance.json")
-setting_filename = "maker_setting1_bi.json"
+binance_setting = load_json("connect_binance_huqh109.json")
+setting_filename = "maker_setting1_bi_test.json"
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 event_engine = EventEngine()
-log_engine = LogEngine(event_engine, log_level=INFO, log_name='fsa1')
+log_engine = LogEngine(event_engine, log_level=DEBUG, log_name='fsa1_test')
 
 fsa_engine = SpreadEngine(event_engine, setting_filename)
 
