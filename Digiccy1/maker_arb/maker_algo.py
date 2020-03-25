@@ -271,7 +271,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 # 可用资金不足，调整数量
                 if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free:
                     vol = self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free
-                    self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free = 0
                 # 不足最小金额，立即返回
                 if shadow_bid * vol < 12:
                     return
@@ -314,12 +313,12 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 borrow = False
                 if vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free:
                     # 可借不足，调整数量
-                    if vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow:
-                        vol = self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow * 0.9
+                    if (vol-self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free) > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow:
+                        vol = self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free + self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow * 0.9
 
                     borrow = True
-                    self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free += vol
-                    self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow -= vol
+                    self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free = vol
+                    self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow -= (vol-self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free)
 
                 # 不足最小金额，立即返回
                 if shadow_ask * vol < 12:
