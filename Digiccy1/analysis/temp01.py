@@ -13,9 +13,9 @@ from typing import Dict, List, Set, Callable
 
 
 d = defaultdict(list)
-d['a'].append(1)
-print(d)
-
+d['a'] = 'asdas'
+if not d['b']:
+    print(d['a'])
 
 
 """ list index

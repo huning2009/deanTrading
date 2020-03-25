@@ -1,0 +1,2 @@
+binance gateway 设计，所有报单回报通过websocket推送，后期有优化空间。
+当报单回报未回来时，发送撤单委托会范围unknow order,类型未REJECT，同样会推送到on_order里面

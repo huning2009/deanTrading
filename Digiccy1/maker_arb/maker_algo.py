@@ -32,12 +32,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.max_pos = self.spread.max_pos
         self.payup = self.spread.payup
 
-        self.submitting_long_oderid = None
-        self.submitting_long_price = None
-        self.submitting_long_vol = None
-        self.submitting_short_oderid = None
-        self.submitting_short_price = None
-        self.submitting_short_vol = None
+        self.submitting_long_dict = {}   # key: orderid (None or orderid), status, price, vol, traded
+        self.submitting_short_dict = {}
 
         self.cancel_long_orderid = None
         self.cancel_short_orderid = None
@@ -160,10 +156,10 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         """"""
         bids = copy.copy(self.active_leg.bids)
         # 去掉自己挂单
-        if self.submitting_long_oderid is not None:
-            min_value = min(abs(bids[:,0] - self.submitting_long_price))
-            index_arr = np.where(abs(bids[:,0] - self.submitting_long_price) == min_value)
-            bids[index_arr][0,1] -= min(self.submitting_long_vol, bids[index_arr][0,1])
+        if self.submitting_long_dict['order_id'] is not None:
+            min_value = min(abs(bids[:,0] - self.submitting_long_dict['price']))
+            index_arr = np.where(abs(bids[:,0] - self.submitting_long_dict['price']) == min_value)
+            bids[index_arr][0,1] -= min(self.submitting_long_dict['vol'], bids[index_arr][0,1])
         # 
         bids[:,1] = np.cumsum(bids[:,1], axis=0)
         bids[:,1][bids[:,1] > max_vol * self.FILT_RATIO] = 0
@@ -175,10 +171,10 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         """"""
         asks = copy.copy(self.active_leg.asks)
         # 去掉自己挂单
-        if self.submitting_short_oderid is not None:
-            min_value = min(abs(asks[:,0] - self.submitting_short_price))
-            index_arr = np.where(abs(asks[:,0] - self.submitting_short_price) == min_value)
-            asks[index_arr][0,1] -= min(self.submitting_short_vol, asks[index_arr][0,1])
+        if self.submitting_short_dict['order_id'] is not None:
+            min_value = min(abs(asks[:,0] - self.submitting_short_dict['price']))
+            index_arr = np.where(abs(asks[:,0] - self.submitting_short_dict['price']) == min_value)
+            asks[index_arr][0,1] -= min(self.submitting_short_dict['vol'], asks[index_arr][0,1])
 
         asks[:,1] = np.cumsum(asks[:,1], axis=0)
         asks[:,1][asks[:,1] > max_vol * self.FILT_RATIO] = 0
@@ -193,14 +189,16 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             if order.status in [Status.REJECTED, Status.ALLTRADED]:
                 self.write_log(f'rejected or alltrade: order id: {order.vt_orderid}, volume: {order.volume}', level=DEBUG)
 
-                if order.vt_orderid == self.submitting_long_oderid:
-                    self.submitting_long_oderid = None
-                    self.submitting_long_price = None
-                    self.submitting_long_vol = None
-                elif order.vt_orderid == self.submitting_short_oderid:
-                    self.submitting_short_oderid = None
-                    self.submitting_short_price = None
-                    self.submitting_short_vol = None
+                if order.vt_orderid == self.submitting_long_dict['order_id']:
+                    self.submitting_long_dict['order_id'] = None
+                    self.submitting_long_dict['price'] = None
+                    self.submitting_long_dict['status'] = None
+                    self.submitting_long_dict['vol'] = None
+                elif order.vt_orderid == self.submitting_short_dict['order_id']:
+                    self.submitting_short_dict['order_id'] = None
+                    self.submitting_short_dict['price'] = None
+                    self.submitting_short_dict['status'] = None
+                    self.submitting_short_dict['vol'] = None
 
                 if order.vt_orderid == self.cancel_long_orderid:
                     self.cancel_long_orderid = None
@@ -210,14 +208,16 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             elif order.status == Status.CANCELLED:
                 self.write_log(f'cancel: order id: {order.vt_orderid}, volume: {order.volume}', level=DEBUG)
 
-                if order.vt_orderid == self.submitting_long_oderid:
-                    self.submitting_long_oderid = None
-                    self.submitting_long_price = None
-                    self.submitting_long_vol = None
-                elif order.vt_orderid == self.submitting_short_oderid:
-                    self.submitting_short_oderid = None
-                    self.submitting_short_price = None
-                    self.submitting_short_vol = None
+                if order.vt_orderid == self.submitting_long_dict['order_id']:
+                    self.submitting_long_dict['order_id'] = None
+                    self.submitting_long_dict['price'] = None
+                    self.submitting_long_dict['status'] = None
+                    self.submitting_long_dict['vol'] = None
+                elif order.vt_orderid == self.submitting_short_dict['order_id']:
+                    self.submitting_short_dict['order_id'] = None
+                    self.submitting_short_dict['price'] = None
+                    self.submitting_short_dict['status'] = None
+                    self.submitting_short_dict['vol'] = None
 
                 if order.vt_orderid == self.cancel_long_orderid:
                     self.cancel_long_orderid = None
@@ -225,6 +225,12 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     self.cancel_short_orderid = None
 
                 self.on_tick()
+            
+            elif order.status == Status.NOTTRADED:
+                if order.vt_orderid == self.submitting_long_dict['order_id']:
+                    self.submitting_long_dict['status'] = Status.NOTTRADED
+                elif order.vt_orderid == self.submitting_short_dict['order_id']:
+                    self.submitting_short_dict['status'] = Status.NOTTRADED
 
         else:
             if order.status == Status.CANCELLED:
@@ -242,44 +248,56 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.hedge_passive_leg()
 
     def long_active_leg(self, shadow_bid, bestbid, vol):
-        # 市场最优高于要提报价格，则不报。
-        if bestbid > shadow_bid:
-            if self.submitting_long_oderid and self.cancel_long_orderid is None:
-                self.cancel_order(self.submitting_long_oderid)
-                self.cancel_long_orderid = self.submitting_long_oderid
+        # 10档价格高于预报价，则不报。
+        if self.active_leg.bids[9,0] > shadow_bid:
+            if self.submitting_long_dict['order_id'] and self.cancel_long_orderid is None:
+                if self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
+                    self.cancel_order(self.submitting_long_dict['order_id'])
+                    self.cancel_long_orderid = self.submitting_long_dict['order_id']
+        # 开始报价
         else:
-            # 根据 bestbid 调整shadow_bids
-            # shadow_bid = bestbid + self.active_leg.pricetick * 2
-            shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
+            if shadow_bid > bestbid:
+                # 根据 bestbid 调整shadow_bids
+                shadow_bid = bestbid + self.active_leg.pricetick * 2
+                shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
+            else:
+                shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
             # 如果没有报单，则发出委托；否则取消原委托
-            if self.submitting_long_oderid is None:
+            if self.submitting_long_dict['order_id'] is None:
                 # 不足最小金额，立即返回
                 if shadow_bid * vol < 12:
                     return
                 # 可用资金不足，立即返回
                 if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free:
                     return
-                self.submitting_long_oderid = self.send_long_order(self.active_leg.vt_symbol, shadow_bid, vol)
-                self.submitting_long_price = shadow_bid
-                self.submitting_long_vol = vol
+                self.submitting_long_dict['order_id'] = self.send_long_order(self.active_leg.vt_symbol, shadow_bid, vol)
+                self.submitting_long_dict['price'] = shadow_bid
+                self.submitting_long_dict['status'] = Status.SUBMITTING
+                self.submitting_long_dict['vol'] = vol
             else:
-                if abs(self.submitting_long_price - shadow_bid) > self.active_leg.pricetick * 2 and self.cancel_long_orderid is None:
-                    self.cancel_order(self.submitting_long_oderid)
-                    self.cancel_long_orderid = self.submitting_long_oderid
+                if self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
+                    if abs(self.submitting_long_dict['price'] - shadow_bid) > self.active_leg.pricetick * 3 and self.cancel_long_orderid is None:
+                        self.cancel_order(self.submitting_long_dict['order_id'])
+                        self.cancel_long_orderid = self.submitting_long_dict['order_id']
 
 
     def short_active_leg(self, shadow_ask, bestask, vol):
-        # 市场最优低于要提报价格，则不报。
-        if bestask < shadow_ask:
-            if self.submitting_short_oderid and self.cancel_short_orderid is None:
-                self.cancel_order(self.submitting_short_oderid)
-                self.cancel_short_orderid = self.submitting_short_oderid
+        # 10档报价低于要提报价格，则不报。
+        if self.active_leg.asks[9,0] < shadow_ask:
+            if self.submitting_short_dict['order_id'] and self.cancel_short_orderid is None:
+                if self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
+                    self.cancel_order(self.submitting_short_dict['order_id'])
+                    self.cancel_short_orderid = self.submitting_short_dict['order_id']
+        # 开始报价
         else:
-            # 根据 bestask shadow_ask
-            # shadow_ask = bestask - self.active_leg.pricetick * 2
-            shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
+            if shadow_ask < bestask:
+                # 根据 bestask shadow_ask
+                shadow_ask = bestask - self.active_leg.pricetick * 2
+                shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
+            else:
+                shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
             # 如果没有报单，则发出委托；否则取消原委托
-            if self.submitting_short_oderid is None:
+            if self.submitting_short_dict['order_id'] is None:
                 # 不足最小金额，立即返回
                 if shadow_ask * vol < 12:
                     return
@@ -291,15 +309,18 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     borrow = True
                     self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free += vol
                     self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow -= vol
-                self.submitting_short_oderid = self.send_short_order(self.active_leg.vt_symbol, shadow_ask, vol, borrow)
-                self.submitting_short_price = shadow_ask
-                self.submitting_short_vol = vol
+                self.submitting_short_dict['order_id'] = self.send_short_order(self.active_leg.vt_symbol, shadow_ask, vol, borrow)
+                self.submitting_short_dict['price'] = shadow_ask
+                self.submitting_short_dict['status'] = Status.SUBMITTING
+                self.submitting_short_dict['vol'] = vol
                 if borrow:
-                    self.cancel_short_orderid = self.submitting_short_oderid
+                    self.cancel_short_orderid = self.submitting_short_dict['order_id']
             else:
-                if abs(self.submitting_short_price - shadow_ask) > self.active_leg.pricetick*3 and self.cancel_short_orderid is None:
-                    self.cancel_order(self.submitting_short_oderid)
-                    self.cancel_short_orderid = self.submitting_short_oderid
+                if self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
+                    if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.pricetick*3 and self.cancel_short_orderid is None:
+                        self.cancel_order(self.submitting_short_dict['order_id'])
+                        self.cancel_short_orderid = self.submitting_short_dict['order_id']
+
 
     def hedge_passive_leg(self):
         """
