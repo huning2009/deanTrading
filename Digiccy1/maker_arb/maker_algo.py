@@ -268,13 +268,13 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_long_dict['order_id'] is None:
-                # 不足最小金额，立即返回
-                if shadow_bid * vol < 12:
-                    return
                 # 可用资金不足，调整数量
                 if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free:
                     vol = self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free
                     self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free = 0
+                # 不足最小金额，立即返回
+                if shadow_bid * vol < 12:
+                    return
                 self.submitting_long_dict['order_id'] = self.send_long_order(self.active_leg.vt_symbol, shadow_bid, vol)
                 self.submitting_long_dict['price'] = shadow_bid
                 self.submitting_long_dict['status'] = Status.SUBMITTING
@@ -311,18 +311,20 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_short_dict['order_id'] is None:
-                # 不足最小金额，立即返回
-                if shadow_ask * vol < 12:
-                    return
                 borrow = False
                 if vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free:
                     # 可借不足，调整数量
                     if vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow:
-                        vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow * 0.9
+                        vol = self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow * 0.9
 
                     borrow = True
                     self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free += vol
                     self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow -= vol
+
+                # 不足最小金额，立即返回
+                if shadow_ask * vol < 12:
+                    return
+
                 self.submitting_short_dict['order_id'] = self.send_short_order(self.active_leg.vt_symbol, shadow_ask, vol, borrow)
                 self.submitting_short_dict['price'] = shadow_ask
                 self.submitting_short_dict['status'] = Status.SUBMITTING
