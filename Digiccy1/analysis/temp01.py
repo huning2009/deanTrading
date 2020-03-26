@@ -11,6 +11,11 @@ import copy
 from collections import defaultdict
 from typing import Dict, List, Set, Callable
 
+l = [1,2,3,4,5,6]
+s = pd.Series(l)
+print(s.diff(2))
+
+
 """  timestamp to str
 ts = 1585181656515
 dt = dtt.datetime.fromtimestamp(ts/1000)

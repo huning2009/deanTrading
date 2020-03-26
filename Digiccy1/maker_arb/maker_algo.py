@@ -379,5 +379,5 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             price = round_to(self.passive_leg.asks[0,0] * (1 + self.payup * PAYUPN),self.passive_leg.pricetick)
             self.send_long_order(self.passive_leg.vt_symbol, price, leg_volume)
         elif leg_volume < 0:
-            price = round_to(self.spread.passive_leg.bids[0,0] * (1 - self.payup * PAYUPN),self.passive_leg.pricetick)
+            price = round_to(self.passive_leg.bids[0,0] * (1 - self.payup * PAYUPN),self.passive_leg.pricetick)
             self.send_short_order(self.passive_leg.vt_symbol, price, abs(leg_volume))
