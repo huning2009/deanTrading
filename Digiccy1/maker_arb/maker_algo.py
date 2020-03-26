@@ -15,7 +15,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     """"""
     algo_name = "SpreadMaker"
     SELL_BUY_RATIO = 2
-    FILT_RATIO = 0.1
+    FILT_RATIO = 1
     COMMISSION = 0.0008 + 0.0004
 
     def __init__(
@@ -250,15 +250,15 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.hedge_passive_leg()
 
     def long_active_leg(self, shadow_bid, bestbid, vol):
-        # 10档价格高于预报价，则不报。
-        if self.active_leg.bids[19,0] > shadow_bid:
-            if self.submitting_long_dict['order_id'] and self.cancel_long_orderid is None:
-                if self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                    self.cancel_order(self.submitting_long_dict['order_id'])
-                    self.cancel_long_orderid = self.submitting_long_dict['order_id']
-                    self.write_log(f"lower then 9th bids, cancel order, oder_id: {self.cancel_long_orderid}, 9th bids: {self.active_leg.bids[9,0]}, shadow_bid: {shadow_bid}", level=DEBUG)
+        # # 10档价格高于预报价，则不报。
+        # if self.active_leg.bids[19,0] > shadow_bid:
+        #     if self.submitting_long_dict['order_id'] and self.cancel_long_orderid is None:
+        #         if self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
+        #             self.cancel_order(self.submitting_long_dict['order_id'])
+        #             self.cancel_long_orderid = self.submitting_long_dict['order_id']
+        #             self.write_log(f"lower then 9th bids, cancel order, oder_id: {self.cancel_long_orderid}, 9th bids: {self.active_leg.bids[9,0]}, shadow_bid: {shadow_bid}", level=DEBUG)
         # 开始报价
-        elif self.active_leg.bids[9,0] < shadow_bid:
+        if bestbid < shadow_bid:
             # if shadow_bid > bestbid:
             #     # 根据 bestbid 调整shadow_bids
             #     shadow_bid = bestbid + self.active_leg.pricetick * 2
@@ -280,28 +280,28 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 self.submitting_long_dict['vol'] = vol
             else:
                 if self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                    if abs(self.submitting_long_dict['price'] - shadow_bid) > self.active_leg.bids[0,0] * 0.0002 and self.cancel_long_orderid is None:
+                    if (abs(self.submitting_long_dict['price'] - shadow_bid) > shadow_bid * 0.0002) and self.cancel_long_orderid is None:
                         self.cancel_order(self.submitting_long_dict['order_id'])
                         self.cancel_long_orderid = self.submitting_long_dict['order_id']
-                        self.write_log(f"long more than 3 tick, last short: {self.submitting_long_dict['price']}, this shadow_bid: {shadow_bid}")
+                        self.write_log(f"long more than 2%%, last long: {self.submitting_long_dict['price']}, this shadow_bid: {shadow_bid}")
 
         else:
-            if self.submitting_long_dict['order_id'] and self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                 if abs(self.submitting_long_dict['price'] - shadow_bid) >  self.active_leg.bids[0,0] * 0.0002 and self.cancel_long_orderid is None:
+            if self.submitting_long_dict['order_id'] and self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED] and self.cancel_long_orderid is None:
+                if (abs(self.submitting_long_dict['price'] - shadow_bid) > shadow_bid * 0.0002) and self.cancel_long_orderid is None:
                     self.cancel_order(self.submitting_long_dict['order_id'])
                     self.cancel_long_orderid = self.submitting_long_dict['order_id']
-                    self.write_log(f"<9-19> long more than 3 tick, last short: {self.submitting_long_dict['price']}, this shadow_bid: {shadow_bid}")
+                    self.write_log(f"price out bestbid: {bestbid}, long more than 3 tick, last long: {self.submitting_long_dict['price']}, this shadow_bid: {shadow_bid}")
 
     def short_active_leg(self, shadow_ask, bestask, vol):
-        # 10档报价低于要提报价格，则不报。
-        if self.active_leg.asks[19,0] < shadow_ask:
-            if self.submitting_short_dict['order_id'] and self.cancel_short_orderid is None:
-                if self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                    self.cancel_order(self.submitting_short_dict['order_id'])
-                    self.cancel_short_orderid = self.submitting_short_dict['order_id']
-                    self.write_log(f"higher then 9th asks, cancel order, oder_id: {self.cancel_short_orderid}, 9th ask: {self.active_leg.asks[9,0]}, shadow_ask :{shadow_ask}", level=DEBUG)
+        # # 10档报价低于要提报价格，则不报。
+        # if self.active_leg.asks[19,0] < shadow_ask:
+        #     if self.submitting_short_dict['order_id'] and self.cancel_short_orderid is None:
+        #         if self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
+        #             self.cancel_order(self.submitting_short_dict['order_id'])
+        #             self.cancel_short_orderid = self.submitting_short_dict['order_id']
+        #             self.write_log(f"higher then 9th asks, cancel order, oder_id: {self.cancel_short_orderid}, 9th ask: {self.active_leg.asks[9,0]}, shadow_ask :{shadow_ask}", level=DEBUG)
         # 开始报价
-        elif self.active_leg.asks[9,0] > shadow_ask:
+        if bestask > shadow_ask:
             # if shadow_ask < bestask:
             #     # 根据 bestask shadow_ask
             #     shadow_ask = bestask - self.active_leg.pricetick * 2
@@ -332,16 +332,16 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     self.cancel_short_orderid = self.submitting_short_dict['order_id']
             else:
                 if self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                    if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.asks[0,0]*0.00015 and self.cancel_short_orderid is None:
+                    if (abs(self.submitting_short_dict['price'] - shadow_ask) > shadow_ask*0.0002) and self.cancel_short_orderid is None:
                         self.cancel_order(self.submitting_short_dict['order_id'])
                         self.cancel_short_orderid = self.submitting_short_dict['order_id']
-                        self.write_log(f"short more than 3 tick, last short: {self.submitting_short_dict['price']}, this shadow_ask: {shadow_ask}")
+                        self.write_log(f"short more than 2%%, last short: {self.submitting_short_dict['price']}, this shadow_ask: {shadow_ask}")
         else:
-            if self.submitting_short_dict['order_id'] and self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.asks[0,0]*0.0002 and self.cancel_short_orderid is None:
+            if self.submitting_short_dict['order_id'] and self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED] and self.cancel_short_orderid is None:
+                if (abs(self.submitting_short_dict['price'] - shadow_ask) > shadow_ask*0.0002) and self.cancel_short_orderid is None:
                     self.cancel_order(self.submitting_short_dict['order_id'])
                     self.cancel_short_orderid = self.submitting_short_dict['order_id']
-                    self.write_log(f"<9-19> short more than 3 tick, last short: {self.submitting_short_dict['price']}, this shadow_ask: {shadow_ask}")
+                    self.write_log(f"price out, bestask: {bestask} short more than 3 tick, last short: {self.submitting_short_dict['price']}, this shadow_ask: {shadow_ask}")
 
     def hedge_passive_leg(self):
         """
