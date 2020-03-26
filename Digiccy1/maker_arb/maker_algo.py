@@ -280,14 +280,14 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 self.submitting_long_dict['vol'] = vol
             else:
                 if self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                    if abs(self.submitting_long_dict['price'] - shadow_bid) > self.active_leg.bids[0,0] * 0.00015 and self.cancel_long_orderid is None:
+                    if abs(self.submitting_long_dict['price'] - shadow_bid) > self.active_leg.bids[0,0] * 0.0002 and self.cancel_long_orderid is None:
                         self.cancel_order(self.submitting_long_dict['order_id'])
                         self.cancel_long_orderid = self.submitting_long_dict['order_id']
                         self.write_log(f"long more than 3 tick, last short: {self.submitting_long_dict['price']}, this shadow_bid: {shadow_bid}")
 
         else:
             if self.submitting_long_dict['order_id'] and self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                 if abs(self.submitting_long_dict['price'] - shadow_bid) > self.active_leg.pricetick * 3 and self.cancel_long_orderid is None:
+                 if abs(self.submitting_long_dict['price'] - shadow_bid) >  self.active_leg.bids[0,0] * 0.0002 and self.cancel_long_orderid is None:
                     self.cancel_order(self.submitting_long_dict['order_id'])
                     self.cancel_long_orderid = self.submitting_long_dict['order_id']
                     self.write_log(f"<9-19> long more than 3 tick, last short: {self.submitting_long_dict['price']}, this shadow_bid: {shadow_bid}")
@@ -332,13 +332,13 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     self.cancel_short_orderid = self.submitting_short_dict['order_id']
             else:
                 if self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                    if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.bids[0,0]*0.00015 and self.cancel_short_orderid is None:
+                    if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.asks[0,0]*0.00015 and self.cancel_short_orderid is None:
                         self.cancel_order(self.submitting_short_dict['order_id'])
                         self.cancel_short_orderid = self.submitting_short_dict['order_id']
                         self.write_log(f"short more than 3 tick, last short: {self.submitting_short_dict['price']}, this shadow_ask: {shadow_ask}")
         else:
             if self.submitting_short_dict['order_id'] and self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.pricetick*3 and self.cancel_short_orderid is None:
+                if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.asks[0,0]*0.0002 and self.cancel_short_orderid is None:
                     self.cancel_order(self.submitting_short_dict['order_id'])
                     self.cancel_short_orderid = self.submitting_short_dict['order_id']
                     self.write_log(f"<9-19> short more than 3 tick, last short: {self.submitting_short_dict['price']}, this shadow_ask: {shadow_ask}")
