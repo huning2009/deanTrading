@@ -11,10 +11,11 @@ import copy
 from collections import defaultdict
 from typing import Dict, List, Set, Callable
 
-
-arr = np.random.ranf()
-print(arr)
-
+"""  timestamp to str
+ts = 1585181656515
+dt = dtt.datetime.fromtimestamp(ts/1000)
+print(dt.strftime("%Y-%m-%d %H:%M:%S.%f"))
+"""
 
 """ list index
 

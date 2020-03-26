@@ -114,7 +114,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # print(f'n = {n}')
         # print(cumshadow_bids)
         # print(self.passive_leg.bids)
-        shadow_buybid = (cumshadow_bids[n,0] - self.passive_leg.pricetick * self.payup) * (1-self.COMMISSION + self.spread.buy_price)
+        shadow_buybid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup + self.spread.buy_price)
 
         return shadow_buybid
 
@@ -127,7 +127,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # print(f'n = {n}')
         # print(cumshadow_asks)
         # print(self.passive_leg.asks)
-        shadow_shortask = (cumshadow_asks[n,0] + self.passive_leg.pricetick * self.payup) * (1 + self.COMMISSION + self.spread.short_price)
+        shadow_shortask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup + self.spread.short_price)
 
         return shadow_shortask
 
@@ -138,7 +138,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         cumshadow_bids[:,1][cumshadow_bids[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_bids[:,1])
 
-        shadow_coverbid = (cumshadow_bids[n,0] - self.passive_leg.pricetick * self.payup) * (1 - self.COMMISSION + self.spread.cover_price)
+        shadow_coverbid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup + self.spread.cover_price)
 
         return shadow_coverbid
 
@@ -149,7 +149,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         cumshadow_asks[:,1][cumshadow_asks[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_asks[:,1])
 
-        shadow_sellask = (cumshadow_asks[n,0] + self.passive_leg.pricetick * self.payup) * (1 + self.COMMISSION + self.spread.sell_price)
+        shadow_sellask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup + self.spread.sell_price)
 
         return shadow_sellask
 
@@ -240,7 +240,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     vol = order.volume - order.traded
                 else:
                     vol = -(order.volume - order.traded)
-                self.send_passiveleg_order(vol, PAYUPN=2)
+                self.send_passiveleg_order(vol, PAYUPN=1.5)
 
     def on_trade(self, trade: TradeData):
         """"""
@@ -280,7 +280,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 self.submitting_long_dict['vol'] = vol
             else:
                 if self.submitting_long_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                    if abs(self.submitting_long_dict['price'] - shadow_bid) > self.active_leg.pricetick * 3 and self.cancel_long_orderid is None:
+                    if abs(self.submitting_long_dict['price'] - shadow_bid) > self.active_leg.bids[0,0] * 0.00015 and self.cancel_long_orderid is None:
                         self.cancel_order(self.submitting_long_dict['order_id'])
                         self.cancel_long_orderid = self.submitting_long_dict['order_id']
                         self.write_log(f"long more than 3 tick, last short: {self.submitting_long_dict['price']}, this shadow_bid: {shadow_bid}")
@@ -332,7 +332,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                     self.cancel_short_orderid = self.submitting_short_dict['order_id']
             else:
                 if self.submitting_short_dict['status'] in [Status.NOTTRADED, Status.PARTTRADED]:
-                    if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.pricetick*3 and self.cancel_short_orderid is None:
+                    if abs(self.submitting_short_dict['price'] - shadow_ask) > self.active_leg.bids[0,0]*0.00015 and self.cancel_short_orderid is None:
                         self.cancel_order(self.submitting_short_dict['order_id'])
                         self.cancel_short_orderid = self.submitting_short_dict['order_id']
                         self.write_log(f"short more than 3 tick, last short: {self.submitting_short_dict['price']}, this shadow_ask: {shadow_ask}")
@@ -373,11 +373,11 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         return True
 
-    def send_passiveleg_order(self, leg_volume: float, borrowmoney = False, PAYUPN=0):
+    def send_passiveleg_order(self, leg_volume: float, borrowmoney = False, PAYUPN=1):
         """"""
         if leg_volume > 0:
-            price = round_to(self.passive_leg.asks[0,0] + self.passive_leg.pricetick * (self.payup + PAYUPN),self.passive_leg.pricetick)
+            price = round_to(self.passive_leg.asks[0,0] * (1 + self.payup * PAYUPN),self.passive_leg.pricetick)
             self.send_long_order(self.passive_leg.vt_symbol, price, leg_volume)
         elif leg_volume < 0:
-            price = round_to(self.spread.passive_leg.bids[0,0] - self.passive_leg.pricetick * (self.payup + PAYUPN),self.passive_leg.pricetick)
+            price = round_to(self.spread.passive_leg.bids[0,0] * (1 - self.payup * PAYUPN),self.passive_leg.pricetick)
             self.send_short_order(self.passive_leg.vt_symbol, price, abs(leg_volume))
