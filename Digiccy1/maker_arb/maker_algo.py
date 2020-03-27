@@ -114,6 +114,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # print(f'n = {n}')
         # print(cumshadow_bids)
         # print(self.passive_leg.bids)
+        if n ==20:
+            self.write_log(cumshadow_bids)
+            n = 19
         shadow_buybid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup + self.spread.buy_price)
 
         return shadow_buybid
@@ -127,6 +130,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # print(f'n = {n}')
         # print(cumshadow_asks)
         # print(self.passive_leg.asks)
+        if n ==20:
+            self.write_log(cumshadow_asks)
+            n = 19
         shadow_shortask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup + self.spread.short_price)
 
         return shadow_shortask
