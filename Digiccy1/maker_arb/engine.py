@@ -9,6 +9,7 @@ from copy import copy
 from pathlib import Path
 from datetime import datetime, timedelta
 import math
+from logging import DEBUG, INFO, CRITICAL
 
 from myEvent import (
     EventEngine, 
@@ -353,7 +354,7 @@ class SpreadAlgoEngine:
                     d[leg.vt_symbol] = leg.bids[0,0]
 
                 timer_msg = "TIMER CHECK %s %s: %s, spead_pos: %s, active_leg_net_pos: %s, passive_leg_net_pos: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), spread.name, d, spread.net_pos, spread.active_leg.net_pos, spread.passive_leg.net_pos)
-                self.write_log(timer_msg)
+                self.write_log(timer_msg, level=CRITICAL)
 
     def process_tick_event(self, event: Event) -> None:
         """"""
