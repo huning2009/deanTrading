@@ -3,6 +3,7 @@ from typing import Any
 from datetime import datetime
 import numpy as np
 import copy
+from logging import DEBUG, INFO, CRITICAL
 
 from myConstant import Direction, Offset, Status
 from myObject import (TickData, OrderData, TradeData)
@@ -115,7 +116,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # print(cumshadow_bids)
         # print(self.passive_leg.bids)
         if n ==20:
-            self.write_log(cumshadow_bids)
+            self.write_log(cumshadow_bids, level=CRITICAL)
             n = 19
         shadow_buybid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup + self.spread.buy_price)
 
@@ -131,7 +132,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # print(cumshadow_asks)
         # print(self.passive_leg.asks)
         if n ==20:
-            self.write_log(cumshadow_asks)
+            self.write_log(cumshadow_asks, level=CRITICAL)
             n = 19
         shadow_shortask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup + self.spread.short_price)
 
@@ -143,6 +144,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         cumshadow_bids[:,1] = np.cumsum(cumshadow_bids[:,1], axis=0)
         cumshadow_bids[:,1][cumshadow_bids[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_bids[:,1])
+        if n ==20:
+            self.write_log(cumshadow_bids, level=CRITICAL)
+            n = 19
 
         shadow_coverbid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup + self.spread.cover_price)
 
@@ -154,7 +158,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         cumshadow_asks[:,1] = np.cumsum(cumshadow_asks[:,1], axis=0)
         cumshadow_asks[:,1][cumshadow_asks[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_asks[:,1])
-
+        if n ==20:
+            self.write_log(cumshadow_asks, level=CRITICAL)
+            n = 19
         shadow_sellask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup + self.spread.sell_price)
 
         return shadow_sellask
@@ -172,6 +178,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         bids[:,1] = np.cumsum(bids[:,1], axis=0)
         bids[:,1][bids[:,1] > max_vol * self.FILT_RATIO] = 0
         n = np.count_nonzero(bids[:,1])
+        if n ==20:
+            self.write_log(bids, level=CRITICAL)
+            n = 19
         bestbid = bids[n,0]
         return bestbid
 
@@ -187,6 +196,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         asks[:,1] = np.cumsum(asks[:,1], axis=0)
         asks[:,1][asks[:,1] > max_vol * self.FILT_RATIO] = 0
         n = np.count_nonzero(asks[:,1])
+        if n ==20:
+            self.write_log(asks, level=CRITICAL)
+            n = 19
         bestask = asks[n,0]
 
         return bestask
