@@ -30,8 +30,8 @@ conn = sqlite3.connect("E:\\Desktop\\deanTrading\\.vntrader\\info.db")
 symbol = 'BTCUSDT'
 spotexchange = Exchange.BINANCE.value
 futuresexchange = Exchange.BINANCEFUTURES.value
-sql = f"select * from dbbardata where symbol='{symbol}' and exchange='{spotexchange}' and interval='1m' order by datetime DESC limit 10000"
-sql2 = f"select * from dbbardata where symbol='{symbol}' and exchange='{futuresexchange}' and interval='1m' order by datetime DESC limit 10000"
+sql = f"select * from dbbardata where symbol='{symbol}' and exchange='{spotexchange}' and interval='1m' order by datetime DESC limit 100000"
+sql2 = f"select * from dbbardata where symbol='{symbol}' and exchange='{futuresexchange}' and interval='1m' order by datetime DESC limit 100000"
 
 df1 = pd.read_sql(sql, conn)
 df1.set_index('datetime', inplace=True)
@@ -50,19 +50,19 @@ data['spread'] = data.iloc[:,0] - data.iloc[:,1]
 data['spread_diff'] = data['spread'].diff().rolling(20).std()
 data['spread_diff60'] = data['spread'].diff().rolling(60).std()
 data['q80'] = data['spread_diff60'].quantile(0.8)
-data['q99'] = data['spread_diff60'].quantile(0.95)
-print(data['spread_diff60'].quantile(0.9))
+data['q95'] = data['spread_diff60'].quantile(0.95)
+print(data['spread_diff60'].quantile(0.99))
 
 fig, ax = plt.subplots(1,1)
 ax.plot(data['spread_diff60'], color='g', label='prob')
-ax2 = ax.twinx()
-ax2.plot(data['spread'], color='r')
+# ax2 = ax.twinx()
+# ax2.plot(data['spread'], color='r')
 
 ax.plot(data['q80'], color='b')
-ax.plot(data['q99'], color='b')
+ax.plot(data['q95'], color='b')
 # ax4 = ax.twinx()
 # ax4.plot(data['prob'], color='r')
 # ax.hist(data['spread_diff'], bins='auto', density=True, cumulative=True)
-# plt.ylim([1,5])
+plt.ylim([0,7.5])
 plt.show()
 

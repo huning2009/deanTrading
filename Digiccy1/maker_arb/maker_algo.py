@@ -103,12 +103,12 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         print(self.std_series.shape)
         print(self.std_series[-1])
         quantile80 = np.quantile(self.std_series, 0.8)
-        quantile99 = np.quantile(self.std_series, 0.99)
+        quantile95 = np.quantile(self.std_series, 0.95)
         
         latest_std = max(self.std_series[-1], quantile80)
-        latest_std = min(latest_std, quantile99)
+        latest_std = min(latest_std, quantile95)
         # 将[quantile01, quantile09]映射到[1,10]区间
-        self.price_ratio = 9.0 / (quantile99 - quantile80) * (latest_std - quantile80) + 1.0
+        self.price_ratio = 9.0 / (quantile95 - quantile80) * (latest_std - quantile80) + 1.0
         self.write_log(f"init algo, price_ratio: {self.price_ratio}", level=DEBUG)
 
         self.trading = True
@@ -494,11 +494,11 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.std_series[-1] = new_std
             
             quantile80 = np.quantile(self.std_series, 0.8)
-            quantile99 = np.quantile(self.std_series, 0.99)
+            quantile95 = np.quantile(self.std_series, 0.95)
             new_std = max(new_std, quantile80)
-            new_std = min(new_std, quantile99)
+            new_std = min(new_std, quantile95)
             # 将[quantile01, quantile09]映射到[1,10]区间
-            self.price_ratio = 9.0 / (quantile99 - quantile80) * (new_std - quantile80) + 1.0
+            self.price_ratio = 9.0 / (quantile95 - quantile80) * (new_std - quantile80) + 1.0
 
             dtt2 = datetime.now()
             self.write_log(f"on_interval, price_ratio: {self.price_ratio}, cost time: {dtt2-dtt1}", level=DEBUG)
