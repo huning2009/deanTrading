@@ -37,7 +37,7 @@ fsa_engine.start()
 
 fsa_engine.connect(binance_setting, 'BINANCE')
 fsa_engine.connect(binance_setting, 'BINANCEFUTURES')
-fsa_engine.write_log('Gateways is connecting, and sleep 20 seconds!', level=INFO)
+fsa_engine.write_log('Gateways is connecting, and sleep 20 seconds!', level=CRITICAL)
 print('Gateways is connecting, and sleep 20 seconds!')
 sleep(30)
 

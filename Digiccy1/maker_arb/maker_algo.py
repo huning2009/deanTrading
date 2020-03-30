@@ -105,7 +105,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         latest_std = min(latest_std, quantile99)
         # 将[quantile01, quantile09]映射到[1,10]区间
         self.price_ratio = 9.0 / (quantile99 - quantile80) * (latest_std - quantile80) + 1.0
-        self.write_log(f"init algo, price_ratio: {self.price_ratio}", level=CRITICAL)
+        self.write_log(f"init algo, price_ratio: {self.price_ratio}", level=DEBUG)
 
         self.trading = True
 
@@ -486,7 +486,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.spread_series.iloc[-1] = (self.active_leg.bids[0,0] - self.passive_leg.bids[0,0] + self.active_leg.asks[0,0] - self.passive_leg.asks[0,0]) * 0.5
 
             new_std = self.spread_series[-60:].std()
-            self.write_log(f'{new_std}', level=CRITICAL)
             self.std_series[:-1] = self.std_series[1:]
             self.std_series[-1] = new_std
             
@@ -498,4 +497,4 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.price_ratio = 9.0 / (quantile99 - quantile80) * (new_std - quantile80) + 1.0
 
             dtt2 = datetime.now()
-            self.write_log(f"on_interval, price_ratio: {self.price_ratio}, cost time: {dtt2-dtt1}", level=CRITICAL)
+            self.write_log(f"on_interval, price_ratio: {self.price_ratio}, cost time: {dtt2-dtt1}", level=DEBUG)
