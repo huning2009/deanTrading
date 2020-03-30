@@ -52,6 +52,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
 
         self.trading = False
+        self.init_turn = False
 
     def init(self):
         """
@@ -108,6 +109,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.write_log(f"init algo, price_ratio: {self.price_ratio}", level=CRITICAL)
 
         self.trading = True
+        self.init_turn = True
 
     def on_tick(self, tick=None):
         """"""
@@ -473,6 +475,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.send_short_order(self.passive_leg.vt_symbol, price, abs(leg_volume))
 
     def on_interval(self):
+        if not self.init_turn:
+            self.init()
+
         if not self.trading:
             return
         self.algo_count += 1
