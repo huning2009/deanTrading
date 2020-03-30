@@ -149,7 +149,7 @@ class SpreadAlgoTemplate:
         #     self.cancel_active_short_order()
 
         # self.put_algo_event()
-        pass
+        self.on_interval()
 
     def write_log(self, msg: str, level=INFO):
         """"""

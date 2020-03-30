@@ -5,6 +5,7 @@ from sklearn import preprocessing
 from sklearn import pipeline
 from sklearn import impute
 from sklearn import decomposition
+from sklearn import feature_extraction
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -17,10 +18,18 @@ d = np.column_stack((X,Y))
 在numpy中，选择行/列，如果不加：，则返回的是一维数组；加上：，则返回的是二维数组
 print(d[:,4:][:5])
 """
+lb = preprocessing.LabelBinarizer(neg_label=-100, pos_label=100)
+new_Y = lb.fit_transform(Y)
+print(new_Y)
+
+
+
+
+
+"""
 print(d[-5:])
 text_encode = preprocessing.OneHotEncoder()
-d_ft = text_encode.fit_transform(d[:, -1:])
-print()
+d_ft = text_encode.fit_transform(d[:, -1:])"""
 
 # l = np.array([1,2,3,4,5]).reshape(1,-1)
 # print(l.mean(axis=1))

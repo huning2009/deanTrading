@@ -1,12 +1,13 @@
 from logging import DEBUG
 from typing import Any
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
+import pandas as pd
 import copy
 from logging import DEBUG, INFO, CRITICAL
 
-from myConstant import Direction, Offset, Status
-from myObject import (TickData, OrderData, TradeData)
+from myConstant import Direction, Offset, Status, Interval
+from myObject import (TickData, OrderData, TradeData, HistoryRequest)
 from myUtility import round_to
 
 from .template import SpreadAlgoTemplate
@@ -17,7 +18,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     algo_name = "SpreadMaker"
     SELL_BUY_RATIO = 2
     FILT_RATIO = 1
-    COMMISSION = 0.0008 + 0.0004
+    COMMISSION = (0.0008 + 0.0004) * 2
 
     def __init__(
         self,
@@ -41,8 +42,79 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.cancel_long_orderid = None
         self.cancel_short_orderid = None
 
+        self.spread_series = None
+        self.std_series = None
+        self.quantile1 = None
+        self.quantile9 = None
+        self.price_ratio = 1.0
+
+        self.algo_count = 0
+
+
+        self.trading = False
+
+    def init(self):
+        """
+        初始化数据
+        """
+        endtime = datetime.now()
+        starttime = endtime - timedelta(days=7)
+
+        active_contract = self.algo_engine.get_contract(self.active_leg.vt_symbol)
+        passive_contract = self.algo_engine.get_contract(self.passive_leg.vt_symbol)
+        active_gateway = self.algo_engine.spread_engine.get_gateway(active_contract.gateway_name)
+        passive_gateway = self.algo_engine.spread_engine.get_gateway(passive_contract.gateway_name)
+        
+        act_query = HistoryRequest(active_contract.symbol, active_contract.exchange, starttime, endtime, Interval.MINUTE)
+        active_his_bar = active_gateway.query_history(act_query)
+        print(f'active symbol: {active_contract.symbol}, {len(active_his_bar)}')
+        active_close_arr = np.zeros((len(active_his_bar),2))
+        active_df = pd.DataFrame(active_close_arr)
+        for i in range(len(active_his_bar)):
+            active_df.iloc[i,0] = active_his_bar[i].datetime
+            active_df.iloc[i,1] = active_his_bar[i].close_price
+
+        active_df.columns = ['datetime', 'spot_close']
+        active_df.set_index('datetime', inplace=True)
+        active_df = active_df.loc[active_df.index.drop_duplicates(keep=False), 'spot_close']
+
+        passive_query = HistoryRequest(passive_contract.symbol, passive_contract.exchange, starttime, endtime, Interval.MINUTE)
+        passive_his_bar = passive_gateway.query_history(passive_query)
+        print(f'passive symbol: {passive_contract.symbol}, {len(passive_his_bar)}')
+        pasive_close_arr = np.zeros((len(passive_his_bar),2))
+        passive_df = pd.DataFrame(pasive_close_arr)
+        for i in range(len(passive_his_bar)):
+            passive_df.iloc[i,0] = passive_his_bar[i].datetime
+            passive_df.iloc[i,1] = passive_his_bar[i].close_price
+
+        passive_df.columns = ['datetime', 'fu_close']
+        passive_df.set_index('datetime', inplace=True)
+        passive_df = passive_df.loc[passive_df.index.drop_duplicates(keep=False), 'fu_close']
+
+        data = pd.concat((active_df, passive_df), axis=1, join='inner')
+        data.sort_index(inplace=True)
+        data.columns = ['spot', 'futures']
+        print(data[-5:])
+        self.spread_series = data.iloc[:,0] - data.iloc[:,1]
+
+        self.std_series = self.spread_series.diff().rolling(60).std()
+        quantile80 = self.std_series.quantile(0.8)
+        quantile99 = self.std_series.quantile(0.99)
+        
+        latest_std = max(self.std_series.iloc[-1], quantile80)
+        latest_std = min(latest_std, quantile99)
+        # 将[quantile01, quantile09]映射到[1,10]区间
+        self.price_ratio = 9.0 / (quantile99 - quantile80) * (latest_std - quantile80) + 1.0
+        self.write_log(f"init algo, price_ratio: {self.price_ratio}", level=CRITICAL)
+
+        self.trading = True
+
     def on_tick(self, tick=None):
         """"""
+        if not self.trading:
+            return
+        else:
+            return
         if (self.active_leg.bids is None) or (self.passive_leg.bids is None):
             return
         # 首先判断是否有敞口，有则对冲
@@ -118,7 +190,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         if n ==20:
             self.write_log(cumshadow_bids, level=CRITICAL)
             n = 19
-        shadow_buybid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup + self.spread.buy_price)
+        shadow_buybid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup*2 + self.spread.buy_price)
 
         return shadow_buybid
 
@@ -131,10 +203,10 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # print(f'n = {n}')
         # print(cumshadow_asks)
         # print(self.passive_leg.asks)
-        if n ==20:
+        if n == 20:
             self.write_log(cumshadow_asks, level=CRITICAL)
             n = 19
-        shadow_shortask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup + self.spread.short_price)
+        shadow_shortask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup*2 + self.spread.short_price)
 
         return shadow_shortask
 
@@ -148,7 +220,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.write_log(cumshadow_bids, level=CRITICAL)
             n = 19
 
-        shadow_coverbid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup + self.spread.cover_price)
+        shadow_coverbid = cumshadow_bids[n,0] * (1 + self.spread.cover_price)
 
         return shadow_coverbid
 
@@ -161,7 +233,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         if n ==20:
             self.write_log(cumshadow_asks, level=CRITICAL)
             n = 19
-        shadow_sellask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup + self.spread.sell_price)
+        shadow_sellask = cumshadow_asks[n,0] * (1 + self.spread.sell_price)
 
         return shadow_sellask
 
@@ -399,3 +471,30 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         elif leg_volume < 0:
             price = round_to(self.passive_leg.bids[0,0] * (1 - self.payup * PAYUPN),self.passive_leg.pricetick)
             self.send_short_order(self.passive_leg.vt_symbol, price, abs(leg_volume))
+
+    def on_interval(self):
+        if not self.trading:
+            return
+        self.algo_count += 1
+        if self.algo_count > 60:
+            dtt1 = datetime.now()
+
+            self.algo_count = 0
+
+            self.spread_series[:-1] = self.spread_series[1:]
+            self.spread_series.iloc[-1] = (self.active_leg.bids[0,0] - self.passive_leg.bids[0,0] + self.active_leg.asks[0,0] - self.passive_leg.asks[0,0]) * 0.5
+
+            new_std = self.spread_series[-60:].std()
+            self.write_log(f'{new_std}')
+            self.std_series[:-1] = self.std_series[1:]
+            self.std_series[-1] = new_std
+            
+            quantile80 = self.std_series.quantile(0.8)
+            quantile99 = self.std_series.quantile(0.99)
+            new_std = max(new_std, quantile80)
+            new_std = min(new_std, quantile99)
+            # 将[quantile01, quantile09]映射到[1,10]区间
+            self.price_ratio = 9.0 / (quantile99 - quantile80) * (new_std - quantile80) + 1.0
+
+            dtt2 = datetime.now()
+            self.write_log(f"on_interval, price_ratio: {self.price_ratio}, cost time: {dtt2-dtt1}", level=CRITICAL)

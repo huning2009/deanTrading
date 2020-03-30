@@ -92,6 +92,10 @@ class SpreadEngine(object):
         """"""
         self.algo_engine.stop()
 
+    def init(self):
+        """"""
+        self.algo_engine.init()
+
     def load_setting(self) -> None:
         """"""
         setting = load_json(self.setting_filename)
@@ -328,6 +332,11 @@ class SpreadAlgoEngine:
         for algo in self.algos.values():
             self.stop_algo(algo)
 
+    def init(self):
+        """"""
+        for algo in self.algos.values():
+            algo.init()
+
     def register_event(self):
         """"""
         self.event_engine.register(EVENT_ORDER, self.process_order_event)
@@ -420,7 +429,7 @@ class SpreadAlgoEngine:
             req = SubscribeRequest(
                 contract.symbol, contract.exchange
             )
-            sleep(3)
+            # sleep(3)
             self.spread_engine.subscribe(req, contract.gateway_name)
             print('subscribe>>>>>>>>>>>>>>>>>>>:%s' % leg.vt_symbol)
 
@@ -444,7 +453,7 @@ class SpreadAlgoEngine:
 
         dt_now = datetime.now()
         
-        if dt_now.minute >= 59 and (dt_now.hour > 21 or dt_now.hour < 12):
+        if dt_now.minute >= 59:
             if margin_account_data.borrowed > 0 and margin_account_data.free > 0:
                 amount = min(margin_account_data.borrowed, margin_account_data.free)
                 gateway_name = margin_account_data.gateway_name
@@ -566,7 +575,7 @@ class SpreadAlgoEngine:
             self.offset_converter.update_order_request(req, vt_orderid)
             # Save relationship between orderid and algo.
             self.order_algo_map[vt_orderid] = algo
-            self.write_log(f'send_order vt_orderid: {vt_orderid}, event_engine size: {self.event_engine.get_qsize()}')
+            self.write_log(f'send_order vt_orderid: {vt_orderid}, event_engine size: {self.event_engine.get_qsize()}', level=CRITICAL)
             # print('%s algo engine send_order vt_orderid:%s,price: %s' % (algo.algoid, vt_orderid, req.price))
 
         return vt_orderids

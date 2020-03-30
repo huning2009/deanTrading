@@ -6,19 +6,29 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 import talib as ta
-from numpy import ndarray
+import numpy as np
 import copy
 from collections import defaultdict
 from typing import Dict, List, Set, Callable
+import matplotlib.pyplot as plt
 
-# l = [1,2,3,4,5,6]
-# s = pd.Series(l)
-# print(s.diff(2))
-
-
-ts = 1585267571553
-dt = dtt.datetime.fromtimestamp(ts/1000)
-print(dt.strftime("%Y-%m-%d %H:%M:%S.%f"))
+arr = np.zeros(10)
+s = pd.Series(arr)
+print(s[-5:].std())
+"""
+x = np.random.poisson(1,100000)
+y = np.random.random(10)
+fig, ax = plt.subplots(2,1)
+ax[0].hist(x)
+ax[1].plot(y)
+plt.show()"""
+# arr = np.zeros(10)
+# for i in range(10):
+#     arr[i] = i
+# print(arr)
+# ts = 1585333791054
+# dt = dtt.datetime.fromtimestamp(ts/1000)
+# print(dt.strftime("%Y-%m-%d %H:%M:%S.%f"))
 
 
 """ list index

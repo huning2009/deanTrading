@@ -1,7 +1,7 @@
 """
 Gateway for Binance Crypto Exchange.
 """
-from logging import DEBUG
+from logging import DEBUG, INFO, CRITICAL
 import urllib
 import hashlib
 import hmac
@@ -558,7 +558,7 @@ class BinanceRestApi(RestClient):
         self.gateway.on_order(order)
 
         msg = f"委托失败，状态码：{status_code}，信息：{request.response.text}"
-        self.gateway.write_log(msg)
+        self.gateway.write_log(msg, level=CRITICAL)
 
     def on_send_order_error(
         self, exception_type: type, exception_value: Exception, tb, request: Request
@@ -806,7 +806,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
         if req.symbol not in symbol_name_map:
             self.gateway.write_log(f"FUTURES找不到该合约代码{req.symbol}")
             return
-        time.sleep(3)
+        # time.sleep(3)
         # Create tick buf data
         tick = DepthTickData(
             symbol=req.symbol,
