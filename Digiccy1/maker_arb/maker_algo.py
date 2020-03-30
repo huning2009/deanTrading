@@ -52,7 +52,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
 
         self.trading = False
-        self.init_turn = False
 
     def init(self):
         """
@@ -109,7 +108,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.write_log(f"init algo, price_ratio: {self.price_ratio}", level=CRITICAL)
 
         self.trading = True
-        self.init_turn = True
 
     def on_tick(self, tick=None):
         """"""
@@ -477,10 +475,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     def on_interval(self):
         self.algo_count += 1
 
-        if not self.init_turn:
-            if self.algo_count > 30:
-                self.init()
-
         if not self.trading:
             return
         if self.algo_count > 60:
@@ -492,7 +486,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.spread_series.iloc[-1] = (self.active_leg.bids[0,0] - self.passive_leg.bids[0,0] + self.active_leg.asks[0,0] - self.passive_leg.asks[0,0]) * 0.5
 
             new_std = self.spread_series[-60:].std()
-            self.write_log(f'{new_std}')
+            self.write_log(f'{new_std}', level=CRITICAL)
             self.std_series[:-1] = self.std_series[1:]
             self.std_series[-1] = new_std
             
