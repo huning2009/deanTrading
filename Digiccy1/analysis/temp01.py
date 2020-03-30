@@ -12,9 +12,12 @@ from collections import defaultdict
 from typing import Dict, List, Set, Callable
 import matplotlib.pyplot as plt
 
-arr = np.zeros(10)
-s = pd.Series(arr)
-print(s[-5:].std())
+df = pd.Series(np.random.normal(size=10000))
+df.iloc[0] = np.nan
+print(df.quantile(0.4))
+arr = df.values[1:]
+print(arr[-10:])
+print(np.quantile(arr,0.4))
 """
 x = np.random.poisson(1,100000)
 y = np.random.random(10)

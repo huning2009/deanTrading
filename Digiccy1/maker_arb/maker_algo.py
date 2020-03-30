@@ -97,11 +97,15 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         print(data[-5:])
         self.spread_series = data.iloc[:,0] - data.iloc[:,1]
 
-        self.std_series = self.spread_series.diff().rolling(60).std()
-        quantile80 = self.std_series.quantile(0.8)
-        quantile99 = self.std_series.quantile(0.99)
+        self.std_series = self.spread_series.diff().rolling(60).std().values[60:]
+        self.spread_series = self.spread_series.values
+        print(self.spread_series.shape)
+        print(self.std_series.shape)
+        print(self.std_series[-1])
+        quantile80 = np.quantile(self.std_series, 0.8)
+        quantile99 = np.quantile(self.std_series, 0.99)
         
-        latest_std = max(self.std_series.iloc[-1], quantile80)
+        latest_std = max(self.std_series[-1], quantile80)
         latest_std = min(latest_std, quantile99)
         # 将[quantile01, quantile09]映射到[1,10]区间
         self.price_ratio = 9.0 / (quantile99 - quantile80) * (latest_std - quantile80) + 1.0
@@ -483,14 +487,14 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.algo_count = 0
 
             self.spread_series[:-1] = self.spread_series[1:]
-            self.spread_series.iloc[-1] = (self.active_leg.bids[0,0] - self.passive_leg.bids[0,0] + self.active_leg.asks[0,0] - self.passive_leg.asks[0,0]) * 0.5
+            self.spread_series[-1] = (self.active_leg.bids[0,0] - self.passive_leg.bids[0,0] + self.active_leg.asks[0,0] - self.passive_leg.asks[0,0]) * 0.5
 
             new_std = self.spread_series[-60:].std()
             self.std_series[:-1] = self.std_series[1:]
             self.std_series[-1] = new_std
             
-            quantile80 = self.std_series.quantile(0.8)
-            quantile99 = self.std_series.quantile(0.99)
+            quantile80 = np.quantile(self.std_series, 0.8)
+            quantile99 = np.quantile(self.std_series, 0.99)
             new_std = max(new_std, quantile80)
             new_std = min(new_std, quantile99)
             # 将[quantile01, quantile09]映射到[1,10]区间
