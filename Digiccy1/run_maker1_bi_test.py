@@ -41,7 +41,7 @@ fsa_engine.write_log('Gateways is connecting, and sleep 20 seconds!', level=CRIT
 print('Gateways is connecting, and sleep 20 seconds!')
 sleep(30)
 
-# fsa_engine.init()
+fsa_engine.init()
 
 while True:
     # print('sleep')

@@ -429,7 +429,7 @@ class SpreadAlgoEngine:
             req = SubscribeRequest(
                 contract.symbol, contract.exchange
             )
-            # sleep(3)
+            sleep(1)
             self.spread_engine.subscribe(req, contract.gateway_name)
             print('subscribe>>>>>>>>>>>>>>>>>>>:%s' % leg.vt_symbol)
 
