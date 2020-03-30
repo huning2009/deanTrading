@@ -475,12 +475,14 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.send_short_order(self.passive_leg.vt_symbol, price, abs(leg_volume))
 
     def on_interval(self):
+        self.algo_count += 1
+
         if not self.init_turn:
-            self.init()
+            if self.algo_count > 30:
+                self.init()
 
         if not self.trading:
             return
-        self.algo_count += 1
         if self.algo_count > 60:
             dtt1 = datetime.now()
 
