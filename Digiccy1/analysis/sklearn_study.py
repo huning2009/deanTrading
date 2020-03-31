@@ -6,24 +6,27 @@ from sklearn import pipeline
 from sklearn import impute
 from sklearn import decomposition
 from sklearn import feature_extraction
+from sklearn import gaussian_process
+from sklearn import linear_model
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-
-iris = datasets.load_iris()
-X = iris.data
-Y = iris.target
-d = np.column_stack((X,Y))
 
 """
 在numpy中，选择行/列，如果不加：，则返回的是一维数组；加上：，则返回的是二维数组
 print(d[:,4:][:5])
 """
-lb = preprocessing.LabelBinarizer(neg_label=-100, pos_label=100)
-new_Y = lb.fit_transform(Y)
-print(new_Y)
+X, y = datasets.make_regression(100000, 10,5)
+sgd = linear_model.SGDRegressor()
+train = np.random.choice([True, False], size=len(y), p=[.75, .25])
+sgd.fit(X[train], y[train])
+preds = sgd.predict(X[train])
+
+fig, ax = plt.subplots(1,1)
+bins = np.arange(-0.001,0.001,0.000001)
+ax.hist((preds- y[train])/y[train], bins=bins)
 
 
-
+plt.show()
 
 
 """
@@ -58,7 +61,8 @@ print(iris_X_svd.shape)
 print(iris_X_svd[:5])
 """
 
-""" KernalPCA
+
+"""
 A1_mean = [1, 1]
 A1_cov = [[2, .99], [1, 1]]
 A1 = np.random.multivariate_normal(A1_mean, A1_cov, 50)
@@ -67,8 +71,8 @@ A2_mean = [5, 5]
 A2_cov = [[2, .99], [1, 1]]
 A2 = np.random.multivariate_normal(A2_mean, A2_cov, 50)
 A = np.vstack((A1, A2))
-print(A1[:3])
-print(A[:3])
+print(A1.shape)
+print(A.shape)
 B_mean = [5,0]
 B_cov = [[.5, -1], [-.9, .5]]
 B = np.random.multivariate_normal(B_mean, B_cov, 100)
@@ -77,8 +81,8 @@ print(AB.shape)
 
 kpca = decomposition.KernelPCA(kernel='cosine', n_components=1)
 AB_tra = kpca.fit_transform(AB)
-print(AB_tra.shape)
-"""
+print(AB_tra.shape)"""
+
 
 """ impute.SimpleImputer
 iris = datasets.load_iris()

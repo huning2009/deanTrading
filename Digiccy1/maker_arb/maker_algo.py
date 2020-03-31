@@ -102,7 +102,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         print(self.spread_series.shape)
         print(self.std_series.shape)
         print(self.std_series[-1])
-        quantile80 = np.quantile(self.std_series, 0.8)
+        quantile80 = np.quantile(self.std_series, 0.5)
         quantile95 = np.quantile(self.std_series, 0.95)
         
         latest_std = max(self.std_series[-1], quantile80)
@@ -493,7 +493,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.std_series[:-1] = self.std_series[1:]
             self.std_series[-1] = new_std
             
-            quantile80 = np.quantile(self.std_series, 0.8)
+            quantile80 = np.quantile(self.std_series, 0.5)
             quantile95 = np.quantile(self.std_series, 0.95)
             new_std = max(new_std, quantile80)
             new_std = min(new_std, quantile95)
