@@ -507,7 +507,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.price_ratio = 9.0 / (quantile95 - quantile80) * (new_std - quantile80) + 1.0
 
             dtt2 = datetime.now()
-            self.write_log(f"on_interval, price_ratio: {self.price_ratio}, cost time: {dtt2-dtt1}", level=DEBUG)
+            if self.price_ratio > 5:
+                self.write_log(f"on_interval, price_ratio: {self.price_ratio}, cost time: {dtt2-dtt1}", level=CRITICAL)
 
             self.spread.buy_price *= self.price_ratio
             # self.spread.sell_price *= self.price_ratio
