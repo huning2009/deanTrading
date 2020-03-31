@@ -104,7 +104,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         print(self.std_series[-1])
         quantile80 = np.quantile(self.std_series, 0.5)
         quantile95 = np.quantile(self.std_series, 0.95)
-        
+        print(quantile80)
+        print(quantile95)
         latest_std = max(self.std_series[-1], quantile80)
         latest_std = min(latest_std, quantile95)
         # 将[quantile01, quantile09]映射到[1,10]区间
@@ -495,6 +496,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             
             quantile80 = np.quantile(self.std_series, 0.5)
             quantile95 = np.quantile(self.std_series, 0.95)
+            self.write_log(f"on_interval, std: {new_std}, quantile80: {quantile80}, quantile95: {quantile95}", level=DEBUG)
             new_std = max(new_std, quantile80)
             new_std = min(new_std, quantile95)
             # 将[quantile01, quantile09]映射到[1,10]区间

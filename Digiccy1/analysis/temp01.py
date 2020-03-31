@@ -12,12 +12,8 @@ from collections import defaultdict
 from typing import Dict, List, Set, Callable
 import matplotlib.pyplot as plt
 
-df = pd.Series(np.random.normal(size=10000))
-df.iloc[0] = np.nan
-print(df.quantile(0.4))
-arr = df.values[1:]
-print(arr[-10:])
-print(np.quantile(arr,0.4))
+arr = np.random.choice(np.arange(0,20), size=10)
+print(arr)
 """
 x = np.random.poisson(1,100000)
 y = np.random.random(10)

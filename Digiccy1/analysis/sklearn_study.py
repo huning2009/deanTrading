@@ -8,6 +8,7 @@ from sklearn import decomposition
 from sklearn import feature_extraction
 from sklearn import gaussian_process
 from sklearn import linear_model
+from scipy import probplot
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -15,16 +16,19 @@ from mpl_toolkits.mplot3d import Axes3D
 在numpy中，选择行/列，如果不加：，则返回的是一维数组；加上：，则返回的是二维数组
 print(d[:,4:][:5])
 """
-X, y = datasets.make_regression(100000, 10,5)
+
+
+
+
+"""X, y = datasets.make_regression(100000, 10,5)
 sgd = linear_model.SGDRegressor()
 train = np.random.choice([True, False], size=len(y), p=[.75, .25])
 sgd.fit(X[train], y[train])
-preds = sgd.predict(X[train])
+preds = sgd.predict(X[train])"""
 
 fig, ax = plt.subplots(1,1)
 bins = np.arange(-0.001,0.001,0.000001)
 ax.hist((preds- y[train])/y[train], bins=bins)
-
 
 plt.show()
 
