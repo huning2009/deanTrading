@@ -102,7 +102,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         print(self.spread_series.shape)
         print(self.std_series.shape)
         print(self.std_series[-1])
-        quantile80 = np.quantile(self.std_series, 0.5)
+        quantile80 = np.quantile(self.std_series, 0.8)
         quantile95 = np.quantile(self.std_series, 0.95)
         print(quantile80)
         print(quantile95)
@@ -112,14 +112,18 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.price_ratio = 9.0 / (quantile95 - quantile80) * (latest_std - quantile80) + 1.0
         self.write_log(f"init algo, price_ratio: {self.price_ratio}", level=DEBUG)
 
+        self.spread.buy_price *= self.price_ratio
+        # self.spread.sell_price *= self.price_ratio
+        self.spread.short_price *= self.price_ratio
+        # self.spread.cover_price *= self.price_ratio
+
         self.trading = True
 
     def on_tick(self, tick=None):
         """"""
         if not self.trading:
             return
-        else:
-            return
+
         if (self.active_leg.bids is None) or (self.passive_leg.bids is None):
             return
         # 首先判断是否有敞口，有则对冲
@@ -494,7 +498,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.std_series[:-1] = self.std_series[1:]
             self.std_series[-1] = new_std
             
-            quantile80 = np.quantile(self.std_series, 0.5)
+            quantile80 = np.quantile(self.std_series, 0.8)
             quantile95 = np.quantile(self.std_series, 0.95)
             self.write_log(f"on_interval, std: {new_std}, quantile80: {quantile80}, quantile95: {quantile95}", level=DEBUG)
             new_std = max(new_std, quantile80)
@@ -504,3 +508,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
             dtt2 = datetime.now()
             self.write_log(f"on_interval, price_ratio: {self.price_ratio}, cost time: {dtt2-dtt1}", level=DEBUG)
+
+            self.spread.buy_price *= self.price_ratio
+            # self.spread.sell_price *= self.price_ratio
+            self.spread.short_price *= self.price_ratio
+            # self.spread.cover_price *= self.price_ratio

@@ -12,8 +12,9 @@ from collections import defaultdict
 from typing import Dict, List, Set, Callable
 import matplotlib.pyplot as plt
 
-arr = np.random.choice(np.arange(0,20), size=10)
-print(arr)
+a = 10
+a *= 1.5
+print(a)
 """
 x = np.random.poisson(1,100000)
 y = np.random.random(10)

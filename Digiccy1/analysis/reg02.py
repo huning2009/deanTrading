@@ -30,8 +30,8 @@ conn = sqlite3.connect("E:\\Desktop\\deanTrading\\.vntrader\\info.db")
 symbol = 'BTCUSDT'
 spotexchange = Exchange.BINANCE.value
 futuresexchange = Exchange.BINANCEFUTURES.value
-sql = f"select * from dbbardata where symbol='{symbol}' and exchange='{spotexchange}' and interval='1m' order by datetime DESC limit 100000"
-sql2 = f"select * from dbbardata where symbol='{symbol}' and exchange='{futuresexchange}' and interval='1m' order by datetime DESC limit 100000"
+sql = f"select * from dbbardata where symbol='{symbol}' and exchange='{spotexchange}' and interval='1m' order by datetime DESC limit 10000"
+sql2 = f"select * from dbbardata where symbol='{symbol}' and exchange='{futuresexchange}' and interval='1m' order by datetime DESC limit 10000"
 
 df1 = pd.read_sql(sql, conn)
 df1.set_index('datetime', inplace=True)
