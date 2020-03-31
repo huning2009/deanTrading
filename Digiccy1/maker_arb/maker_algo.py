@@ -132,7 +132,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         if abs(self.spread.net_pos) < self.pos_threshold:
             # 无持仓
             long_vol = self.max_pos
-            short_vol = self.max_pos * self.SELL_BUY_RATIO
+            short_vol = self.max_pos
 
             bestbid = self.cal_active_bestbid(long_vol)
             bestask = self.cal_active_bestask(short_vol)
@@ -167,7 +167,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         elif self.spread.net_pos < -self.pos_threshold and (self.spread.net_pos - self.pos_threshold) > -self.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。不到最大单量，卖开同时买平
             long_vol = -self.spread.net_pos
-            short_vol = self.max_pos * self.SELL_BUY_RATIO + self.spread.net_pos
+            short_vol = min(self.max_pos * self.SELL_BUY_RATIO + self.spread.net_pos, self.max_pos)
 
             bestbid = self.cal_active_bestbid(long_vol)
             bestask = self.cal_active_bestask(short_vol)
