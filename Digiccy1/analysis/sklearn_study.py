@@ -8,7 +8,6 @@ from sklearn import decomposition
 from sklearn import feature_extraction
 from sklearn import gaussian_process
 from sklearn import linear_model
-from scipy import probplot
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -16,7 +15,22 @@ from mpl_toolkits.mplot3d import Axes3D
 在numpy中，选择行/列，如果不加：，则返回的是一维数组；加上：，则返回的是二维数组
 print(d[:,4:][:5])
 """
+lr = linear_model.Ridge()
+reg_data, reg_target = datasets.make_regression(n_samples=2000, n_features=3, effective_rank=2, noise=10)
+n_bootstraps = 1000
+len_data = len(reg_data)
+subsample_size = np.int(len_data*0.75)
+subsample = lambda: np.random.choice(np.arange(0, len_data), size=subsample_size)
+cofes = np.zeros((n_bootstraps, 3))
+for i in range(n_bootstraps):
+    subsample_idx = subsample()
+    subsample_X = reg_data[subsample_idx]
+    subsample_y = reg_target[subsample_idx]
 
+    lr.fit(subsample_X, subsample_y)
+    cofes[i][0] = lr.coef_[0]
+    cofes[i][1] = lr.coef_[1]
+    cofes[i][2] = lr.coef_[2]
 
 
 
@@ -26,9 +40,11 @@ train = np.random.choice([True, False], size=len(y), p=[.75, .25])
 sgd.fit(X[train], y[train])
 preds = sgd.predict(X[train])"""
 
-fig, ax = plt.subplots(1,1)
-bins = np.arange(-0.001,0.001,0.000001)
-ax.hist((preds- y[train])/y[train], bins=bins)
+fig, ax = plt.subplots(3,1)
+
+ax[0].hist(cofes[:,0], bins='auto')
+ax[1].hist(cofes[:,1], bins='auto')
+ax[2].hist(cofes[:,2], bins='auto')
 
 plt.show()
 
