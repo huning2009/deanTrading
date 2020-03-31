@@ -18,7 +18,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     algo_name = "SpreadMaker"
     SELL_BUY_RATIO = 2
     FILT_RATIO = 1
-    COMMISSION = (0.0008 + 0.0004) * 2
+    COMMISSION = (0.0006 + 0.0004) * 2
 
     def __init__(
         self,
@@ -507,7 +507,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.price_ratio = 9.0 / (quantile95 - quantile80) * (new_std - quantile80) + 1.0
 
             dtt2 = datetime.now()
-            if self.price_ratio > 5:
+            if self.price_ratio > 1:
                 self.write_log(f"on_interval, price_ratio: {self.price_ratio}, cost time: {dtt2-dtt1}", level=CRITICAL)
 
             self.spread.buy_price *= self.price_ratio
