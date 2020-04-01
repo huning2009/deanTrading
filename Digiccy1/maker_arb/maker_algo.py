@@ -510,7 +510,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             if self.price_ratio > 1:
                 self.write_log(f"on_interval, price_ratio: {self.price_ratio}, cost time: {dtt2-dtt1}", level=CRITICAL)
 
-            self.spread.buy_price *= self.price_ratio
+            # self.spread.buy_price *= self.price_ratio
             # self.spread.sell_price *= self.price_ratio
-            self.spread.short_price *= self.price_ratio
+            # self.spread.short_price *= self.price_ratio
             # self.spread.cover_price *= self.price_ratio
