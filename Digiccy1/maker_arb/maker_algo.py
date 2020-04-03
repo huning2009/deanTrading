@@ -65,14 +65,12 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         endtime = datetime.now()
         starttime = endtime - timedelta(days=7)
 
-        active_contract = self.algo_engine.get_contract(self.active_leg.vt_symbol)
-        passive_contract = self.algo_engine.get_contract(self.passive_leg.vt_symbol)
-        active_gateway = self.algo_engine.spread_engine.get_gateway(active_contract.gateway_name)
-        passive_gateway = self.algo_engine.spread_engine.get_gateway(passive_contract.gateway_name)
+        active_gateway = self.algo_engine.spread_engine.get_gateway(self.active_leg.gateway_name)
+        passive_gateway = self.algo_engine.spread_engine.get_gateway(self.passive_leg.gateway_name)
         
-        act_query = HistoryRequest(active_contract.symbol, active_contract.exchange, starttime, endtime, Interval.MINUTE)
+        act_query = HistoryRequest(self.active_leg.symbol, self.active_leg.exchange, starttime, endtime, Interval.MINUTE)
         active_his_bar = active_gateway.query_history(act_query)
-        print(f'active symbol: {active_contract.symbol}, {len(active_his_bar)}')
+        print(f'active symbol: {self.active_leg.symbol}, {len(active_his_bar)}')
         active_close_arr = np.zeros((len(active_his_bar),2))
         active_df = pd.DataFrame(active_close_arr)
         for i in range(len(active_his_bar)):
@@ -83,9 +81,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         active_df.set_index('datetime', inplace=True)
         active_df = active_df.loc[active_df.index.drop_duplicates(keep=False), 'spot_close']
 
-        passive_query = HistoryRequest(passive_contract.symbol, passive_contract.exchange, starttime, endtime, Interval.MINUTE)
+        passive_query = HistoryRequest(self.passive_leg.symbol, self.passive_leg.exchange, starttime, endtime, Interval.MINUTE)
         passive_his_bar = passive_gateway.query_history(passive_query)
-        print(f'passive symbol: {passive_contract.symbol}, {len(passive_his_bar)}')
+        print(f'passive symbol: {self.passive_leg.symbol}, {len(passive_his_bar)}')
         pasive_close_arr = np.zeros((len(passive_his_bar),2))
         passive_df = pd.DataFrame(pasive_close_arr)
         for i in range(len(passive_his_bar)):
@@ -371,8 +369,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_long_dict['order_id'] is None:
                 # 可用资金不足，调整数量
-                if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free:
-                    vol = self.algo_engine.margin_accounts["USDTUSDT."+self.get_contract(self.active_leg.vt_symbol).exchange.value].free * 0.9
+                if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT."+self.active_leg.exchange.value].free:
+                    vol = self.algo_engine.margin_accounts["USDTUSDT."+self.active_leg.exchange.value].free * 0.9
                 # 不足最小金额，立即返回
                 if shadow_bid * vol < 12:
                     return
@@ -487,7 +485,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     def on_interval(self):
         if True:
             return
-            
+
         self.algo_count += 1
 
         if not self.trading:

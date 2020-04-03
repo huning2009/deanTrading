@@ -46,6 +46,9 @@ class LegData:
         self.net_position = contract.net_position
         self.min_volume = contract.min_volume
         self.pricetick = contract.pricetick
+        self.exchange = contract.exchange
+        self.gateway_name = contract.gateway_name
+        self.symbol = contract.symbol
 
     def update_tick(self, tick: TickData):
         """"""
