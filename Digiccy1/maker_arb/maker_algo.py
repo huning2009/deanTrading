@@ -18,7 +18,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     algo_name = "SpreadMaker"
     SELL_BUY_RATIO = 2
     FILT_RATIO = 1
-    COMMISSION = (0.0006 + 0.0004) * 2
+    COMMISSION = 0.0006 + 0.0004
 
     def __init__(
         self,
@@ -166,7 +166,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         elif self.spread.net_pos < -self.pos_threshold and (self.spread.net_pos - self.pos_threshold) > -self.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。不到最大单量，卖开同时买平
-            long_vol = -self.spread.net_pos
+            long_vol = min(-self.spread.net_pos, self.max_pos)
             short_vol = min(self.max_pos * self.SELL_BUY_RATIO + self.spread.net_pos, self.max_pos)
 
             bestbid = self.cal_active_bestbid(long_vol)
@@ -179,7 +179,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         elif (self.spread.net_pos - self.pos_threshold) < -self.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。已到最大单量，仅买平
-            long_vol = -self.spread.net_pos
+            long_vol = min(-self.spread.net_pos, self.max_pos)
 
             bestbid = self.cal_active_bestbid(long_vol)
             shadow_coverbid = self.cal_shadow_coverbid(long_vol)
@@ -197,9 +197,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # print(cumshadow_bids)
         # print(self.passive_leg.bids)
         if n ==20:
-            self.write_log(cumshadow_bids, level=CRITICAL)
+            # self.write_log(cumshadow_bids, level=CRITICAL)
             n = 19
-        shadow_buybid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup*2 + self.spread.buy_price)
+        shadow_buybid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup + self.spread.buy_price)
 
         return shadow_buybid
 
@@ -213,9 +213,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # print(cumshadow_asks)
         # print(self.passive_leg.asks)
         if n == 20:
-            self.write_log(cumshadow_asks, level=CRITICAL)
+            # self.write_log(cumshadow_asks, level=CRITICAL)
             n = 19
-        shadow_shortask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup*2 + self.spread.short_price)
+        shadow_shortask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup + self.spread.short_price)
 
         return shadow_shortask
 
@@ -226,10 +226,10 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         cumshadow_bids[:,1][cumshadow_bids[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_bids[:,1])
         if n ==20:
-            self.write_log(cumshadow_bids, level=CRITICAL)
+            # self.write_log(cumshadow_bids, level=CRITICAL)
             n = 19
 
-        shadow_coverbid = cumshadow_bids[n,0] * (1 + self.spread.cover_price)
+        shadow_coverbid = cumshadow_bids[n,0] * (1 - self.COMMISSION - self.payup + self.spread.cover_price)
 
         return shadow_coverbid
 
@@ -240,9 +240,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         cumshadow_asks[:,1][cumshadow_asks[:,1] > max_vol] = 0
         n = np.count_nonzero(cumshadow_asks[:,1])
         if n ==20:
-            self.write_log(cumshadow_asks, level=CRITICAL)
+            # self.write_log(cumshadow_asks, level=CRITICAL)
             n = 19
-        shadow_sellask = cumshadow_asks[n,0] * (1 + self.spread.sell_price)
+        shadow_sellask = cumshadow_asks[n,0] * (1 + self.COMMISSION + self.payup + self.spread.sell_price)
 
         return shadow_sellask
 
@@ -259,8 +259,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         bids[:,1] = np.cumsum(bids[:,1], axis=0)
         bids[:,1][bids[:,1] > max_vol * self.FILT_RATIO] = 0
         n = np.count_nonzero(bids[:,1])
-        if n ==20:
-            self.write_log(bids, level=CRITICAL)
+        if n == 20:
+            # self.write_log(bids, level=CRITICAL)
             n = 19
         bestbid = bids[n,0]
         return bestbid
@@ -277,8 +277,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         asks[:,1] = np.cumsum(asks[:,1], axis=0)
         asks[:,1][asks[:,1] > max_vol * self.FILT_RATIO] = 0
         n = np.count_nonzero(asks[:,1])
-        if n ==20:
-            self.write_log(asks, level=CRITICAL)
+        if n == 20:
+            # self.write_log(asks, level=CRITICAL)
             n = 19
         bestask = asks[n,0]
 
