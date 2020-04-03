@@ -57,6 +57,11 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         """
         初始化数据
         """
+        # self.get_history_data(self)
+        self.trading = True
+
+    def get_history_data(self):
+        """download history data"""
         endtime = datetime.now()
         starttime = endtime - timedelta(days=7)
 
@@ -116,8 +121,6 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         # self.spread.sell_price *= self.price_ratio
         self.spread.short_price *= self.price_ratio
         # self.spread.cover_price *= self.price_ratio
-
-        self.trading = True
 
     def on_tick(self, tick=None):
         """"""
@@ -482,6 +485,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             self.send_short_order(self.passive_leg.vt_symbol, price, abs(leg_volume))
 
     def on_interval(self):
+        if True:
+            return
+            
         self.algo_count += 1
 
         if not self.trading:

@@ -150,6 +150,7 @@ class SpreadAlgoTemplate:
 
         # self.put_algo_event()
         self.on_interval()
+        pass
 
     def write_log(self, msg: str, level=INFO):
         """"""
