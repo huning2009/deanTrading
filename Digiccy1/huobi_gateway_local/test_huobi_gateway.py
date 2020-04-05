@@ -16,6 +16,7 @@ from myEvent import (
     EVENT_ACCOUNT,
     EVENT_CONTRACT,
     EVENT_LOG,
+    EVENT_ACCOUNT_MARGIN
 )    
 
 from myObject import (
@@ -32,6 +33,7 @@ from myObject import (
 from myConstant import (
     Direction,
     Exchange,
+    Offset,
     Product,
     Status,
     OrderType,
@@ -43,17 +45,20 @@ setting = load_json("connect_huobi.json")
 def process_event(event:Event):
     print('event type:%s' % event.type)
     print("event data:%s" % event.data)
-    
+
 def process_tick_event(event:Event):
     print('event type:%s' % event.type)
     print("event data:%s" % event.data.bids)
 
 event_engine = EventEngine()
-event_engine.register(EVENT_TICK, process_event)
+# event_engine.register(EVENT_TICK, process_event)
 # event_engine.register(EVENT_CONTRACT, process_event)
 event_engine.register(EVENT_POSITION, process_event)
 # event_engine.register(EVENT_ACCOUNT, process_event)
 event_engine.register(EVENT_LOG, process_event)
+event_engine.register(EVENT_ORDER, process_event)
+event_engine.register(EVENT_TRADE, process_event)
+# event_engine.register(EVENT_ACCOUNT_MARGIN, process_event)
 event_engine.start()
 
 gateway = HuobiGateway(event_engine)
@@ -62,6 +67,20 @@ gateway.connect(setting)
 sleep(3)
 req = SubscribeRequest("ethusdt", Exchange.HUOBI)
 gateway.subscribe(req)
+
+order_req = OrderRequest(
+            symbol="ethusdt",
+            exchange=Exchange.HUOBI,
+            direction=Direction.LONG,
+            offset=Offset.OPEN,
+            type=OrderType.LIMIT,
+            price=120,
+            volume=0.1,
+            borrowmoney=False
+)
+order_id = gateway.send_order(order_req)
+print(order_id)
+
 
 # endtime = datetime.now()
 # starttime = endtime - timedelta(days=1)

@@ -17,7 +17,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     """"""
     algo_name = "SpreadMaker"
     SELL_BUY_RATIO = 2
-    FILT_RATIO = 1
+    FILT_RATIO = 3
     COMMISSION = 0.0006 + 0.0004
 
     def __init__(
@@ -140,7 +140,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             bestask = self.cal_active_bestask(short_vol)
             shadow_buybid = self.cal_shadow_buybid(long_vol)
             shadow_shortask = self.cal_shadow_shortask(short_vol)
-
+            # print(bestbid, shadow_buybid, bestask, shadow_shortask)
             self.long_active_leg(shadow_buybid, bestbid, long_vol)
             self.short_active_leg(shadow_shortask, bestask, short_vol)
 
@@ -288,6 +288,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
     def on_order(self, order: OrderData):
         """"""
+        print(order)
         if order.vt_symbol == self.active_leg.vt_symbol:
             if order.status in [Status.REJECTED, Status.ALLTRADED]:
                 self.write_log(f'rejected or alltrade: order id: {order.vt_orderid}, volume: {order.volume}', level=DEBUG)
@@ -345,6 +346,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
     def on_trade(self, trade: TradeData):
         """"""
+        print("on_trade")
+        print(trade)
          # Only care active leg order update
         if trade.vt_symbol == self.active_leg.vt_symbol:
             # Hedge passive legs if necessary
@@ -366,12 +369,12 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             #     shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
             # else:
             shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
-
+            print(f"long active: {bestbid}, {shadow_bid}")
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_long_dict['order_id'] is None:
                 # 可用资金不足，调整数量
                 if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT."+self.active_leg.exchange.value].free:
-                    vol = self.algo_engine.margin_accounts["USDTUSDT."+self.active_leg.exchange.value].free * 0.9
+                    vol = self.algo_engine.margin_accounts["USDTUSDT."+self.active_leg.exchange.value].free * 0.9 / shadow_bid
                 # 不足最小金额，立即返回
                 if shadow_bid * vol < 12:
                     return
@@ -409,6 +412,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             #     shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
             # else:
             shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
+            print(f"short active: {bestask}, {shadow_ask}")
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_short_dict['order_id'] is None:
                 borrow = False

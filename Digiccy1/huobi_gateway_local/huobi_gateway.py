@@ -368,7 +368,7 @@ class HuobiRestApi(RestClient):
             "symbol": req.symbol,
             "type": huobi_type,
             "price": str(req.price),
-            "source": "api"
+            "source": "super-margin-api"
         }
 
         self.add_request(
@@ -706,6 +706,7 @@ class HuobiWebsocketApiBase(WebsocketClient):
 
     def on_packet(self, packet):
         """"""
+        # print(packet)
         action = packet.get("action", None)
 
         if action == "ping":
@@ -841,7 +842,7 @@ class HuobiTradeWebsocketApi(HuobiWebsocketApiBase):
         req = {
             "action": "sub",
             # "cid": str(self.req_id),
-            "ch": f"orders.{req.symbol}"
+            "ch": f"orders#{req.symbol}"
         }
         self.send_packet(req)
 
@@ -866,6 +867,8 @@ class HuobiTradeWebsocketApi(HuobiWebsocketApiBase):
 
     def on_order(self, data: dict):
         """"""
+        # print("on_order>>>>>>>>>>>")
+        # print(data)
         sys_orderid = str(data["orderId"])
 
         order = self.order_manager.get_order_with_sys_orderid(sys_orderid)

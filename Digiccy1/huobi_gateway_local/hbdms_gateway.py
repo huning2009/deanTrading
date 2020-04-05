@@ -144,6 +144,7 @@ class HbdmSwapGateway(BaseGateway):
     def subscribe(self, req: SubscribeRequest):
         """"""
         self.market_ws_api.subscribe(req)
+        self.trade_ws_api.subscribe(req)
 
     def send_order(self, req: OrderRequest):
         """"""
@@ -781,13 +782,13 @@ class HbdmTradeWebsocketApi(HbdmWebsocketApiBase):
         """"""
         super().connect(key, secret, WEBSOCKET_TRADE_HOST, proxy_host, proxy_port)
 
-    def subscribe(self):
+    def subscribe(self, req):
         """"""
         self.req_id += 1
         req = {
             "op": "sub",
             "cid": str(self.req_id),
-            "topic": f"orders.*"
+            "topic": f"orders.{req.symbol}"
         }
         self.send_packet(req)
 
@@ -799,10 +800,11 @@ class HbdmTradeWebsocketApi(HbdmWebsocketApiBase):
     def on_login(self):
         """"""
         self.gateway.write_log("交易Websocket API登录成功")
-        self.subscribe()
+        # self.subscribe()
 
     def on_data(self, packet):  # type: (dict)->None
         """"""
+        # print(packet)
         op = packet.get("op", None)
         if op != "notify":
             return
