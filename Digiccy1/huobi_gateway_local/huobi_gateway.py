@@ -12,8 +12,9 @@ import hmac
 import sys
 from copy import copy
 from datetime import datetime
+import numpy as np
 
-from myEvent import Event, EVENT_TIMER
+from myEvent import Event, EVENT_TIMER, EVENT_BORROW_MONEY, EVENT_ACCOUNT_MARGIN
 from myApi.rest import RestClient, Request
 from myApi.websocket import WebsocketClient
 from myConstant import (
@@ -27,11 +28,14 @@ from myConstant import (
 from myGateway import BaseGateway, LocalOrderManager
 from myObject import (
     TickData,
+    DepthTickData,
     OrderData,
     TradeData,
     AccountData,
     ContractData,
     BarData,
+    BorrowData,
+    MarginAccountData,
     OrderRequest,
     CancelRequest,
     SubscribeRequest,
@@ -40,7 +44,7 @@ from myObject import (
 
 REST_HOST = "https://api-aws.huobi.pro"
 WEBSOCKET_DATA_HOST = "wss://api-aws.huobi.pro/ws"       # Market Data
-WEBSOCKET_TRADE_HOST = "wss://api-aws.huobi.pro/ws/v1"     # Account and Order
+WEBSOCKET_TRADE_HOST = "wss://api-aws.huobi.pro/ws/v2"     # Account and Order
 
 STATUS_HUOBI2VT = {
     "submitted": Status.NOTTRADED,
@@ -129,14 +133,17 @@ class HuobiGateway(BaseGateway):
 
     def query_account(self):
         """"""
-        self.rest_api.query_account_balance()
+        # self.rest_api.query_account_balance()
+        self.rest_api.query_margin_account_balance()
 
     def query_position(self):
         """"""
         pass
 
     def query_history(self, req: HistoryRequest):
-        """"""
+        """
+        1min, 5min, 15min, 30min, 60min, 4hour, 1day, 1mon, 1week, 1year
+        """
         return self.rest_api.query_history(req)
 
     def close(self):
@@ -147,17 +154,36 @@ class HuobiGateway(BaseGateway):
 
     def process_timer_event(self, event: Event):
         """"""
-        self.count += 1
-        if self.count < 3:
-            return
+        # self.count += 1
+        # if self.count < 3:
+        #     return
 
         self.query_account()
 
+    def repay_money(self, req):
+        self.rest_api.repay_money(req)
+
+    def borrow_money(self, asset, amount):
+        self.rest_api.borrow_money(asset, amount)
+    
     def init_query(self):
         """"""
         self.count = 0
         self.event_engine.register(EVENT_TIMER, self.process_timer_event)
 
+    def on_borrow_money(self, borrow: BorrowData) -> None:
+        """
+        Trade event push.
+        Trade event of a specific vt_symbol is also pushed.
+        """
+        self.on_event(EVENT_BORROW_MONEY, borrow)
+
+    def on_account_margin(self, account: MarginAccountData):
+        """
+        Account event push.
+        Account event of a specific vt_accountid is also pushed.
+        """
+        self.on_event(EVENT_ACCOUNT_MARGIN, account)
 
 class HuobiRestApi(RestClient):
     """
@@ -245,6 +271,14 @@ class HuobiRestApi(RestClient):
             method="GET",
             path=path,
             callback=self.on_query_account_balance
+        )
+
+    def query_margin_account_balance(self):
+        """"""
+        self.add_request(
+            method="GET",
+            path="/v1/cross-margin/accounts/balance",
+            callback=self.on_query_margin_account_balance
         )
 
     def query_order(self):
@@ -362,11 +396,53 @@ class HuobiRestApi(RestClient):
             extra=req
         )
 
+    def repay_money(self, req):
+        path = f"/v1/cross-margin/orders/{req.order_id}/repay"
+        data = {
+            "amount": str(req.amount)
+        }
+        self.add_request(
+            method="POST",
+            path=path,
+            data=data,
+            callback=self.on_repay_money
+        )
+
+    def borrow_money(self, asset, amount):
+        data = {
+            "currency": asset,
+            "amount": str(amount)
+        }
+
+        self.add_request(
+            method="POST",
+            path="/v1/cross-margin/orders",
+            callback=self.on_borrow_money,
+            data=data,
+            extra=data
+        )
+
+    def on_repay_money(self, data, request):
+        pass
+
+    def on_borrow_money(self, data, request):
+        if data['status'] == 'ok':
+            asset = request.extra['currency']
+            amount = float(request.extra['amount'])
+            order_id = str(data['data'])
+            borrow_data = BorrowData(
+                gateway_name=self.gateway_name,
+                asset=asset,
+                amount=amount,
+                order_id=order_id
+            )
+
+            self.gateway.on_borrow_money(borrow_data)
+
     def on_query_account(self, data, request):
         """"""
         if self.check_error(data, "查询账户"):
             return
-        print(data)
         for d in data["data"]:
             # if d["type"] == "spot":
             #     self.account_id = d["id"]
@@ -398,6 +474,32 @@ class HuobiRestApi(RestClient):
 
             if account.balance:
                 self.gateway.on_account(account)
+
+    def on_query_margin_account_balance(self, data, request):
+        """"""
+        if self.check_error(data, "查询借款账户资金"):
+            return
+
+        buf = {}
+        for d in data["data"]["list"]:
+            currency = d["currency"]
+            currency_data = buf.setdefault(currency, {})
+            currency_data[d["type"]] = float(d["balance"])
+
+        for currency, currency_data in buf.items():
+            account = MarginAccountData(
+                accountid=currency,
+                exchange=Exchange.HUOBI,
+                borrowed=float(currency_data.get("loan", 0)),
+                interest=float(currency_data.get("interest", 0)),
+                free=float(currency_data.get("trade", 0)),
+                locked=float(currency_data.get("frozen", 0)),
+                # netAsset=float(currency_data["netAsset"]),
+                max_borrow=float(currency_data.get("loan-available", 0)),
+                gateway_name=self.gateway_name
+            )
+            
+            self.gateway.on_account_margin(account)
 
     def on_query_order(self, data, request):
         """"""
@@ -572,11 +674,113 @@ class HuobiWebsocketApiBase(WebsocketClient):
 
     def login(self):
         """"""
+        timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        sig = create_signature_v2(self.key, "GET", self.sign_host, self.path, self.secret, timestamp)
+        params = {
+            "action": "req", 
+            "ch": "auth",
+            "params":{
+                "authType":"api",
+                "accessKey": self.key,
+                "signatureMethod": "HmacSHA256",
+                "signatureVersion": "2.1",
+                "timestamp": timestamp,
+                "signature": sig['Signature']
+            }
+            }
+        return self.send_packet(params)
+
+    def on_login(self):
+        """"""
+        pass
+
+    @staticmethod
+    def unpack_data(data):
+        """"""
+        # return json.loads(zlib.decompress(data, 31))
+        try:
+            return json.loads(data)
+        except:
+            return json.loads(zlib.decompress(data, 31))
+        
+
+    def on_packet(self, packet):
+        """"""
+        action = packet.get("action", None)
+
+        if action == "ping":
+            req = {"action": "pong",
+                "data":{
+                    "ts": packet["data"]["ts"]
+                }
+            }
+            self.send_packet(req)
+        # elif "op" in packet and packet["op"] == "ping":
+        #     req = {
+        #         "op": "pong",
+        #         "ts": packet["ts"]
+        #     }
+        #     self.send_packet(req)
+        elif "err-msg" in packet:
+            return self.on_error_msg(packet)
+        elif "code" in packet and int(packet["code"]) == 200 and packet["ch"] == "auth":
+            return self.on_login()
+        else:
+            self.on_data(packet)
+
+    def on_data(self, packet):
+        """"""
+        print("data : {}".format(packet))
+
+    def on_error_msg(self, packet):
+        """"""
+        msg = packet["err-msg"]
+        if msg == "invalid pong":
+            return
+
+        self.gateway.write_log(packet["err-msg"])
+
+class HuobiWebsocketApiBase_v1(WebsocketClient):
+    """"""
+
+    def __init__(self, gateway):
+        """"""
+        super().__init__()
+
+        self.gateway = gateway
+        self.gateway_name = gateway.gateway_name
+
+        self.key = ""
+        self.secret = ""
+        self.sign_host = ""
+        self.path = ""
+
+    def connect(
+        self,
+        key: str,
+        secret: str,
+        url: str,
+        proxy_host: str,
+        proxy_port: int
+    ):
+        """"""
+        self.key = key
+        self.secret = secret
+
+        host, path = _split_url(url)
+        self.sign_host = host
+        self.path = path
+
+        self.init(url, proxy_host, proxy_port)
+        self.start()
+
+    def login(self):
+        """"""
         params = {"op": "auth"}
         params.update(create_signature(self.key, "GET", self.sign_host, self.path, self.secret))
         return self.send_packet(params)
 
-    def on_login(self):
+    def on_login(self, packet):
         """"""
         pass
 
@@ -635,45 +839,45 @@ class HuobiTradeWebsocketApi(HuobiWebsocketApiBase):
         """"""
         self.req_id += 1
         req = {
-            "op": "sub",
-            "cid": str(self.req_id),
-            "topic": f"orders.{req.symbol}"
+            "action": "sub",
+            # "cid": str(self.req_id),
+            "ch": f"orders.{req.symbol}"
         }
         self.send_packet(req)
 
     def on_connected(self):
         """"""
-        self.gateway.write_log("交易Websocket API连接成功")
+        self.gateway.write_log("swap交易Websocket API连接成功")
         self.login()
 
     def on_login(self):
         """"""
-        self.gateway.write_log("交易Websocket API登录成功")
+        self.gateway.write_log("swap交易Websocket API登录成功")
 
     def on_data(self, packet):  # type: (dict)->None
         """"""
-        op = packet.get("op", None)
-        if op != "notify":
+        # action = packet.get("action", None)
+        if packet["action"] != "push":
             return
 
-        topic = packet["topic"]
-        if "orders" in topic:
+        ch = packet["ch"]
+        if "orders" in ch:
             self.on_order(packet["data"])
 
     def on_order(self, data: dict):
         """"""
-        sys_orderid = str(data["order-id"])
+        sys_orderid = str(data["orderId"])
 
         order = self.order_manager.get_order_with_sys_orderid(sys_orderid)
         if not order:
             self.order_manager.add_push_data(sys_orderid, data)
             return
 
-        traded_volume = float(data["filled-amount"])
+        traded_volume = float(data.get('tradeVolume', 0))
 
         # Push order event
         order.traded += traded_volume
-        order.status = STATUS_HUOBI2VT.get(data["order-state"], None)
+        order.status = STATUS_HUOBI2VT.get(data["orderStatus"], None)
         self.order_manager.on_order(order)
 
         # Push trade event
@@ -684,17 +888,17 @@ class HuobiTradeWebsocketApi(HuobiWebsocketApiBase):
             symbol=order.symbol,
             exchange=Exchange.HUOBI,
             orderid=order.orderid,
-            tradeid=str(data["seq-id"]),
+            tradeid=str(data["tradeId"]),
             direction=order.direction,
-            price=float(data["price"]),
-            volume=float(data["filled-amount"]),
+            price=float(data["tradePrice"]),
+            volume=float(data["tradeVolume"]),
             time=datetime.now().strftime("%H:%M:%S"),
             gateway_name=self.gateway_name,
         )
         self.gateway.on_trade(trade)
 
 
-class HuobiDataWebsocketApi(HuobiWebsocketApiBase):
+class HuobiDataWebsocketApi(HuobiWebsocketApiBase_v1):
     """"""
 
     def __init__(self, gateway):
@@ -717,7 +921,7 @@ class HuobiDataWebsocketApi(HuobiWebsocketApiBase):
         symbol = req.symbol
 
         # Create tick data buffer
-        tick = TickData(
+        tick = DepthTickData(
             symbol=symbol,
             name=symbol_name_map.get(symbol, ""),
             exchange=Exchange.HUOBI,
@@ -735,12 +939,12 @@ class HuobiDataWebsocketApi(HuobiWebsocketApiBase):
         self.send_packet(req)
 
         # Subscribe to market detail update
-        self.req_id += 1
-        req = {
-            "sub": f"market.{symbol}.detail",
-            "id": str(self.req_id)
-        }
-        self.send_packet(req)
+        # self.req_id += 1
+        # req = {
+        #     "sub": f"market.{symbol}.detail",
+        #     "id": str(self.req_id)
+        # }
+        # self.send_packet(req)
 
     def on_data(self, packet):  # type: (dict)->None
         """"""
@@ -761,19 +965,13 @@ class HuobiDataWebsocketApi(HuobiWebsocketApiBase):
         tick = self.ticks[symbol]
         tick.datetime = datetime.fromtimestamp(data["ts"] / 1000)
 
-        bids = data["tick"]["bids"]
-        for n in range(5):
-            price, volume = bids[n]
-            tick.__setattr__("bid_price_" + str(n + 1), float(price))
-            tick.__setattr__("bid_volume_" + str(n + 1), float(volume))
+        tick_data = data["tick"]
+        if "bids" not in tick_data or "asks" not in tick_data:
+            return
+        tick.bids = np.array(tick_data['bids']).astype(float)
+        tick.asks = np.array(tick_data['asks']).astype(float)
 
-        asks = data["tick"]["asks"]
-        for n in range(5):
-            price, volume = asks[n]
-            tick.__setattr__("ask_price_" + str(n + 1), float(price))
-            tick.__setattr__("ask_volume_" + str(n + 1), float(volume))
-
-        if tick.last_price:
+        if tick.bids[0,1]:
             self.gateway.on_tick(copy(tick))
 
     def on_market_detail(self, data):
@@ -825,6 +1023,37 @@ def create_signature(api_key, method, host, path, secret_key, get_params=None):
     payload = "\n".join(payload)
     payload = payload.encode(encoding="UTF8")
 
+    secret_key = secret_key.encode(encoding="UTF8")
+
+    digest = hmac.new(secret_key, payload, digestmod=hashlib.sha256).digest()
+    signature = base64.b64encode(digest)
+
+    params = dict(sorted_params)
+    params["Signature"] = signature.decode("UTF8")
+    return params
+
+def create_signature_v2(api_key, method, host, path, secret_key, timestamp, get_params=None):
+    """
+    创建签名
+    :param get_params: dict 使用GET方法时附带的额外参数(urlparams)
+    :return:
+    """
+    sorted_params = [
+        ("accessKey", api_key),
+        ("signatureMethod", "HmacSHA256"),
+        ("signatureVersion", "2.1"),
+        ("timestamp", timestamp)
+    ]
+
+    if get_params:
+        sorted_params.extend(list(get_params.items()))
+        sorted_params = list(sorted(sorted_params))
+    encode_params = urllib.parse.urlencode(sorted_params)
+
+    payload = [method, host, path, encode_params]
+    payload = "\n".join(payload)
+    payload = payload.encode(encoding="UTF8")
+    # print(payload, secret_key)
     secret_key = secret_key.encode(encoding="UTF8")
 
     digest = hmac.new(secret_key, payload, digestmod=hashlib.sha256).digest()

@@ -21,6 +21,12 @@ EVENT_POSITION = "ePosition."
 EVENT_ACCOUNT = "eAccount."
 EVENT_CONTRACT = "eContract."
 EVENT_LOG = "eLog"
+EVENT_ACCOUNT_MARGIN = "eAccountMargin."
+EVENT_ACCOUNT_FUTURES = "eAccountFutures."
+EVENT_POSITION_FUTURES = "ePositionFutures."
+EVENT_BORROW_MONEY = "eBorrowMonety."
+EVENT_REPAY_MONEY = "eRepayMoney."
+
 from myUtility import get_folder_path
 
 class Event:

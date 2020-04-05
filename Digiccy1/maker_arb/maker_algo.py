@@ -38,6 +38,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.submitting_long_dict['order_id'] = None
         self.submitting_short_dict = {}
         self.submitting_short_dict['order_id'] = None
+        self.submitting_borrow_money = False
 
         self.cancel_long_orderid = None
         self.cancel_short_orderid = None

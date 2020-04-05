@@ -1,12 +1,5 @@
 from enum import Enum
 
-EVENT_ACCOUNT_MARGIN = "eAccountMargin."
-EVENT_ACCOUNT_FUTURES = "eAccountFutures."
-EVENT_POSITION_FUTURES = "ePositionFutures."
-EVENT_BORROW_MONEY = "eBorrowMonety."
-EVENT_REPAY_MONEY = "eRepayMoney."
-
-
 class MarketType(Enum):
     """
     type of spot/margin/futures.
@@ -120,6 +113,7 @@ class Product(Enum):
     WARRANT = "权证"
     SPREAD = "价差"
     FUND = "基金"
+    SWAP = "永续"
 
 
 class OrderType(Enum):

@@ -26,9 +26,9 @@ plt.show()"""
 # for i in range(10):
 #     arr[i] = i
 # print(arr)
-# ts = 1585333791054
-# dt = dtt.datetime.fromtimestamp(ts/1000)
-# print(dt.strftime("%Y-%m-%d %H:%M:%S.%f"))
+ts = 1585968794101
+dt = dtt.datetime.fromtimestamp(ts/1000)
+print(dt.strftime("%Y-%m-%d %H:%M:%S.%f"))
 
 
 """ list index

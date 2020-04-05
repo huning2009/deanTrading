@@ -13,6 +13,9 @@ from myEvent import (
     EVENT_POSITION,
     EVENT_ACCOUNT,
     EVENT_CONTRACT,
+    EVENT_ACCOUNT_MARGIN,
+    EVENT_BORROW_MONEY,
+    EVENT_REPAY_MONEY,
     EVENT_LOG
 )
 
@@ -31,9 +34,6 @@ from myObject import (
 from DatabaseManage.init_sqlite import get_sqlite, init_models
 from myConstant import (
     Exchange, 
-    EVENT_ACCOUNT_MARGIN,
-    EVENT_BORROW_MONEY,
-    EVENT_REPAY_MONEY,
     Direction,
     Exchange,
     Product,
@@ -41,7 +41,7 @@ from myConstant import (
     OrderType,
     Interval
 )
-from Digiccy1.binance_gateway_local import BinanceGateway, BinanceFuturesGateway
+from Digiccy1.binance_gateway_local import BinanceDepthGateway, BinanceFuturesDepthGateway
 from Digiccy1.huobi_gateway_local import HuobiGateway, HbdmGateway
 
 
@@ -61,9 +61,9 @@ event_engine.register(EVENT_LOG, process_event)
 event_engine.start()
 
 binance_setting = load_json("connect_binance.json")
-gateway = BinanceGateway(event_engine)
+gateway = BinanceDepthGateway(event_engine)
 gateway.connect(binance_setting)
-gateway_futures = BinanceFuturesGateway(event_engine)
+gateway_futures = BinanceFuturesDepthGateway(event_engine)
 gateway_futures.connect(binance_setting)
 
 # huobi_setting = load_json("connect_huobi.json")
@@ -77,13 +77,14 @@ sleep(5)
 endtime = datetime.now()
 starttime = endtime - timedelta(days=12)
 
-# symbol_l1 = ['BTCUSDT', 'EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT', 'ETHUSDT', 'ETCUSDT']
-symbol_l1 = ['BNBUSDT', 'LINKUSDT', 'XTZUSDT', 'ETHUSDT', 'ETCUSDT']
-symbol_l = ['TRXUSDT', 'ADAUSDT', 'ATOMUSDT', 'XMRUSDT', 'DASHUSDT']
+symbol_l1 = ['BTCUSDT', 'EOSUSDT', 'BCHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT', 'LINKUSDT', 'XTZUSDT', 'ETHUSDT', 'ETCUSDT']
+# symbol_l1 = ['BNBUSDT', 'LINKUSDT', 'XTZUSDT', 'ETHUSDT', 'ETCUSDT']
+symbol_l = ['TRXUSDT', 'ADAUSDT', 'ATOMUSDT', 'XMRUSDT', 'DASHUSDT', 'ZECUSDT', 'NEOUSDT', 'XLMUSDT', 'VETUSDT', 'IOSTUSDT']
+symbol_2 = []
 l = ['BSV200327', 'BSV200626']
 l1 = ['bsvusdt']
 Interval = Interval.MINUTE
-for symbol in symbol_l1:
+for symbol in symbol_2:
     historyReq = HistoryRequest(symbol, Exchange.BINANCE, starttime, endtime, Interval)
     data_spot = gateway.query_history(historyReq)
     db_data_spot = [DbBarData.from_bar(bar) for bar in data_spot]

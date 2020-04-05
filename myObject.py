@@ -55,7 +55,7 @@ class MarginAccountData(BaseData):
 
     def __post_init__(self):
         """"""
-        self.vt_symbol = f"{self.accountid}USDT.{self.exchange.value}"
+        self.vt_symbol = f"{self.accountid.upper()}USDT.{self.exchange.value}"
 
 @dataclass
 class FuturesAccountData(BaseData):
@@ -147,7 +147,7 @@ class TickData(BaseData):
     ask_volume_3: float = 0
     ask_volume_4: float = 0
     ask_volume_5: float = 0
-
+    
     def __post_init__(self):
         """"""
         self.vt_symbol = f"{self.symbol}.{self.exchange.value}"
@@ -319,6 +319,12 @@ class LogData(BaseData):
         """"""
         self.time = datetime.now()
 
+@dataclass
+class BorrowData(BaseData):
+    asset: str
+    amount: float
+    order_id: str = ''
+
 
 @dataclass
 class ContractData(BaseData):
@@ -363,6 +369,11 @@ class SubscribeRequest:
         """"""
         self.vt_symbol = f"{self.symbol}.{self.exchange.value}"
 
+@dataclass
+class RepayRequest:
+    amount: float
+    asset: str = ''
+    order_id: str = ''
 
 @dataclass
 class OrderRequest:

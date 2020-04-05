@@ -21,10 +21,7 @@ from myConstant import (
     Status,
     Offset,
     OrderType,
-    Interval,
-    EVENT_ACCOUNT_MARGIN,
-    EVENT_BORROW_MONEY,
-    EVENT_REPAY_MONEY
+    Interval
 )
 from myGateway import BaseGateway
 from myObject import (
@@ -41,7 +38,13 @@ from myObject import (
     HistoryRequest,
     MarginAccountData
 )
-from myEvent import Event, EVENT_TIMER
+from myEvent import (
+    Event, 
+    EVENT_TIMER,     
+    EVENT_ACCOUNT_MARGIN,
+    EVENT_BORROW_MONEY,
+    EVENT_REPAY_MONEY
+)
 
 REST_HOST = "https://api.binance.com"
 WEBSOCKET_TRADE_HOST = "wss://stream.binance.com:9443/ws/"
@@ -142,9 +145,9 @@ class BinanceDepthGateway(BaseGateway):
     def borrow_money(self, asset, amount):
         """"""
         return self.rest_api.borrow_money(asset, amount)
-    def repay_money(self, asset, amount):
+    def repay_money(self, req):
         """"""
-        return self.rest_api.repay_money(asset, amount)
+        return self.rest_api.repay_money(req)
 
     def cancel_order(self, req: CancelRequest):
         """"""
@@ -522,15 +525,15 @@ class BinanceRestApi(RestClient):
             data=data
         )
         
-    def repay_money(self, asset, amount):
+    def repay_money(self, req):
         """"""
         data = {
             "security": Security.SIGNED
         }
 
         params = {
-            "asset": asset,
-            "amount": amount
+            "asset": req.asset,
+            "amount": req.amount
         }
 
         self.add_request(
@@ -1017,7 +1020,7 @@ class BinanceDataWebsocketApi(WebsocketClient):
             return
         # time.sleep(3)
         # Create tick buf data
-        tick = TickData(
+        tick = DepthTickData(
             symbol=req.symbol,
             name=symbol_name_map.get(req.symbol, ""),
             exchange=Exchange.BINANCE,

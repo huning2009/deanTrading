@@ -20,10 +20,7 @@ from myConstant import (
     Status,
     Offset,
     OrderType,
-    Interval,
-    EVENT_ACCOUNT_MARGIN,
-    EVENT_BORROW_MONEY,
-    EVENT_REPAY_MONEY
+    Interval
 )
 from myGateway import BaseGateway
 from myObject import (
@@ -39,7 +36,12 @@ from myObject import (
     HistoryRequest,
     MarginAccountData
 )
-from myEvent import Event, EVENT_TIMER
+from myEvent import (
+    Event, EVENT_TIMER,    
+    EVENT_ACCOUNT_MARGIN,
+    EVENT_BORROW_MONEY,
+    EVENT_REPAY_MONEY
+)
 
 REST_HOST = "https://api.binance.com"
 WEBSOCKET_TRADE_HOST = "wss://stream.binance.com:9443/ws/"

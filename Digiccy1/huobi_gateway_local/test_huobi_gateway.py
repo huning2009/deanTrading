@@ -43,6 +43,10 @@ setting = load_json("connect_huobi.json")
 def process_event(event:Event):
     print('event type:%s' % event.type)
     print("event data:%s" % event.data)
+    
+def process_tick_event(event:Event):
+    print('event type:%s' % event.type)
+    print("event data:%s" % event.data.bids)
 
 event_engine = EventEngine()
 event_engine.register(EVENT_TICK, process_event)
@@ -55,10 +59,10 @@ event_engine.start()
 gateway = HuobiGateway(event_engine)
 
 gateway.connect(setting)
-
+sleep(3)
 req = SubscribeRequest("ethusdt", Exchange.HUOBI)
+gateway.subscribe(req)
 
-# gateway.subscribe(req)
 # endtime = datetime.now()
 # starttime = endtime - timedelta(days=1)
 # historyReq = HistoryRequest('ethusdt', Exchange.HUOBI, starttime, endtime, Interval.MINUTE)

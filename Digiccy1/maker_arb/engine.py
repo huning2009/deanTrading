@@ -21,7 +21,11 @@ from myEvent import (
     EVENT_LOG, 
     EVENT_ORDER, 
     EVENT_TRADE, 
-    EVENT_TIMER
+    EVENT_TIMER,
+    EVENT_ACCOUNT_MARGIN, 
+    EVENT_ACCOUNT_FUTURES, 
+    EVENT_BORROW_MONEY
+
 )
 from myConverter import OffsetConverter
 from myUtility import load_json, save_json
@@ -33,6 +37,7 @@ from myObject import (
     PositionData,
     SubscribeRequest, 
     OrderRequest, 
+    RepayRequest,
     MarginAccountData, 
     FuturesAccountData
 )
@@ -41,10 +46,7 @@ from myConstant import (
     Offset, 
     OrderType, 
     Interval, 
-    EVENT_ACCOUNT_MARGIN, 
-    EVENT_ACCOUNT_FUTURES, 
-    Exchange, 
-    EVENT_BORROW_MONEY
+    Exchange
 )
 from myGateway import BaseGateway
 
@@ -283,9 +285,9 @@ class SpreadEngine(object):
         if gateway:
             gateway.connect(setting)
 
-    def repay(self, asset, amount, gateway_name):
+    def repay(self, req, gateway_name):
         gateway = self.get_gateway(gateway_name)
-        gateway.repay_money(asset, amount)
+        gateway.repay_money(req)
 
     def borrow_money(self,  asset, amount, gateway_name):
         gateway = self.get_gateway(gateway_name)
@@ -458,8 +460,12 @@ class SpreadAlgoEngine:
                 amount = min(margin_account_data.borrowed, margin_account_data.free)
                 gateway_name = margin_account_data.gateway_name
                 asset = margin_account_data.accountid
+                repay_req = RepayRequest(
+                    asset=asset,
+                    amount=amount
+                )
 
-                self.spread_engine.repay(asset, amount, gateway_name)
+                self.spread_engine.repay(repay_req, gateway_name)
                 
                 margin_account_data.borrowed -= amount
                 margin_account_data.free -= amount
