@@ -17,7 +17,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
     """"""
     algo_name = "SpreadMaker"
     SELL_BUY_RATIO = 2
-    FILT_RATIO = 1
+    FILT_RATIO = 2
     COMMISSION = 0.0006 + 0.0004
 
     def __init__(
@@ -33,6 +33,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.pos_threshold = self.spread.max_pos * 0.001
         self.max_pos = self.spread.max_pos
         self.payup = self.spread.payup
+        self.lot_size = self.spread.lot_size
 
         self.submitting_long_dict = {}   # key: orderid (None or orderid), status, price, vol, traded
         self.submitting_long_dict['order_id'] = None
@@ -132,8 +133,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         if abs(self.spread.net_pos) < self.pos_threshold:
             # 无持仓
-            long_vol = self.max_pos
-            short_vol = self.max_pos
+            long_vol = min(self.max_pos, self.lot_size)
+            short_vol = min(self.max_pos, self.lot_size)
 
             bestbid = self.cal_active_bestbid(long_vol)
             bestask = self.cal_active_bestask(short_vol)
@@ -145,7 +146,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         elif self.spread.net_pos > self.pos_threshold and (self.spread.net_pos + self.pos_threshold) < self.max_pos:
             # 持有active 多单，passive空单。不到最大单量，买开同时卖平
-            long_vol = self.max_pos - self.spread.net_pos
+            long_vol = min(self.max_pos - self.spread.net_pos, self.lot_size)
             short_vol = self.spread.net_pos
 
             bestbid = self.cal_active_bestbid(long_vol)
@@ -167,8 +168,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         elif self.spread.net_pos < -self.pos_threshold and (self.spread.net_pos - self.pos_threshold) > -self.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。不到最大单量，卖开同时买平
-            long_vol = min(-self.spread.net_pos, self.max_pos)
-            short_vol = min(self.max_pos * self.SELL_BUY_RATIO + self.spread.net_pos, self.max_pos)
+            long_vol = -self.spread.net_pos
+            short_vol = min(self.max_pos * self.SELL_BUY_RATIO + self.spread.net_pos, self.lot_size)
 
             bestbid = self.cal_active_bestbid(long_vol)
             bestask = self.cal_active_bestask(short_vol)
@@ -180,7 +181,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         elif (self.spread.net_pos - self.pos_threshold) < -self.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。已到最大单量，仅买平
-            long_vol = min(-self.spread.net_pos, self.max_pos)
+            long_vol = -self.spread.net_pos
 
             bestbid = self.cal_active_bestbid(long_vol)
             shadow_coverbid = self.cal_shadow_coverbid(long_vol)
