@@ -240,6 +240,15 @@ class OrderData(BaseData):
         )
         return req
 
+    def create_query_request(self) -> "QueryRequest":
+        """
+        Create cancel request object from order.
+        """
+        req = QueryOrderRequest(
+            orderid=self.orderid, symbol=self.symbol, exchange=self.exchange
+        )
+        return req
+
 
 @dataclass
 class TradeData(BaseData):
@@ -414,6 +423,20 @@ class OrderRequest:
 
 @dataclass
 class CancelRequest:
+    """
+    Request sending to specific gateway for canceling an existing order.
+    """
+
+    orderid: str
+    symbol: str
+    exchange: Exchange
+
+    def __post_init__(self):
+        """"""
+        self.vt_symbol = f"{self.symbol}.{self.exchange.value}"
+
+@dataclass
+class QueryOrderRequest:
     """
     Request sending to specific gateway for canceling an existing order.
     """

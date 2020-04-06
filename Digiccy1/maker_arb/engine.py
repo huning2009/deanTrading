@@ -34,6 +34,7 @@ from myObject import (
     ContractData, 
     LogData, 
     CancelRequest, 
+    QueryOrderRequest,
     PositionData,
     SubscribeRequest, 
     OrderRequest, 
@@ -255,6 +256,14 @@ class SpreadEngine(object):
         if gateway:
             gateway.cancel_order(req)
 
+    def query_order_with_orderid(self, req: QueryOrderRequest, gateway_name: str):
+        """
+        Send query order request to a specific gateway.
+        """
+        gateway = self.get_gateway(gateway_name)
+        if gateway:
+            gateway.query_order_with_orderid(req)
+
     def add_gateway(self, gateway_class: Type[BaseGateway]):
         """
         Add gateway.
@@ -366,6 +375,8 @@ class SpreadAlgoEngine:
 
                 timer_msg = "TIMER CHECK %s %s: %s, spead_pos: %s, active_leg_net_pos: %s, passive_leg_net_pos: %s, event_engine size: %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), spread.name, d, spread.net_pos, spread.active_leg.net_pos, spread.passive_leg.net_pos, self.event_engine.get_qsize())
                 self.write_log(timer_msg, level=CRITICAL)
+                
+        self.query_order_with_orderid()
 
     def process_tick_event(self, event: Event) -> None:
         """"""
@@ -418,6 +429,11 @@ class SpreadAlgoEngine:
 
             algo.update_order(order)
 
+    def query_order_with_orderid(self):
+        for order in self.active_orders.values():
+            req = order.create_query_request()
+            self.spread_engine.query_order_with_orderid(req, order.gateway_name)
+
     def process_contract_event(self, event: Event) -> None:
         """"""
         contract = event.data
@@ -449,6 +465,7 @@ class SpreadAlgoEngine:
         # print(">>>>>>>>process_account_margin_event")
         # 根据self.borrowmoneys 检查是否需要还款
         margin_account_data = event.data
+        # print(margin_account_data)
         leg = self.spread_engine.legs.get(margin_account_data.vt_symbol, None)
         if not leg and margin_account_data.vt_symbol.split('.')[0] != 'USDTUSDT':
             return
@@ -469,7 +486,7 @@ class SpreadAlgoEngine:
                 
                 margin_account_data.borrowed -= amount
                 margin_account_data.free -= amount
-        self.margin_accounts[margin_account_data.vt_symbol] = margin_account_data
+        self.margin_accounts[margin_account_data.vt_symbol.upper()] = margin_account_data
         # print(self.borrowmoneys)
         # print(f'{margin_account_data.vt_symbol} max borrow: {margin_account_data.max_borrow}')
 

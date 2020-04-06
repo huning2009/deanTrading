@@ -11,7 +11,7 @@ from myObject import (TickData, OrderData, TradeData, HistoryRequest)
 from myUtility import round_to
 
 from .template import SpreadAlgoTemplate
-from .base import SpreadData
+from .base import SpreadData, calculate_inverse_volume, calculate_forward_volume
 
 class SpreadMakerAlgo(SpreadAlgoTemplate):
     """"""
@@ -33,6 +33,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.pos_threshold = self.spread.max_pos * 0.001
         self.max_pos = self.spread.max_pos
         self.payup = self.spread.payup
+        self.lot_size = self.spread.lot_size
 
         self.submitting_long_dict = {}   # key: orderid (None or orderid), status, price, vol, traded
         self.submitting_long_dict['order_id'] = None
@@ -133,8 +134,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         if abs(self.spread.net_pos) < self.pos_threshold:
             # 无持仓
-            long_vol = self.max_pos
-            short_vol = self.max_pos
+            long_vol = min(self.max_pos, self.lot_size)
+            short_vol = min(self.max_pos, self.lot_size)
 
             bestbid = self.cal_active_bestbid(long_vol)
             bestask = self.cal_active_bestask(short_vol)
@@ -146,7 +147,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         elif self.spread.net_pos > self.pos_threshold and (self.spread.net_pos + self.pos_threshold) < self.max_pos:
             # 持有active 多单，passive空单。不到最大单量，买开同时卖平
-            long_vol = self.max_pos - self.spread.net_pos
+            long_vol = min(self.max_pos - self.spread.net_pos, self.lot_size)
             short_vol = self.spread.net_pos
 
             bestbid = self.cal_active_bestbid(long_vol)
@@ -168,8 +169,8 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         elif self.spread.net_pos < -self.pos_threshold and (self.spread.net_pos - self.pos_threshold) > -self.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。不到最大单量，卖开同时买平
-            long_vol = min(-self.spread.net_pos, self.max_pos)
-            short_vol = min(self.max_pos * self.SELL_BUY_RATIO + self.spread.net_pos, self.max_pos)
+            long_vol = -self.spread.net_pos
+            short_vol = min(self.max_pos * self.SELL_BUY_RATIO + self.spread.net_pos, self.lot_size)
 
             bestbid = self.cal_active_bestbid(long_vol)
             bestask = self.cal_active_bestask(short_vol)
@@ -181,7 +182,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         elif (self.spread.net_pos - self.pos_threshold) < -self.max_pos * self.SELL_BUY_RATIO:
             # 持有active 空单，passive多单。已到最大单量，仅买平
-            long_vol = min(-self.spread.net_pos, self.max_pos)
+            long_vol = -self.spread.net_pos
 
             bestbid = self.cal_active_bestbid(long_vol)
             shadow_coverbid = self.cal_shadow_coverbid(long_vol)
@@ -369,7 +370,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             #     shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
             # else:
             shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
-            print(f"long active: {bestbid}, {shadow_bid}")
+            # print(f"long active: {bestbid}, {shadow_bid}")
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_long_dict['order_id'] is None:
                 # 可用资金不足，调整数量
@@ -379,6 +380,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
                 if shadow_bid * vol < 12:
                     return
                 self.submitting_long_dict['order_id'] = self.send_long_order(self.active_leg.vt_symbol, shadow_bid, vol)
+                self.write_log(f"long_active_order_id: {self.submitting_long_dict['order_id']}")
                 self.submitting_long_dict['price'] = shadow_bid
                 self.submitting_long_dict['status'] = Status.SUBMITTING
                 self.submitting_long_dict['vol'] = vol
@@ -412,18 +414,18 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             #     shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
             # else:
             shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
-            print(f"short active: {bestask}, {shadow_ask}")
+            # print(f"short active: {bestask}, {shadow_ask}")
             # 如果没有报单，则发出委托；否则取消原委托
             if self.submitting_short_dict['order_id'] is None:
                 borrow = False
-                if vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free:
+                if vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol.upper()].free:
                     # 可借不足，调整数量
-                    if (vol-self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free) > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow:
-                        vol = self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free + self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow * 0.9
+                    if (vol-self.algo_engine.margin_accounts[self.active_leg.vt_symbol.upper()].free) > self.algo_engine.margin_accounts[self.active_leg.vt_symbol.upper()].max_borrow:
+                        vol = self.algo_engine.margin_accounts[self.active_leg.vt_symbol.upper()].free + self.algo_engine.margin_accounts[self.active_leg.vt_symbol.upper()].max_borrow * 0.9
 
                     borrow = True
-                    self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free = vol
-                    self.algo_engine.margin_accounts[self.active_leg.vt_symbol].max_borrow -= (vol-self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free)
+                    self.algo_engine.margin_accounts[self.active_leg.vt_symbol.upper()].free = vol
+                    self.algo_engine.margin_accounts[self.active_leg.vt_symbol.upper()].max_borrow -= (vol-self.algo_engine.margin_accounts[self.active_leg.vt_symbol.upper()].free)
 
                 # 不足最小金额，立即返回
                 if shadow_ask * vol < 12:
@@ -455,7 +457,13 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         #  是否有被动腿对冲单挂单，有则不再进行对冲
         if not self.check_passive_order_finished():
             return
-        active_traded = round_to(self.active_leg.net_pos, self.spread.min_volume)
+        
+        if self.spread.inverse_contracts[self.active_leg.vt_symbol]:
+            # 转为正向合约数量
+            active_traded = calculate_inverse_volume(self.active_leg.net_pos, self.active_leg.net_pos_price, self.active_leg.size)
+            active_traded = round_to(active_traded, self.spread.min_volume)
+        else:
+            active_traded = round_to(self.active_leg.net_pos, self.spread.min_volume)
 
         hedge_volume = self.spread.calculate_spread_volume(
             self.active_leg.vt_symbol,
@@ -464,13 +472,26 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
 
         # Calculate passive leg target volume and do hedge
         # passive_traded = self.leg_traded[self.passive_leg.vt_symbol]
-        passive_traded = round_to(self.passive_leg.net_pos, self.spread.min_volume)
+        if self.spread.inverse_contracts[self.passive_leg.vt_symbol]:
+            # 转为正向合约数量
+            passive_traded = calculate_inverse_volume(self.passive_leg.net_pos, self.passive_leg.net_pos_price, self.passive_leg.size)
+            passive_traded = round_to(passive_traded, self.spread.min_volume)
 
-        passive_target = self.spread.calculate_leg_volume(
-            self.passive_leg.vt_symbol,
-            hedge_volume
-        )
-        leg_order_volume = passive_target - passive_traded
+            passive_target = self.spread.calculate_leg_volume(
+                self.passive_leg.vt_symbol,
+                hedge_volume
+            )
+
+            leg_order_volume = passive_target - passive_traded
+        else:
+            passive_traded = round_to(self.passive_leg.net_pos, self.spread.min_volume)
+
+            passive_target = self.spread.calculate_leg_volume(
+                self.passive_leg.vt_symbol,
+                hedge_volume
+            )
+            leg_order_volume = passive_target - passive_traded
+
         if abs(leg_order_volume) * self.passive_leg.bids[0,0] > 12:
             self.send_passiveleg_order(leg_order_volume)
             self.write_log(f'hedge_passive_leg active_traded: {active_traded}, passive_target: {passive_target}, passive_traded: {passive_traded}')

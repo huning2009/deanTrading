@@ -138,6 +138,8 @@ class SpreadAlgoTemplate:
 
     def update_timer(self):
         """"""
+        # 定时通过restful api查询self.leg_orders 里面的订单状态，以防websocket订单推送有问题
+        
         # self.count += 1
         # self.count_active_short += 1
         # if self.count > self.interval:

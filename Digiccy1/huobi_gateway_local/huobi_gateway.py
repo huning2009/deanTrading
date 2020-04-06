@@ -38,6 +38,7 @@ from myObject import (
     MarginAccountData,
     OrderRequest,
     CancelRequest,
+    QueryOrderRequest,
     SubscribeRequest,
     HistoryRequest
 )
@@ -130,6 +131,10 @@ class HuobiGateway(BaseGateway):
     def cancel_order(self, req: CancelRequest):
         """"""
         self.rest_api.cancel_order(req)
+
+    def query_order_with_orderid(self, req: QueryOrderRequest):
+        """"""
+        self.rest_api.query_order_with_orderid(req)
 
     def query_account(self):
         """"""
@@ -396,6 +401,18 @@ class HuobiRestApi(RestClient):
             extra=req
         )
 
+    def query_order_with_orderid(self, req: QueryOrderRequest):
+        """"""
+        sys_orderid = self.order_manager.get_sys_orderid(req.orderid)
+
+        path = f"/v1/order/orders/{sys_orderid}"
+        self.add_request(
+            method="GET",
+            path=path,
+            callback=self.on_query_order_with_orderid,
+            extra=req
+        )
+
     def repay_money(self, req):
         path = f"/v1/cross-margin/orders/{req.order_id}/repay"
         data = {
@@ -612,6 +629,38 @@ class HuobiRestApi(RestClient):
             self.gateway.write_log(f"委托撤单成功：{order.orderid}")
 
         self.order_manager.on_order(order)
+
+    def on_query_order_with_orderid(self, data, request):
+        """"""
+        query_request = request.extra
+        local_orderid = query_request.orderid
+        order = self.order_manager.get_order_with_local_orderid(local_orderid)
+        # 检验是否有成交未推送
+        if float(data['field-amount']) > order.traded:
+            traded_volume = float(data['field-amount']) - order.traded
+        else:
+            traded_volume = 0
+
+        order.status = STATUS_HUOBI2VT.get(data["orderStatus"], None)
+        self.order_manager.on_order(order)
+
+        # Push trade event
+        if not traded_volume:
+            return
+
+        trade = TradeData(
+            symbol=order.symbol,
+            exchange=Exchange.HUOBI,
+            orderid=order.orderid,
+            tradeid=str(data["id"]),
+            direction=order.direction,
+            price=float(data["price"]),
+            volume=traded_volume,
+            time=datetime.now().strftime("%H:%M:%S"),
+            gateway_name=self.gateway_name,
+        )
+        self.gateway.on_trade(trade)
+
 
     def on_error(
         self, exception_type: type, exception_value: Exception, tb, request: Request
@@ -857,8 +906,8 @@ class HuobiTradeWebsocketApi(HuobiWebsocketApiBase):
 
     def on_data(self, packet):  # type: (dict)->None
         """"""
-        # action = packet.get("action", None)
-        if packet["action"] != "push":
+        action = packet.get("action", None)
+        if action != "push":
             return
 
         ch = packet["ch"]

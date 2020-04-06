@@ -40,6 +40,7 @@ from myObject import (
     ContractData,
     OrderRequest,
     CancelRequest,
+    QueryOrderRequest,
     SubscribeRequest,
     HistoryRequest
 )
@@ -153,6 +154,10 @@ class HbdmSwapGateway(BaseGateway):
     def cancel_order(self, req: CancelRequest):
         """"""
         self.rest_api.cancel_order(req)
+
+    def query_order_with_orderid(self, req: QueryOrderRequest):
+        """"""
+        self.rest_api.query_order_with_orderid(req)
 
     def send_orders(self, reqs: Sequence[OrderRequest]):
         """"""
@@ -463,6 +468,26 @@ class HbdmRestApi(RestClient):
             extra=req
         )
 
+    def query_order_with_orderid(self, req: QueryOrderRequest):
+        """"""
+        data = {
+            "contract_code":req.symbol,
+        }
+
+        orderid = int(req.orderid)
+        if orderid > 1000000:
+            data["client_order_id"] = orderid
+        else:
+            data["order_id"] = orderid
+
+        self.add_request(
+            method="POST",
+            path="swap-api/v1/swap_order_info",
+            callback=self.on_query_order_with_orderid,
+            data=data,
+            extra=req
+        )
+
     def on_query_account(self, data, request):
         """"""
         if self.check_error(data, "查询swap账户"):
@@ -560,6 +585,7 @@ class HbdmRestApi(RestClient):
                 size=int(d["contract_size"]),
                 min_volume=1,
                 product=Product.SWAP,
+                net_position=True,
                 history_data=True,
                 gateway_name=self.gateway_name,
             )
@@ -605,6 +631,10 @@ class HbdmRestApi(RestClient):
     def on_cancel_order(self, data, request):
         """"""
         self.check_error(data, "swap撤单")
+
+    def on_query_order_with_orderid(self, data, request):
+        """"""
+        pass
 
     def on_cancel_order_failed(self, status_code: str, request: Request):
         """
@@ -878,7 +908,7 @@ class HbdmDataWebsocketApi(HbdmWebsocketApiBase):
 
     def on_connected(self):
         """"""
-        self.gateway.write_log("行情Websocket API连接成功")
+        self.gateway.write_log("SWAP行情Websocket API连接成功")
 
         for ws_symbol in self.ticks.keys():
             self.subscribe_data(ws_symbol)
