@@ -8,12 +8,65 @@ from sklearn import decomposition
 from sklearn import feature_extraction
 from sklearn import gaussian_process
 from sklearn import linear_model
+from sklearn import ensemble
+from sklearn import cluster
+from sklearn import metrics
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 """
 在numpy中，选择行/列，如果不加：，则返回的是一维数组；加上：，则返回的是二维数组
 print(d[:,4:][:5])
+"""
+blobs, classes = datasets.make_blobs(1000,centers=3, n_features=3)
+color = np.array(['r', 'g', 'b'])
+
+kmeans = cluster.KMeans(n_clusters=3)
+kmeans.fit(blobs)
+
+fig =plt.figure()
+ax = Axes3D(fig)
+ax.scatter(blobs[:,0], blobs[:,1], blobs[:,2], color=color[classes])
+ax.scatter(kmeans.cluster_centers_[:,0], kmeans.cluster_centers_[:,1], kmeans.cluster_centers_[:,2], color='black', marker='*')
+plt.show()
+"""
+X, y = datasets.make_regression(1000, 2, noise=10)
+n_estimator = np.arange(100, 1000, 200)
+gbrs = [
+    ensemble.GradientBoostingRegressor(n_estimators=estimator)
+    for estimator in n_estimator
+]
+residuals = {}
+for n, gbr in enumerate(gbrs):
+
+    gbr.fit(X, y)
+    residuals[gbr.n_estimators] = gbr.predict(X) - y
+"""
+
+# lr = linear_model.LinearRegression()
+# lr.fit(X, y)
+# y_preds_lr = lr.predict(X)
+
+# gbr_residual = y_preds_gbr - y
+# lr_residual = y_preds_lr - y
+
+# print(gbr_residual.mean(), gbr_residual.var())
+# print(lr_residual.mean(), lr_residual.var())
+
+
+
+"""
+X, y = datasets.make_classification(n_samples=1000, n_features=4)
+lr = linear_model.LogisticRegression()
+X_train = X[:-200]
+X_test = X[-200:]
+y_train = y[:-200]
+y_test = y[-200:]
+
+lr.fit(X_train, y_train)
+y_train_preds = lr.predict(X_test)
+print((y_train_preds==y_test).sum().astype(float)/ y_test.shape[0])
+"""
 """
 lr = linear_model.Ridge()
 reg_data, reg_target = datasets.make_regression(n_samples=2000, n_features=3, effective_rank=2, noise=10)
@@ -31,7 +84,7 @@ for i in range(n_bootstraps):
     cofes[i][0] = lr.coef_[0]
     cofes[i][1] = lr.coef_[1]
     cofes[i][2] = lr.coef_[2]
-
+"""
 
 
 """X, y = datasets.make_regression(100000, 10,5)
@@ -40,13 +93,16 @@ train = np.random.choice([True, False], size=len(y), p=[.75, .25])
 sgd.fit(X[train], y[train])
 preds = sgd.predict(X[train])"""
 
-fig, ax = plt.subplots(3,1)
-
-ax[0].hist(cofes[:,0], bins='auto')
-ax[1].hist(cofes[:,1], bins='auto')
-ax[2].hist(cofes[:,2], bins='auto')
-
-plt.show()
+# fig, ax = plt.subplots(len(n_estimator), 1)
+# i = 0
+# for value in residuals.values():
+#     ax[i].hist(value, bins="auto", label=f"asd{i}")
+# # ax[1].hist(cofes[:,1], bins='auto')
+# # ax[2].hist(cofes[:,2], bins='auto')
+#     ax[i].legend()
+#     i += 1
+# # plt.legend()
+# plt.show()
 
 
 """
@@ -128,7 +184,6 @@ print(iris_fa[:5])
 # """
 
 
-
 # fig = plt.figure()
 # plt.scatter(A1[:,0], A1[:,1], c="red")
 # plt.scatter(A2[:,0], A2[:,1], c="green")
@@ -138,7 +193,6 @@ print(iris_fa[:5])
 # ax = Axes3D(fig)
 # ax.scatter(iris_tf[:,0], iris_tf[:,1], iris_tf[:,2])
 # plt.show()
-
 
 
 """
