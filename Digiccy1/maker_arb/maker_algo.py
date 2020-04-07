@@ -130,7 +130,9 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         if (self.active_leg.bids is None) or (self.passive_leg.bids is None):
             return
         # 首先判断是否有敞口，有则对冲
-        self.hedge_passive_leg()
+        hedging = self.hedge_passive_leg()
+        if not hedging:
+            return
 
         if abs(self.spread.net_pos) < self.pos_threshold:
             # 无持仓
