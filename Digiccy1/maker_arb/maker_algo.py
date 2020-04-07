@@ -50,7 +50,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         self.price_ratio = 1.0
 
         self.algo_count = 0
-
+        self.hedging = True
 
         self.trading = False
 
@@ -129,9 +129,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
         if (self.active_leg.bids is None) or (self.passive_leg.bids is None):
             return
         # 首先判断是否有敞口，有则对冲
-        heding = self.hedge_passive_leg()
-        if not heding:
-            return
+        self.hedging = self.hedge_passive_leg()
 
         if abs(self.spread.net_pos) < self.pos_threshold:
             # 无持仓
@@ -350,7 +348,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
          # Only care active leg order update
         if trade.vt_symbol == self.active_leg.vt_symbol:
             # Hedge passive legs if necessary
-            self.hedge_passive_leg()
+            self.hedging = self.hedge_passive_leg()
 
     def long_active_leg(self, shadow_bid, bestbid, vol):
         # # 10档价格高于预报价，则不报。
@@ -370,7 +368,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             shadow_bid = round_to(shadow_bid, self.active_leg.pricetick)
 
             # 如果没有报单，则发出委托；否则取消原委托
-            if self.submitting_long_dict['order_id'] is None:
+            if self.submitting_long_dict['order_id'] is None and self.hedging:
                 # 可用资金不足，调整数量
                 if shadow_bid * vol > self.algo_engine.margin_accounts["USDTUSDT."+self.active_leg.exchange.value].free:
                     vol = self.algo_engine.margin_accounts["USDTUSDT."+self.active_leg.exchange.value].free * 0.9 / shadow_bid
@@ -412,7 +410,7 @@ class SpreadMakerAlgo(SpreadAlgoTemplate):
             # else:
             shadow_ask = round_to(shadow_ask, self.active_leg.pricetick)
             # 如果没有报单，则发出委托；否则取消原委托
-            if self.submitting_short_dict['order_id'] is None:
+            if self.submitting_short_dict['order_id'] is None and self.hedging:
                 borrow = False
                 if vol > self.algo_engine.margin_accounts[self.active_leg.vt_symbol].free:
                     # 可借不足，调整数量
